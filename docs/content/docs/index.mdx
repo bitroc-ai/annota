@@ -1,0 +1,59 @@
+# Introduction
+
+Annota is a high-performance annotation framework designed specifically for whole slide imaging (WSI) and digital pathology applications. Built with TypeScript and React, it provides a comprehensive solution for creating, editing, and managing annotations on large-scale medical images.
+
+## Key Features
+
+### High Performance
+- **Spatial Indexing**: Efficient R-tree based spatial indexing for fast annotation queries
+- **Optimized Rendering**: Smart rendering pipeline for handling thousands of annotations
+- **Large Image Support**: Built on OpenSeadragon for seamless gigapixel image viewing
+
+### React First
+- **Modern Hooks API**: Intuitive React hooks for annotations, selection, and interactions
+- **Component Based**: Pre-built components for common annotation workflows
+- **Type Safe**: Full TypeScript support with comprehensive type definitions
+
+### Extensible Architecture
+- **Custom Tools**: Easy-to-implement custom annotation tools (point, rectangle, polygon)
+- **Layer System**: Organize annotations into multiple layers with independent styling
+- **Plugin System**: Extend functionality with custom shape editors and interactions
+
+### Professional Features
+- **Drag-and-Drop Editing**: Visual editing of annotation shapes with handles
+- **Smart Popups**: Context-aware popups with adaptive positioning
+- **Import/Export**: Support for ASAP XML format and H5 annotations
+- **Undo/Redo**: Built-in support for annotation history (planned)
+
+## Use Cases
+
+Annota is designed for:
+
+- **Digital Pathology**: Annotate regions of interest in whole slide images
+- **AI Training**: Create and manage training datasets for machine learning models
+- **Clinical Workflows**: Support pathologist workflows with annotation tools
+- **Research**: Facilitate research with flexible annotation capabilities
+
+## Architecture Overview
+
+Annota follows a clean, layered architecture:
+
+```
+┌─────────────────────────────────────┐
+│   React Components & Hooks          │
+├─────────────────────────────────────┤
+│   Core Annotation Engine            │
+│   - Store (Observable)              │
+│   - Spatial Index (R-tree)          │
+│   - Selection Manager               │
+├─────────────────────────────────────┤
+│   OpenSeadragon Adapter             │
+│   - Viewport Integration            │
+│   - Event Handling                  │
+│   - Coordinate Transform            │
+└─────────────────────────────────────┘
+```
+
+## Getting Started
+
+Ready to build annotation tools with Annota? Check out the [Getting Started](/docs/getting-started) guide.

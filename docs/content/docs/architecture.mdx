@@ -1,0 +1,243 @@
+# Architecture
+
+Annota is a React annotation framework for digital pathology and whole slide imaging, designed for high-performance rendering of large-scale cell annotations on OpenSeadragon viewers.
+
+## Design Principles
+
+1. **Separation of Concerns**: Core logic separated from React and viewer adapters
+2. **Framework Agnostic Core**: Core engine works without React
+3. **Type Safety**: Full TypeScript with strict null checks
+4. **Performance First**: WebGL rendering, spatial indexing, viewport culling
+5. **Observable Pattern**: Reactive state management throughout
+
+## Architecture Layers
+
+```
+┌─────────────────────────────────────┐
+│         React Layer                 │
+│  (Provider, Hooks, Components)      │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────┴──────────────────────┐
+│      Adapter Layer                  │
+│  (OpenSeadragon Integration)        │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────┴──────────────────────┐
+│      Rendering Layer                │
+│  (PixiJS WebGL Renderer)            │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────┴──────────────────────┐
+│         Core Layer                  │
+│  (Store, State, Types)              │
+└─────────────────────────────────────┘
+```
+
+## Package Structure
+
+```
+lib/annota/
+├── src/
+│   ├── core/              # Framework-agnostic core
+│   │   ├── types.ts       # Core annotation types
+│   │   ├── store.ts       # Observable annotation store
+│   │   ├── state.ts       # State management
+│   │   └── spatial.ts     # Spatial indexing
+│   │
+│   ├── rendering/         # Rendering layer
+│   │   └── pixi/
+│   │       ├── stage.ts   # PixiJS stage manager
+│   │       ├── shapes.ts  # Shape renderers
+│   │       └── styles.ts  # Style computation
+│   │
+│   ├── adapters/          # Viewer adapters
+│   │   └── openseadragon/
+│   │       ├── annotator.ts    # OSD annotator factory
+│   │       ├── layers.ts       # Layer management
+│   │       └── coordinates.ts  # Coordinate transforms
+│   │
+│   ├── loaders/           # Annotation format loaders
+│   │   ├── h5.ts          # H5/HDF5 loader
+│   │   ├── json.ts        # JSON loader
+│   │   └── xml.ts         # XML (ASAP) loader
+│   │
+│   ├── react/             # React integration
+│   │   ├── Provider.tsx   # Context provider
+│   │   ├── Annotator.tsx  # OSD annotator wrapper
+│   │   ├── Viewer.tsx     # OSD viewer wrapper
+│   │   ├── popup/         # Popup system
+│   │   └── hooks.ts       # React hooks
+│   │
+│   └── index.ts           # Public API exports
+```
+
+## Core Components
+
+### 1. Annotation Store (Observable Pattern)
+
+The store is the single source of truth for all annotations, providing:
+
+- **CRUD operations**: `add`, `update`, `delete`, `get`
+- **Spatial queries**: `getAt`, `getIntersecting`
+- **Observable pattern**: Reactive updates
+- **Spatial indexing**: Efficient R-tree based queries
+
+```typescript
+const store = createAnnotationStore();
+store.observe(event => {
+  // React to changes: created, updated, deleted
+});
+store.addAll(annotations);
+```
+
+### 2. Rendering Layer (PixiJS)
+
+High-performance WebGL rendering using PixiJS v8:
+
+- **Viewport culling**: Only render visible annotations
+- **Dynamic styling**: Based on annotation properties
+- **Hover/selection states**: Visual feedback
+- **Coordinate transformation**: Image ↔ screen coordinates
+
+### 3. OpenSeadragon Adapter
+
+Integrates with OpenSeadragon viewers:
+
+- Manages rendering canvas lifecycle
+- Syncs viewport changes with renderer
+- Handles coordinate transformations
+- Provides hit detection for hover/click
+
+### 4. React Layer
+
+Thin wrapper providing React-friendly API:
+
+- **Context provider**: Dependency injection
+- **Hooks**: Access annotations and state
+- **Component wrappers**: Viewer integration
+- **Popup system**: Annotation details display
+
+## Data Flow
+
+```
+User Interaction → OSD Viewer
+                      ↓
+                Coordinate Transform
+                      ↓
+              Spatial Query (Store)
+                      ↓
+              Update State (Hover)
+                      ↓
+            Observer Notification
+                      ↓
+             Renderer Redraw
+                      ↓
+                PixiJS Stage
+```
+
+## Performance Considerations
+
+1. **Spatial Indexing**: R-tree for O(log n) spatial queries
+2. **Viewport Culling**: Only render visible annotations
+3. **WebGL Rendering**: Hardware-accelerated via PixiJS
+4. **Observable Pattern**: Granular change notifications
+5. **Debounced Updates**: Prevent excessive re-renders
+
+## Type System
+
+### Core Types
+
+```typescript
+interface Annotation {
+  id: string;
+  shape: Shape;
+  properties?: Record<string, any>;
+  style?: AnnotationStyle;
+}
+
+type ShapeType = 'point' | 'circle' | 'rectangle' | 'polygon' | 'ellipse' | 'line';
+
+interface AnnotationStyle {
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+}
+```
+
+### Style Expression
+
+Supports both static and dynamic styling:
+
+```typescript
+// Static
+const style = { fill: 'red', fillOpacity: 0.3 };
+
+// Dynamic
+const style = annotation => ({
+  fill: annotation.properties?.type === 'tumor' ? 'red' : 'blue',
+});
+```
+
+## Key Learnings from Annotorious
+
+Annota's architecture is inspired by [Annotorious v3](https://annotorious.dev), incorporating:
+
+### Multi-Layer Rendering
+
+Separate specialized layers instead of monolithic overlay:
+- **PixiLayer**: Display layer using WebGL
+- **SVGDrawingLayer**: Interactive drawing tools
+- **SVGSelectionLayer**: Selection highlighting
+
+### Centralized State
+
+Observable store pattern:
+```typescript
+const state = {
+  store: createStore<Annotation>(),
+  hover: createHoverState(),
+  selection: createSelectionState(),
+  viewport: createViewportState(),
+};
+```
+
+**Key Pattern**: Layers observe and react to state changes, they don't manage state.
+
+### React Wrapper Pattern
+
+React layer is a thin bridge to the core - it doesn't implement annotation logic.
+
+### Coordinate System
+
+OpenSeadragon coordinate transformations:
+- `viewer.viewport.imageToViewerElementCoordinates(point)` - Image → Screen
+- `viewer.viewport.viewportToImageCoordinates(x, y)` - Viewport → Image
+- `viewer.addHandler('update-viewport', redraw)` - Sync rendering
+
+## Extension Points
+
+1. **Custom Loaders**: Implement loader interface for new formats
+2. **Custom Renderers**: Replace PixiJS with Canvas2D or SVG
+3. **Custom Adapters**: Support other viewers (Leaflet, etc.)
+4. **Styling Functions**: Dynamic styling based on properties
+
+## Public API
+
+```typescript
+// Core
+export { createAnnotationStore } from './core/store';
+export type { Annotation, AnnotationStyle, Shape } from './core/types';
+
+// Adapters
+export { createOSDAnnotator } from './adapters/openseadragon/annotator';
+
+// React
+export { AnnotaProvider, OSDAnnotator } from './react';
+export { useAnnotations, useAnnotation } from './react/hooks';
+
+// Loaders
+export { loadH5Annotations } from './loaders/h5';
+export { loadPGMFile, annotationsToPGM } from './loaders/pgm';
+```

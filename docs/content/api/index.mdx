@@ -1,0 +1,94 @@
+# API Reference
+
+Complete API documentation for Annota.
+
+## Overview
+
+Annota's API is organized into several categories:
+
+- **[React Hooks](/api/hooks)** - Hooks for accessing annotations, selection, and interactions
+- **[Components](/api/components)** - React components for building annotation UIs
+- **[Tools](/api/tools)** - Built-in annotation tools (Point, Rectangle, Polygon)
+
+## Core Types
+
+### Annotation
+
+```typescript
+interface Annotation {
+  id: string;
+  shape: Shape;
+  properties?: Record<string, unknown>;
+  style?: AnnotationStyle;
+}
+```
+
+### Shape
+
+```typescript
+type Shape = PointShape | RectangleShape | PolygonShape;
+
+interface PointShape {
+  type: 'point';
+  geometry: { x: number; y: number };
+  bounds: Bounds;
+}
+
+interface RectangleShape {
+  type: 'rectangle';
+  geometry: { x: number; y: number; width: number; height: number };
+  bounds: Bounds;
+}
+
+interface PolygonShape {
+  type: 'polygon';
+  geometry: { points: Array<{ x: number; y: number }> };
+  bounds: Bounds;
+}
+```
+
+### AnnotationStyle
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+}
+```
+
+### Layer
+
+```typescript
+interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  style?: AnnotationStyle;
+}
+```
+
+## Export Formats
+
+### ASAP XML
+
+Annota supports importing annotations from ASAP XML format:
+
+```typescript
+import { parseASAPXML } from 'annota';
+
+const annotations = parseASAPXML(xmlString);
+```
+
+### H5 Annotations
+
+Load annotations from H5 files:
+
+```typescript
+import { loadH5Masks } from 'annota';
+
+const annotations = await loadH5Masks('/path/to/file.h5', {
+  datasetPath: '/annotations',
+  category: 'positive',
+});
+```

@@ -1,0 +1,132 @@
+# Layer System
+
+Annota's layer system allows you to organize annotations into logical groups with independent styling and visibility control.
+
+## Creating Layers
+
+Use the `useLayerManager` hook to create and manage layers:
+
+```tsx
+import { useLayerManager } from 'annota';
+
+function LayerPanel() {
+  const layerManager = useLayerManager();
+
+  const handleCreateLayer = () => {
+    layerManager.createLayer({
+      id: 'tumor',
+      name: 'Tumor Regions',
+      visible: true,
+      style: {
+        fill: 'rgba(255, 0, 0, 0.3)',
+        stroke: '#ff0000',
+        strokeWidth: 2,
+      },
+    });
+  };
+
+  return (
+    <button onClick={handleCreateLayer}>
+      Create Tumor Layer
+    </button>
+  );
+}
+```
+
+## Layer Properties
+
+Each layer has the following properties:
+
+- **id**: Unique identifier for the layer
+- **name**: Display name for the layer
+- **visible**: Whether annotations in this layer are visible
+- **style**: Default style for annotations in this layer
+
+## Assigning Annotations to Layers
+
+Annotations can be assigned to layers via their `properties.layer` field:
+
+```tsx
+const annotation = {
+  id: 'ann-1',
+  shape: {
+    type: 'rectangle',
+    geometry: { x: 100, y: 100, width: 200, height: 150 },
+  },
+  properties: {
+    layer: 'tumor', // Assign to tumor layer
+  },
+};
+```
+
+## Managing Layer Visibility
+
+Toggle layer visibility to show/hide all annotations in a layer:
+
+```tsx
+function LayerList() {
+  const layerManager = useLayerManager();
+
+  return (
+    <div>
+      {layerManager.layers.map(layer => (
+        <div key={layer.id}>
+          <input
+            type="checkbox"
+            checked={layer.visible}
+            onChange={(e) =>
+              layerManager.updateLayer(layer.id, {
+                visible: e.target.checked,
+              })
+            }
+          />
+          {layer.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Layer Styling
+
+Layers define default styles for their annotations. You can override styles per-annotation:
+
+```tsx
+// Layer style (default for all annotations in layer)
+const layerStyle = {
+  fill: 'rgba(255, 0, 0, 0.3)',
+  stroke: '#ff0000',
+  strokeWidth: 2,
+};
+
+// Annotation-specific style override
+const annotation = {
+  id: 'special-1',
+  properties: { layer: 'tumor' },
+  style: {
+    fill: 'rgba(255, 255, 0, 0.5)', // Override fill color
+  },
+};
+```
+
+## Deleting Layers
+
+Delete a layer and optionally remove all its annotations:
+
+```tsx
+// Delete layer and keep annotations (they become unassigned)
+layerManager.deleteLayer('tumor', false);
+
+// Delete layer and remove all its annotations
+layerManager.deleteLayer('tumor', true);
+```
+
+## Use Cases
+
+Common layer organization patterns:
+
+- **By Type**: "Tumor", "Stroma", "Necrosis"
+- **By Annotator**: "Pathologist-A", "Pathologist-B"
+- **By Status**: "Reviewed", "Pending", "Rejected"
+- **By AI Model**: "Model-v1", "Model-v2", "Manual"

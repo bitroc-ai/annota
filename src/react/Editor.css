@@ -1,0 +1,24 @@
+/**
+ * Editor styles - EXACT copy from Annotorious OpenSeadragon
+ * SVGDrawingLayer.svelte lines 273-289
+ * Now we mount inside .openseadragon-canvas just like Annotorious
+ */
+
+.annota-svg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.annota-svg-layer * {
+  pointer-events: all;
+}
+
+.annota-shape-handle {
+  cursor: move;
+}

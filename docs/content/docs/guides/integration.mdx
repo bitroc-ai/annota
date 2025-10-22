@@ -1,0 +1,369 @@
+# Integration Guide
+
+## Overview
+
+Annota is feature-ready for cell annotation workflows with:
+
+- ✅ All essential shape types (point, circle, ellipse, rectangle, line, polygon, freehand)
+- ✅ OpenCV.js cell edge detection
+- ✅ PGM file format support (region masks)
+- ✅ H5 file format support (point annotations)
+- ✅ Brush/eraser mask refinement tools
+
+## Quick Start
+
+### Installation
+
+```bash
+npm install annota
+# or
+pnpm add annota
+```
+
+### Basic Integration
+
+```typescript
+import {
+  createOSDAnnotator,
+  initOpenCV,
+  detectCellEdge,
+  loadPGMFile,
+  annotationsToPGM,
+  annotationsToH5,
+  type Annotation,
+} from 'annota';
+
+// 1. Initialize OpenCV (do this once on app load)
+await initOpenCV();
+
+// 2. Create annotator for OpenSeadragon viewer
+const annotator = await createOSDAnnotator(viewer, {
+  style: {
+    fill: '#00FF00',
+    fillOpacity: 0.3,
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  },
+});
+
+// 3. Detect cell edge from point click
+viewer.addHandler('canvas-click', async evt => {
+  const imagePoint = viewer.viewport.viewerElementToImageCoordinates(evt.position);
+
+  // Get image data for the region around click point
+  const imageData = getImageDataAroundPoint(imagePoint, 200);
+
+  // Detect cell edge
+  const result = detectCellEdge(imageData, imagePoint, {
+    threshold: 128,
+    thresholdType: 'otsu',
+    blurSize: 5,
+    minArea: 100,
+    maxArea: 10000,
+  });
+
+  if (result) {
+    // Create annotation from detected polygon
+    const annotation: Annotation = {
+      id: `cell-${Date.now()}`,
+      shape: {
+        type: 'polygon',
+        points: result.polygon,
+        bounds: calculateBounds(result.polygon),
+      },
+      properties: {
+        type: 'cell',
+        confidence: result.confidence,
+        area: result.area,
+      },
+    };
+
+    annotator.state.store.add(annotation);
+  }
+});
+```
+
+## Cell Annotation Workflow
+
+### 1. Point Annotations (H5 Format)
+
+For marking cell centers:
+
+```typescript
+import { annotationsToH5, loadH5File } from 'annota';
+
+// Create point annotations
+const points: Annotation[] = cellCenters.map((point, idx) => ({
+  id: `point-${idx}`,
+  shape: {
+    type: 'point',
+    x: point.x,
+    y: point.y,
+    bounds: { minX: point.x, minY: point.y, maxX: point.x, maxY: point.y },
+  },
+  properties: {
+    class: 'tumor',
+    confidence: 0.95,
+  },
+}));
+
+// Save to H5 format
+const h5Data = annotationsToH5(points);
+await saveH5File(h5Data, 'annotations.h5');
+
+// Load from H5
+const loadedPoints = await loadH5File(file);
+loadedPoints.forEach(a => annotator.state.store.add(a));
+```
+
+### 2. Region Annotations (PGM Format)
+
+For cell boundaries and regions:
+
+```typescript
+import { annotationsToPGM, loadPGMFile } from 'annota';
+
+// Load PGM mask file
+const annotations = await loadPGMFile(file);
+annotations.forEach(a => annotator.state.store.add(a));
+
+// Save regions to PGM
+const pgmData = annotationsToPGM(
+  annotator.state.store.all(),
+  imageWidth,
+  imageHeight
+);
+await savePGMFile(pgmData, 'mask.pgm');
+```
+
+### 3. Cell Edge Detection
+
+Using OpenCV for automatic cell boundary detection:
+
+```typescript
+import { initOpenCV, detectCellEdge, isOpenCVReady } from 'annota';
+
+// Initialize once on app load
+await initOpenCV();
+
+// Check if ready
+if (!isOpenCVReady()) {
+  console.warn('OpenCV not ready yet');
+  return;
+}
+
+// Detect cell from click point
+const result = detectCellEdge(imageData, clickPoint, {
+  threshold: 128,
+  thresholdType: 'otsu', // 'binary' | 'otsu' | 'adaptive'
+  blurSize: 5,
+  minArea: 100,
+  maxArea: 10000,
+  morphOps: true, // Clean up mask
+  tolerance: 2.0, // Douglas-Peucker simplification
+});
+
+if (result) {
+  console.log('Detected cell:', {
+    polygon: result.polygon, // Array of {x, y} points
+    area: result.area,
+    confidence: result.confidence, // 0-1 quality score
+  });
+}
+```
+
+## React Integration
+
+### Provider Setup
+
+```typescript
+import { AnnotaProvider, OSDAnnotator, useAnnotations } from 'annota';
+
+function App() {
+  const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+
+  useEffect(() => {
+    // Load annotations from your API
+    loadAnnotations().then(setAnnotations);
+  }, []);
+
+  return (
+    <AnnotaProvider>
+      <OSDAnnotator
+        viewer={viewer}
+        annotations={annotations}
+        style={(annotation) => ({
+          fill: annotation.properties?.class === 'tumor' ? 'red' : 'blue',
+          fillOpacity: 0.3,
+          stroke: 'white',
+          strokeWidth: 2
+        })}
+      >
+        <OpenSeadragonViewer
+          options={{ tileSources: '...' }}
+          onViewerReady={setViewer}
+        />
+
+        <AnnotationList />
+      </OSDAnnotator>
+    </AnnotaProvider>
+  );
+}
+```
+
+### Using Hooks
+
+```typescript
+import { useAnnotations, useAnnotation, useAnnotator } from 'annota';
+
+function AnnotationList() {
+  const annotations = useAnnotations();
+
+  return (
+    <div>
+      <h3>Annotations: {annotations.length}</h3>
+      {annotations.map(a => (
+        <AnnotationItem key={a.id} id={a.id} />
+      ))}
+    </div>
+  );
+}
+
+function AnnotationItem({ id }: { id: string }) {
+  const annotation = useAnnotation(id);
+  const annotator = useAnnotator();
+
+  if (!annotation) return null;
+
+  return (
+    <div onClick={() => {
+      // Select annotation
+      annotator.state.selection.selected = [id];
+    }}>
+      {annotation.properties?.class}: {annotation.shape.type}
+    </div>
+  );
+}
+```
+
+## Dynamic Styling
+
+### Property-Based Styling
+
+```typescript
+const style = (annotation: Annotation): AnnotationStyle => {
+  const cellType = annotation.properties?.class;
+
+  switch (cellType) {
+    case 'tumor':
+      return { fill: '#FF0000', fillOpacity: 0.4, stroke: '#FFFFFF', strokeWidth: 2 };
+    case 'normal':
+      return { fill: '#00FF00', fillOpacity: 0.3, stroke: '#FFFFFF', strokeWidth: 1 };
+    case 'necrotic':
+      return { fill: '#FFA500', fillOpacity: 0.5, stroke: '#000000', strokeWidth: 2 };
+    default:
+      return { fill: '#888888', fillOpacity: 0.2, stroke: '#FFFFFF', strokeWidth: 1 };
+  }
+};
+
+const annotator = createOSDAnnotator(viewer, { style });
+```
+
+### Confidence-Based Opacity
+
+```typescript
+const style = (annotation: Annotation): AnnotationStyle => {
+  const confidence = annotation.properties?.confidence || 0.5;
+
+  return {
+    fill: '#FF00FF',
+    fillOpacity: 0.2 + (confidence * 0.3), // 0.2-0.5 based on confidence
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  };
+};
+```
+
+## Advanced Features
+
+### Filtering Annotations
+
+```typescript
+// Filter by layer
+const tumorLayer = annotations.filter(a => a.properties?.layer === 'tumor');
+
+// Filter by type
+const regions = annotations.filter(a => a.shape.type === 'polygon');
+
+// Spatial queries
+const nearby = annotator.state.store.getIntersecting({
+  minX: 100,
+  minY: 100,
+  maxX: 200,
+  maxY: 200,
+});
+```
+
+### Batch Operations
+
+```typescript
+// Add multiple annotations efficiently
+annotator.state.store.addAll(annotations, { replace: true });
+
+// Update annotation properties
+annotations.forEach(a => {
+  annotator.state.store.update(a.id, {
+    ...a,
+    properties: { ...a.properties, reviewed: true },
+  });
+});
+
+// Delete filtered annotations
+const toDelete = annotations.filter(a => a.properties?.confidence < 0.5);
+toDelete.forEach(a => annotator.state.store.delete(a.id));
+```
+
+## Performance Tips
+
+1. **Use viewport culling**: Annota automatically renders only visible annotations
+2. **Batch updates**: Use `addAll()` instead of multiple `add()` calls
+3. **Debounce style changes**: Avoid changing styles on every mouse move
+4. **Simplify polygons**: Use Douglas-Peucker to reduce vertex count
+5. **Lazy load annotations**: Load annotations for current viewport only
+
+## Troubleshooting
+
+### OpenCV Not Loading
+
+```typescript
+import { initOpenCV, isOpenCVReady } from 'annota';
+
+// Check if already loaded
+if (isOpenCVReady()) {
+  console.log('OpenCV ready!');
+} else {
+  // Initialize with timeout
+  const timeout = setTimeout(() => {
+    console.error('OpenCV load timeout');
+  }, 30000);
+
+  await initOpenCV();
+  clearTimeout(timeout);
+  console.log('OpenCV initialized');
+}
+```
+
+### Annotations Not Rendering
+
+1. Check viewer is initialized: `viewer.isOpen()`
+2. Check annotations have valid bounds
+3. Verify style is not setting `fillOpacity: 0`
+4. Check layer visibility if using layer system
+
+### Performance Issues
+
+1. Check annotation count: `annotator.state.store.all().length`
+2. Simplify polygon vertices (< 100 points per polygon)
+3. Use spatial queries instead of iterating all annotations
+4. Profile PixiJS rendering: Check console for FPS warnings

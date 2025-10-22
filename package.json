@@ -1,0 +1,42 @@
+{
+  "name": "annota",
+  "version": "0.1.0",
+  "description": "A React annotation framework for digital pathology and whole slide imaging",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "pathology",
+    "annotation",
+    "openseadragon",
+    "whole-slide-imaging",
+    "digital-pathology",
+    "react",
+    "cell-counting"
+  ],
+  "author": "BitRoc Lab",
+  "license": "MIT",
+  "peerDependencies": {
+    "openseadragon": "^4.0.0 || ^5.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "jsfive": "^0.4.0",
+    "pixi.js": "^8.14.0",
+    "rbush": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/openseadragon": "^3.0.10",
+    "@types/rbush": "^4.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+@import 'nextra-theme-docs/style.css';
+@variant dark (&:where(.dark *));
+
+/* Smooth scrolling and stable scrollbar */
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+
+/* Fallback for browsers that don't support scrollbar-gutter */
+@supports not (scrollbar-gutter: stable) {
+  html {
+    overflow-y: scroll;
+  }
+}
+
+/* Enhanced code block styling */
+pre {
+  border-radius: 12px !important;
+}
+
+/* Remove underlines from all links */
+a {
+  text-decoration: none !important;
+}
+
+/* Override Nextra link styles */
+.nextra-content a {
+  text-decoration: none !important;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .text-5xl {
+    font-size: 2.5rem;
+  }
+
+  .text-6xl {
+    font-size: 3rem;
+  }
+}
