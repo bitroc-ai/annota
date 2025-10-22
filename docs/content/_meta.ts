@@ -1,9 +1,6 @@
 import type { Meta } from 'nextra';
 
 export default {
-  index: {
-    display: 'hidden',
-  },
   docs: 'Documentation',
   api: 'API Reference',
   github: {
