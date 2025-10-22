@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack --port 6006",
     "build": "next build",
-    "start": "next start"
+    "start": "npx serve@latest out"
   },
   "dependencies": {
     "lucide-react": "^0.460.0",
