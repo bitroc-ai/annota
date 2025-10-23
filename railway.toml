@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd docs && npx serve@latest out"
+restartPolicyType = "never"
+
+# Important: This service should be deployed from the repository root
+# NOT from the docs subdirectory
+# Set "Root Directory" to "/" or "." in Railway dashboard

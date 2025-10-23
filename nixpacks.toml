@@ -1,11 +1,18 @@
 [phases.setup]
-nixPkgs = ["nodejs_20", "pnpm"]
+nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = [
+  "corepack enable",
+  "corepack prepare pnpm@10.15.0 --activate",
+  "pnpm install --frozen-lockfile"
+]
 
 [phases.build]
-cmds = ["pnpm --filter annota build", "pnpm --filter annota-docs build"]
+cmds = [
+  "pnpm --filter annota build",
+  "pnpm --filter annota-docs build"
+]
 
 [start]
-cmd = "cd docs && pnpm start"
+cmd = "cd docs && npx serve@latest out"
