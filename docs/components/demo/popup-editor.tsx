@@ -11,6 +11,7 @@ export function PopupEditor({ viewer }: PopupEditorProps) {
 
   // Show popup on double-click
   useAnnotationDoubleClick(viewer, annotation => {
+    if (!viewer) return;
     popup.show(annotation.id);
   });
 

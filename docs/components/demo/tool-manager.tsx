@@ -84,19 +84,19 @@ export function ToolManager({
     cellDetectTool?.setThreshold(threshold);
   }, [cellDetectTool, threshold]);
 
-  // Enable tools based on selection
-  useInteraction({ viewer, handler: pointTool, enabled: tool === 'point' });
-  useInteraction({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' });
-  useInteraction({ viewer, handler: polygonTool, enabled: tool === 'polygon' });
-  useInteraction({ viewer, handler: pushTool, enabled: tool === 'push' });
+  // Enable tools based on selection (disabled when viewer is null)
+  useInteraction({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
+  useInteraction({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' && !!viewer });
+  useInteraction({ viewer, handler: polygonTool, enabled: tool === 'polygon' && !!viewer });
+  useInteraction({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
   useInteraction({
     viewer,
     handler: cellDetectTool,
-    enabled: tool === 'cell-detect' && !!cellDetectTool,
+    enabled: tool === 'cell-detect' && !!cellDetectTool && !!viewer,
   });
 
-  // Render push cursor
-  const { cursorPos, radiusInPixels } = usePushToolCursor(viewer, pushTool, tool === 'push');
+  // Render push cursor (disabled when viewer is null)
+  const { cursorPos, radiusInPixels } = usePushToolCursor(viewer, pushTool, tool === 'push' && !!viewer);
 
   return (
     <>

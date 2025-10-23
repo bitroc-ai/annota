@@ -12,6 +12,7 @@ export default {
   },
   demo: {
     title: 'Demo',
+    type: 'page',
     href: '/demo',
   },
   github: {

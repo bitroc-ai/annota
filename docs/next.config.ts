@@ -12,6 +12,7 @@ export default withNextra({
   reactStrictMode: true,
   output: 'export',
   trailingSlash: true,
+  outputFileTracingRoot: require('path').join(__dirname, '..'),
   images: {
     unoptimized: true,
   },

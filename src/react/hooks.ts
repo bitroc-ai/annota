@@ -564,7 +564,9 @@ export function useAnnotationDoubleClick(
     viewer.element.addEventListener('click', handleClick);
 
     return () => {
-      viewer.element.removeEventListener('click', handleClick);
+      if (viewer?.element) {
+        viewer.element.removeEventListener('click', handleClick);
+      }
     };
   }, [viewer, annotator, store, onDoubleClick]);
 }
