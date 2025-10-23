@@ -2,10 +2,10 @@ import nextra from 'nextra';
 
 const withNextra = nextra({
   defaultShowCopyCode: true,
+  contentDirBasePath: "/",
   search: {
     codeblocks: false,
   },
-  contentDirBasePath: '/content',
 });
 
 export default withNextra({

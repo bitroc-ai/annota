@@ -1,10 +1,22 @@
-@import 'tailwindcss';
-@import 'nextra-theme-docs/style.css';
+@import "tailwindcss";
+@import "nextra-theme-docs/style.css";
 @variant dark (&:where(.dark *));
+
+/* Override Nextra's default max-width constraints for full-width layout */
+:root {
+  --nextra-content-width: 100vw !important;
+  --nextra-sidebar-width: 320px !important;
+}
+
+/* Simplified sidebar width override */
+aside[data-nextra-sidebar] {
+  width: 320px !important;
+}
 
 /* Smooth scrolling and stable scrollbar */
 html {
   scroll-behavior: smooth;
+  /* Always show scrollbar gutter to prevent navbar shift */
   scrollbar-gutter: stable;
 }
 
@@ -15,13 +27,81 @@ html {
   }
 }
 
+/* Custom gradient backgrounds for dark mode */
+.dark {
+  --gradient-from: theme('colors.gray.900');
+  --gradient-to: theme('colors.gray.800');
+}
+
+/* Enhanced button hover effects */
+.transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom card hover effects */
+.nextra-card:hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Gradient text animation */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 8s ease infinite;
+}
+
 /* Enhanced code block styling */
 pre {
   border-radius: 12px !important;
+  border: 1px solid theme('colors.gray.200') !important;
+}
+
+.dark pre {
+  border-color: theme('colors.gray.700') !important;
+}
+
+/* Syntax highlighting for bootstrap section */
+.keyword {
+  @apply text-purple-400 font-medium;
+}
+
+.function {
+  @apply text-blue-400 font-medium;
+}
+
+.string {
+  @apply text-emerald-400;
+}
+
+.comment {
+  @apply text-slate-500 italic;
+}
+
+.plain {
+  @apply text-slate-300;
+}
+
+/* Custom callout styling */
+.nextra-callout {
+  border-radius: 12px;
+  border-width: 1px;
 }
 
 /* Remove underlines from all links */
 a {
+  text-decoration: none !important;
+}
+
+/* Specifically target button-style links */
+a.inline-flex {
   text-decoration: none !important;
 }
 
@@ -40,3 +120,4 @@ a {
     font-size: 3rem;
   }
 }
+
