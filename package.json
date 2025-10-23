@@ -22,6 +22,22 @@
   ],
   "author": "BitRoc Lab",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bitroc-ai/annota.git"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./dist/index.css": "./dist/index.css"
+  },
   "peerDependencies": {
     "openseadragon": "^4.0.0 || ^5.0.0",
     "react": "^18.0.0 || ^19.0.0",
