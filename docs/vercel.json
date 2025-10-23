@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd .. && pnpm install && cd docs && pnpm build",
+  "outputDirectory": "out",
+  "installCommand": "echo 'Skipping default install'"
+}
