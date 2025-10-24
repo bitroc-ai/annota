@@ -72,17 +72,50 @@ export interface PushToolOptions extends ToolHandlerOptions {
 }
 
 /**
+ * Result from a contour detection algorithm
+ */
+export interface ContourDetectionResult {
+  /** Detected contour boundary as polygon points */
+  polygon: { x: number; y: number }[];
+  /** Confidence score (0-1) */
+  confidence: number;
+  /** Area in pixels */
+  area: number;
+  /** Additional metadata from the detector */
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Custom contour detector function
+ * Takes image data and click point, returns detected contour or null
+ */
+export type ContourDetector = (
+  imageData: ImageData,
+  clickPoint: { x: number; y: number },
+  options?: Record<string, any>
+) => ContourDetectionResult | null | Promise<ContourDetectionResult | null>;
+
+/**
  * Options for the contour detection tool
  */
 export interface ContourDetectOptions extends ToolHandlerOptions {
-  /** OpenCV instance */
-  cv: any;
+  /** OpenCV instance (optional if using custom detector) */
+  cv?: any;
 
-  /** Tile source for fetching image data */
-  tileSource: OpenSeadragon.TileSource;
+  /** Tile source for fetching image data (optional if using custom detector) */
+  tileSource?: OpenSeadragon.TileSource;
 
   /** Edge detection threshold */
   threshold?: number;
+
+  /**
+   * Custom contour detector function
+   * If not provided, will use built-in OpenCV flood fill detector
+   */
+  detector?: ContourDetector;
+
+  /** Additional options to pass to the detector function */
+  detectorOptions?: Record<string, any>;
 }
 
 /**

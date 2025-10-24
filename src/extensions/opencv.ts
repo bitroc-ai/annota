@@ -36,12 +36,16 @@ export interface ContourDetectionResult {
   polygon: Point[];
   /** Confidence score (0-1) */
   confidence: number;
-  /** Binary mask of the detected region */
-  mask: ImageData;
   /** Area in pixels */
   area: number;
-  /** Whether the detected region is within expected size constraints */
-  isWithinConstraints: boolean;
+  /** Additional metadata from the detector */
+  metadata?: {
+    /** Binary mask of the detected region */
+    mask?: ImageData;
+    /** Whether the detected region is within expected size constraints */
+    isWithinConstraints?: boolean;
+    [key: string]: any;
+  };
 }
 
 /**
@@ -140,8 +144,11 @@ export function isOpenCVReady(): boolean {
 }
 
 /**
- * Detect contour/edge from a click point
+ * Detect contour/edge from a click point using OpenCV flood fill
  * Uses flood fill and contour detection to find the object boundary
+ *
+ * This is the built-in detector that can be used as the default,
+ * or users can provide their own custom detector function.
  */
 export function detectContour(
   imageData: ImageData,
@@ -301,9 +308,11 @@ export function detectContour(
     return {
       polygon: simplifiedPolygon.length > 0 ? simplifiedPolygon : polygon,
       confidence,
-      mask: maskData,
       area: bestArea,
-      isWithinConstraints,
+      metadata: {
+        mask: maskData,
+        isWithinConstraints,
+      },
     };
   } catch (error) {
     console.error('[OpenCV] Error detecting cell edge:', error);

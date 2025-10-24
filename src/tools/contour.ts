@@ -5,18 +5,18 @@
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, PolygonShape } from '../core/types';
 import { calculateBounds } from '../core/types';
-import { detectContour, isOpenCVReady, initOpenCV } from '../extensions/opencv';
+import { detectContour as defaultDetector, isOpenCVReady, initOpenCV } from '../extensions/opencv';
 import { BaseTool } from './base';
-import type { ContourDetectOptions } from './types';
+import type { ContourDetectOptions, ContourDetector } from './types';
 
 /**
- * Tool for detecting object contours/edges using OpenCV flood fill algorithm
- * OpenCV is automatically initialized when the tool is created
+ * Tool for detecting object contours/edges
+ * Supports custom detector functions or uses built-in OpenCV flood fill by default
  */
 export class ContourTool extends BaseTool {
-  private detectOptions: Required<Omit<ContourDetectOptions, 'annotationProperties'>> & {
-    annotationProperties?: Record<string, any>;
-  };
+  private detector: ContourDetector;
+  private threshold: number;
+  private detectorOptions: Record<string, any>;
   private initializingOpenCV = false;
 
   constructor(options: ContourDetectOptions) {
@@ -32,18 +32,13 @@ export class ContourTool extends BaseTool {
       ...options,
     });
 
-    this.detectOptions = {
-      cv: options.cv,
-      tileSource: options.tileSource,
-      threshold: options.threshold ?? 50,
-      preventDefaultAction: options.preventDefaultAction ?? true,
-      checkAnnotationHits: options.checkAnnotationHits ?? true,
-      annotationStyle: options.annotationStyle ?? {},
-      annotationProperties: options.annotationProperties,
-    };
+    // Use custom detector or default OpenCV detector
+    this.detector = options.detector || defaultDetector;
+    this.threshold = options.threshold ?? 50;
+    this.detectorOptions = options.detectorOptions || {};
 
-    // Auto-initialize OpenCV when tool is created (lazy loading)
-    if (!isOpenCVReady() && !this.initializingOpenCV) {
+    // Auto-initialize OpenCV only if using default detector and not using custom detector
+    if (!options.detector && !isOpenCVReady() && !this.initializingOpenCV) {
       this.initializingOpenCV = true;
       initOpenCV()
         .then(() => {
@@ -61,7 +56,7 @@ export class ContourTool extends BaseTool {
    * Update threshold dynamically
    */
   setThreshold(threshold: number): void {
-    this.detectOptions.threshold = threshold;
+    this.threshold = threshold;
   }
 
   /**
@@ -70,7 +65,8 @@ export class ContourTool extends BaseTool {
   onCanvasClick = async (evt: OpenSeadragon.ViewerEvent): Promise<void> => {
     if (!this.enabled || !this.viewer || !this.annotator) return;
 
-    if (!isOpenCVReady()) {
+    // Only check OpenCV if using default detector
+    if (this.detector === defaultDetector && !isOpenCVReady()) {
       console.warn('[ContourTool] OpenCV not ready, still loading...');
       if (this.options.preventDefaultAction) {
         (evt as any).preventDefaultAction = true;
@@ -130,15 +126,18 @@ export class ContourTool extends BaseTool {
     const relativeClickY = canvasY - regionY;
 
     try {
-      // Use threshold from options
-      const result = detectContour(
+      // Call the detector function (custom or default OpenCV)
+      const result = await this.detector(
         imageData,
         { x: relativeClickX, y: relativeClickY },
-        { threshold: this.detectOptions.threshold }
+        {
+          threshold: this.threshold,
+          ...this.detectorOptions,
+        }
       );
 
       if (result) {
-        const { polygon, confidence, area } = result;
+        const { polygon, confidence, area, metadata } = result;
 
         console.log(
           `[ContourTool] Detected contour with ${polygon.length} points, area: ${area}, confidence: ${confidence.toFixed(2)}`
@@ -180,6 +179,7 @@ export class ContourTool extends BaseTool {
             type: 'contour',
             area,
             confidence,
+            ...(metadata || {}),
             ...this.options.annotationProperties,
           },
         };

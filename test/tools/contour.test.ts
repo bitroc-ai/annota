@@ -169,8 +169,10 @@ describe('ContourTool', () => {
       polygon: detectedPolygon,
       confidence: 0.85,
       area: 1600,
-      mask: { data: new Uint8ClampedArray(100 * 100 * 4), width: 100, height: 100 } as ImageData,
-      isWithinConstraints: true,
+      metadata: {
+        mask: { data: new Uint8ClampedArray(100 * 100 * 4), width: 100, height: 100 } as ImageData,
+        isWithinConstraints: true,
+      },
     });
 
     // Mock getImageData
@@ -324,6 +326,69 @@ describe('ContourTool', () => {
       expect.objectContaining({ width: expect.any(Number), height: expect.any(Number) }),
       expect.any(Object),
       expect.objectContaining({ threshold: 75 })
+    );
+  });
+
+  it('should support custom detector function', async () => {
+    // Reset OpenCV mock before testing custom detector
+    vi.mocked(opencv.detectContour).mockClear();
+
+    // Create custom detector
+    const customDetector = vi.fn().mockResolvedValue({
+      polygon: [
+        { x: 20, y: 20 },
+        { x: 60, y: 20 },
+        { x: 60, y: 60 },
+        { x: 20, y: 60 },
+      ],
+      confidence: 0.95,
+      area: 1600,
+      metadata: {
+        algorithm: 'custom',
+        customProp: 'test',
+      },
+    });
+
+    // Create tool with custom detector
+    const customTool = new ContourTool({
+      detector: customDetector,
+      threshold: 100,
+      detectorOptions: { customOption: 'value' },
+    });
+    customTool.init(mockViewer as any, mockAnnotator as any);
+
+    // Mock getImageData
+    const mockImageData = { data: new Uint8ClampedArray(500 * 500 * 4), width: 500, height: 500 } as ImageData;
+    mockContext.getImageData.mockReturnValue(mockImageData);
+
+    const clickEvent = {
+      originalEvent: { offsetX: 100, offsetY: 100 },
+      preventDefaultAction: false,
+    };
+
+    await customTool.onCanvasClick(clickEvent as any);
+
+    // Should call custom detector
+    expect(customDetector).toHaveBeenCalledWith(
+      expect.objectContaining({ width: expect.any(Number), height: expect.any(Number) }),
+      expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }),
+      expect.objectContaining({
+        threshold: 100,
+        customOption: 'value',
+      })
+    );
+
+    // Should not call default OpenCV detector
+    expect(opencv.detectContour).not.toHaveBeenCalled();
+
+    // Should create annotation with custom metadata
+    expect(mockAnnotator.state.store.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        properties: expect.objectContaining({
+          algorithm: 'custom',
+          customProp: 'test',
+        }),
+      })
     );
   });
 });
