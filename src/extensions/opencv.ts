@@ -31,8 +31,8 @@ export interface EdgeDetectionOptions {
   morphOps?: boolean;
 }
 
-export interface CellDetectionResult {
-  /** Detected cell boundary as polygon points */
+export interface ContourDetectionResult {
+  /** Detected contour boundary as polygon points */
   polygon: Point[];
   /** Confidence score (0-1) */
   confidence: number;
@@ -140,24 +140,24 @@ export function isOpenCVReady(): boolean {
 }
 
 /**
- * Detect cell edge from a click point
- * Uses flood fill and contour detection to find the cell boundary
+ * Detect contour/edge from a click point
+ * Uses flood fill and contour detection to find the object boundary
  */
-export function detectCellEdge(
+export function detectContour(
   imageData: ImageData,
   clickPoint: Point,
   options: EdgeDetectionOptions = {}
-): CellDetectionResult | null {
+): ContourDetectionResult | null {
   if (!isOpenCVReady()) {
     throw new Error('OpenCV is not initialized. Call initOpenCV() first.');
   }
 
   const cv = window.cv;
   const {
-    threshold = 8, // Very tight tolerance for distinct cell boundaries (RGB 0-255 scale)
+    threshold = 8, // Tight tolerance for distinct object boundaries (RGB 0-255 scale)
     blurSize = 3, // Smaller blur to preserve edges
-    minArea = 50, // Smaller minimum for individual cells
-    maxArea = 5000, // Conservative max for single cell detection
+    minArea = 50, // Minimum area to filter noise
+    maxArea = 5000, // Maximum area for single object detection
     morphOps = true,
   } = options;
 
@@ -176,12 +176,11 @@ export function detectCellEdge(
     cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
 
     // Flood fill directly on original (unblurred) image for sharp boundaries
-    // For pathology images: blue (hematoxylin) and brown (DAB) have distinct colors
     const mask = new cv.Mat.zeros(rgb.rows + 2, rgb.cols + 2, cv.CV_8UC1);
     const seedPoint = new cv.Point(Math.round(clickPoint.x), Math.round(clickPoint.y));
     const newVal = new cv.Scalar(255, 255, 255);
 
-    // Tight tolerance for distinct cell boundaries
+    // Tight tolerance for distinct object boundaries
     // RGB channels can vary ±threshold from seed pixel
     const colorTolerance = threshold; // Use threshold as color tolerance (default 8)
     const loDiff = new cv.Scalar(colorTolerance, colorTolerance, colorTolerance);
@@ -190,15 +189,15 @@ export function detectCellEdge(
     // Validate seed point is within bounds
     if (seedPoint.x < 0 || seedPoint.y < 0 || seedPoint.x >= rgb.cols || seedPoint.y >= rgb.rows) {
       console.error(
-        `[detectCellEdge] Seed point out of bounds: (${seedPoint.x}, ${seedPoint.y}) not in ${rgb.cols}x${rgb.rows}`
+        `[detectContour] Seed point out of bounds: (${seedPoint.x}, ${seedPoint.y}) not in ${rgb.cols}x${rgb.rows}`
       );
       return null;
     }
 
     const floodRect = new cv.Rect();
     // Use 4-connectivity (compare to neighbors, not seed point)
-    // This allows flood fill to follow gradual color variations within cells
-    // while stopping at sharp edges (cell boundaries)
+    // This allows flood fill to follow gradual color variations within objects
+    // while stopping at sharp edges (object boundaries)
     // The 500x500 region constraint prevents runaway flooding
     const flags = 4;
     cv.floodFill(rgb, mask, seedPoint, newVal, floodRect, loDiff, upDiff, flags);
@@ -247,16 +246,16 @@ export function detectCellEdge(
     }
 
     if (!bestContour || bestArea === 0) {
-      console.warn('[detectCellEdge] No contours found after flood fill');
+      console.warn('[detectContour] No contours found after flood fill');
       return null;
     }
 
     // Check if region is within expected size constraints
     if (bestArea < minArea) {
-      console.warn(`[detectCellEdge] Region too small: ${bestArea} < ${minArea} px²`);
+      console.warn(`[detectContour] Region too small: ${bestArea} < ${minArea} px²`);
       isWithinConstraints = false;
     } else if (bestArea > maxArea) {
-      console.warn(`[detectCellEdge] Region too large: ${bestArea} > ${maxArea} px²`);
+      console.warn(`[detectContour] Region too large: ${bestArea} > ${maxArea} px²`);
       isWithinConstraints = false;
     }
 

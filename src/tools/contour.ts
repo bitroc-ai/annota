@@ -1,16 +1,16 @@
 /**
- * Contour Detection Tool - Detect contours/edges using OpenCV
+ * Contour Detection Tool - Detect object contours/edges using OpenCV
  */
 
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, PolygonShape } from '../core/types';
 import { calculateBounds } from '../core/types';
-import { detectCellEdge, isOpenCVReady, initOpenCV } from '../extensions/opencv';
+import { detectContour, isOpenCVReady, initOpenCV } from '../extensions/opencv';
 import { BaseTool } from './base';
 import type { ContourDetectOptions } from './types';
 
 /**
- * Tool for detecting contours/edges using OpenCV
+ * Tool for detecting object contours/edges using OpenCV flood fill algorithm
  * OpenCV is automatically initialized when the tool is created
  */
 export class ContourTool extends BaseTool {
@@ -47,11 +47,11 @@ export class ContourTool extends BaseTool {
       this.initializingOpenCV = true;
       initOpenCV()
         .then(() => {
-          console.log('[CellDetect] OpenCV initialized');
+          console.log('[ContourTool] OpenCV initialized');
           this.initializingOpenCV = false;
         })
         .catch(error => {
-          console.error('[CellDetect] Failed to initialize OpenCV:', error);
+          console.error('[ContourTool] Failed to initialize OpenCV:', error);
           this.initializingOpenCV = false;
         });
     }
@@ -65,13 +65,13 @@ export class ContourTool extends BaseTool {
   }
 
   /**
-   * Handle click event - detect cell edge at click point
+   * Handle click event - detect contour/edge at click point
    */
   onCanvasClick = async (evt: OpenSeadragon.ViewerEvent): Promise<void> => {
     if (!this.enabled || !this.viewer || !this.annotator) return;
 
     if (!isOpenCVReady()) {
-      console.warn('[CellDetect] OpenCV not ready, still loading...');
+      console.warn('[ContourTool] OpenCV not ready, still loading...');
       if (this.options.preventDefaultAction) {
         (evt as any).preventDefaultAction = true;
       }
@@ -95,7 +95,7 @@ export class ContourTool extends BaseTool {
     // Get the source image element
     const tiledImage = this.viewer.world.getItemAt(0);
     if (!tiledImage) {
-      console.error('[CellDetect] No image loaded');
+      console.error('[ContourTool] No image loaded');
       return;
     }
 
@@ -103,7 +103,7 @@ export class ContourTool extends BaseTool {
     const canvas = (this.viewer.drawer as any).canvas as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      console.error('[CellDetect] Failed to get canvas context');
+      console.error('[ContourTool] Failed to get canvas context');
       return;
     }
 
@@ -131,7 +131,7 @@ export class ContourTool extends BaseTool {
 
     try {
       // Use threshold from options
-      const result = detectCellEdge(
+      const result = detectContour(
         imageData,
         { x: relativeClickX, y: relativeClickY },
         { threshold: this.detectOptions.threshold }
@@ -141,7 +141,7 @@ export class ContourTool extends BaseTool {
         const { polygon, confidence, area } = result;
 
         console.log(
-          `[CellDetect] Detected cell with ${polygon.length} points, area: ${area}, confidence: ${confidence.toFixed(2)}`
+          `[ContourTool] Detected contour with ${polygon.length} points, area: ${area}, confidence: ${confidence.toFixed(2)}`
         );
 
         // Convert region-relative polygon points to image coordinates
@@ -173,11 +173,11 @@ export class ContourTool extends BaseTool {
         };
 
         const annotation: Annotation = {
-          id: `cell-${Date.now()}`,
+          id: `contour-${Date.now()}`,
           shape,
           style: this.options.annotationStyle,
           properties: {
-            type: 'cell',
+            type: 'contour',
             area,
             confidence,
             ...this.options.annotationProperties,
@@ -185,12 +185,12 @@ export class ContourTool extends BaseTool {
         };
 
         this.annotator.state.store.add(annotation);
-        console.log('[CellDetect] Cell annotation added');
+        console.log('[ContourTool] Contour annotation added');
       } else {
-        console.warn('[CellDetect] No cell detected at click point');
+        console.warn('[ContourTool] No contour detected at click point');
       }
     } catch (error) {
-      console.error('[CellDetect] Error during cell detection:', error);
+      console.error('[ContourTool] Error during contour detection:', error);
     }
 
     if (this.options.preventDefaultAction) {
