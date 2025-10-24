@@ -14,6 +14,8 @@ export async function loadMaskPolygons(
   url: string,
   options: PgmLoaderOptions = {}
 ): Promise<Annotation[]> {
+  console.log('[MaskLoader] Loading mask from:', url);
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load mask file: ${response.statusText}`);
@@ -26,6 +28,8 @@ export async function loadMaskPolygons(
   const view = new Uint8Array(arrayBuffer);
   const isPNG = view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4E && view[3] === 0x47;
 
+  console.log('[MaskLoader] File format detected:', isPNG ? 'PNG' : 'PGM');
+
   let annotations: Annotation[];
 
   if (isPNG) {
@@ -35,6 +39,8 @@ export async function loadMaskPolygons(
     // Handle PGM mask
     annotations = await loadPgmFile(arrayBuffer);
   }
+
+  console.log('[MaskLoader] Extracted annotations:', annotations.length);
 
   // Apply layer and styling options
   return annotations.map((ann: Annotation) => ({
@@ -60,11 +66,15 @@ async function loadPngMask(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
   const blob = new Blob([arrayBuffer], { type: 'image/png' });
   const imageUrl = URL.createObjectURL(blob);
 
+  console.log('[MaskLoader] Loading PNG image...');
+
   return new Promise((resolve, reject) => {
     const img = new Image();
 
     img.onload = async () => {
       try {
+        console.log('[MaskLoader] PNG loaded, size:', img.width, 'x', img.height);
+
         // Draw to canvas to get pixel data
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
@@ -80,10 +90,15 @@ async function loadPngMask(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
         ctx.drawImage(img, 0, 0);
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
+        console.log('[MaskLoader] ImageData created, checking OpenCV...');
+
         // Convert to polygon using OpenCV
         if (typeof window !== 'undefined' && (window as any).cv) {
+          console.log('[MaskLoader] OpenCV available, extracting polygon...');
           const { maskToPolygon } = await import('../extensions/opencv');
           const polygon = maskToPolygon(imageData, true);
+
+          console.log('[MaskLoader] Polygon extracted, points:', polygon?.length);
 
           if (polygon && polygon.length > 0) {
             const { calculateBounds } = await import('../core/types');
@@ -105,14 +120,16 @@ async function loadPngMask(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
             };
 
             URL.revokeObjectURL(imageUrl);
+            console.log('[MaskLoader] Annotation created successfully');
             resolve([annotation]);
           } else {
             URL.revokeObjectURL(imageUrl);
+            console.warn('[MaskLoader] No polygon extracted from mask');
             resolve([]);
           }
         } else {
           URL.revokeObjectURL(imageUrl);
-          console.warn('[MaskLoader] OpenCV not available');
+          console.warn('[MaskLoader] OpenCV not available, cv:', (window as any).cv);
           resolve([]);
         }
       } catch (error) {

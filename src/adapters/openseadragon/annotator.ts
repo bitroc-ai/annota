@@ -158,12 +158,7 @@ export async function createOpenSeadragonAnnotator(
   });
 
   // Load existing annotations from store
-  console.log(
-    '[OpenSeadragonAnnotator] Loading existing annotations from store:',
-    store.all().length
-  );
   store.all().forEach(annotation => {
-    console.log('[OpenSeadragonAnnotator] Adding existing annotation:', annotation.id);
     stage.addAnnotation(annotation);
   });
 
@@ -183,37 +178,22 @@ export async function createOpenSeadragonAnnotator(
 
   // Sync with store changes
   const onStoreChange = (event: StoreChangeEvent) => {
-    console.log('[OpenSeadragonAnnotator] Store changed:', {
-      created: event.created.length,
-      updated: event.updated.length,
-      deleted: event.deleted.length,
-    });
     event.created.forEach(annotation => {
-      console.log('[OpenSeadragonAnnotator] Adding annotation to stage:', annotation.id);
       stage.addAnnotation(annotation);
       emitEvent('createAnnotation', annotation);
     });
     event.updated.forEach(({ oldValue, newValue }) => {
-      console.log(
-        '[OpenSeadragonAnnotator] Updating annotation on stage:',
-        oldValue.id,
-        '->',
-        newValue.id
-      );
       stage.updateAnnotation(oldValue, newValue);
       emitEvent('updateAnnotation', newValue);
     });
     event.deleted.forEach(annotation => {
-      console.log('[OpenSeadragonAnnotator] Removing annotation from stage:', annotation.id);
       stage.removeAnnotation(annotation);
       emitEvent('deleteAnnotation', annotation);
     });
-    console.log('[OpenSeadragonAnnotator] Calling stage.redraw()');
     stage.redraw();
   };
 
   store.observe(onStoreChange);
-  console.log('[OpenSeadragonAnnotator] Store observer attached');
 
   // Sync with viewport changes
   // Use 'animation-start' for immediate sync at the START of pan/zoom
@@ -284,7 +264,6 @@ export async function createOpenSeadragonAnnotator(
       const hit = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
 
       if (hit) {
-        console.log('[OpenSeadragonAnnotator] Annotation clicked:', hit.id);
         // Toggle selection
         const previousSelection = [...selection.selected];
         if (selection.selected.includes(hit.id)) {
@@ -299,7 +278,6 @@ export async function createOpenSeadragonAnnotator(
       } else {
         // Click on empty area - clear selection
         if (selection.selected.length > 0) {
-          console.log('[OpenSeadragonAnnotator] Empty area clicked - clearing selection');
           selection.selected = [];
           stage.setSelected([]);
           emitEvent('selectionChanged', { selected: [] });
