@@ -19,6 +19,7 @@ export class PolygonTool extends BaseTool {
   private currentAnnotationId: string | null = null;
   private lastClickTime = 0;
   private isDrawing = false;
+  private previewPoint: Point | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
     super('polygon', {
@@ -27,6 +28,21 @@ export class PolygonTool extends BaseTool {
       ...options,
     });
   }
+
+  /**
+   * Handle mouse move - update preview line
+   */
+  private onPointerMove = (evt: PointerEvent): void => {
+    if (!this.enabled || !this.viewer || !this.annotator || !this.isDrawing) return;
+
+    const movePoint = this.viewerToImageCoords(evt.offsetX, evt.offsetY);
+
+    // Update preview point
+    this.previewPoint = movePoint;
+
+    // Update the annotation with preview
+    this.updatePolygonWithPreview();
+  };
 
   /**
    * Handle click event - add vertex or complete polygon
@@ -92,6 +108,7 @@ export class PolygonTool extends BaseTool {
     if (!this.annotator) return;
 
     this.points.push(point);
+    this.previewPoint = null; // Clear preview point when adding real vertex
 
     if (!this.isDrawing) {
       // Start new polygon
@@ -114,24 +131,38 @@ export class PolygonTool extends BaseTool {
       };
 
       this.annotator.state.store.add(annotation);
-    } else if (this.currentAnnotationId) {
-      // Update existing polygon
-      const existing = this.annotator.state.store.get(this.currentAnnotationId);
-      if (existing) {
-        this.annotator.updateAnnotation(this.currentAnnotationId, {
-          ...existing,
-          shape: {
-            type: 'polygon',
-            points: [...this.points],
-            bounds: calculateBounds({
-              type: 'polygon',
-              points: [...this.points],
-              bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
-            }),
-          },
-        });
-      }
+    } else {
+      // Update existing polygon (without preview since we just cleared it)
+      this.updatePolygonWithPreview();
     }
+  }
+
+  /**
+   * Update polygon annotation with current points and preview point
+   */
+  private updatePolygonWithPreview(): void {
+    if (!this.currentAnnotationId || !this.annotator) return;
+
+    const existing = this.annotator.state.store.get(this.currentAnnotationId);
+    if (!existing) return;
+
+    // Create points array with preview point if available
+    const displayPoints = this.previewPoint
+      ? [...this.points, this.previewPoint]
+      : [...this.points];
+
+    this.annotator.updateAnnotation(this.currentAnnotationId, {
+      ...existing,
+      shape: {
+        type: 'polygon',
+        points: displayPoints,
+        bounds: calculateBounds({
+          type: 'polygon',
+          points: displayPoints,
+          bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+        }),
+      },
+    });
   }
 
   /**
@@ -149,21 +180,33 @@ export class PolygonTool extends BaseTool {
     this.points = [];
     this.isDrawing = false;
     this.currentAnnotationId = null;
+    this.previewPoint = null;
   }
 
   /**
-   * Override init to attach keyboard listener
+   * Override init to attach keyboard and pointer listeners
    */
   init(viewer: OpenSeadragon.Viewer, annotator: any): void {
     super.init(viewer, annotator);
     document.addEventListener('keydown', this.onKeyDown);
+
+    // Attach pointer move listener to canvas for preview line
+    const canvas = viewer.canvas;
+    if (canvas) {
+      canvas.addEventListener('pointermove', this.onPointerMove);
+    }
   }
 
   /**
-   * Override destroy to remove keyboard listener
+   * Override destroy to remove keyboard and pointer listeners
    */
   destroy(): void {
     document.removeEventListener('keydown', this.onKeyDown);
+
+    // Remove pointer move listener from canvas
+    if (this.viewer?.canvas) {
+      this.viewer.canvas.removeEventListener('pointermove', this.onPointerMove);
+    }
 
     // Cancel any in-progress drawing
     if (this.isDrawing && this.currentAnnotationId && this.annotator) {
@@ -171,6 +214,7 @@ export class PolygonTool extends BaseTool {
       this.points = [];
       this.isDrawing = false;
       this.currentAnnotationId = null;
+      this.previewPoint = null;
     }
 
     super.destroy();
@@ -187,6 +231,7 @@ export class PolygonTool extends BaseTool {
       this.points = [];
       this.isDrawing = false;
       this.currentAnnotationId = null;
+      this.previewPoint = null;
     }
   };
 }

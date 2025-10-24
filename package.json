@@ -9,7 +9,9 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "pathology",
@@ -53,7 +55,10 @@
     "@types/rbush": "^4.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitest/ui": "^4.0.2",
+    "jsdom": "^27.0.1",
     "tsup": "^8.0.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^4.0.2"
   }
 }

@@ -171,7 +171,7 @@ export function renderPolygon(
   style: ComputedStyle,
   scale: number
 ): void {
-  if (shape.points.length < 3) return;
+  if (shape.points.length === 0) return;
 
   graphics.clear();
   graphics.position.set(0, 0);
@@ -179,7 +179,38 @@ export function renderPolygon(
   // Flatten points to array of coordinates
   const points = shape.points.flatMap(p => [p.x, p.y]);
 
-  // Draw filled polygon
+  if (shape.points.length < 3) {
+    // Draw as line or points if less than 3 vertices (preview mode)
+    if (shape.points.length === 1) {
+      // Draw single point
+      const p = shape.points[0];
+      const radius = 5 / scale;
+      graphics
+        .circle(p.x, p.y, radius)
+        .fill({ color: style.stroke.color, alpha: style.stroke.alpha });
+    } else if (shape.points.length === 2) {
+      // Draw line between two points
+      graphics
+        .moveTo(points[0], points[1])
+        .lineTo(points[2], points[3])
+        .stroke({
+          width: style.stroke.width / scale,
+          color: style.stroke.color,
+          alpha: style.stroke.alpha,
+        });
+
+      // Draw endpoint circles
+      const radius = 5 / scale;
+      for (const p of shape.points) {
+        graphics
+          .circle(p.x, p.y, radius)
+          .fill({ color: style.stroke.color, alpha: style.stroke.alpha });
+      }
+    }
+    return;
+  }
+
+  // Draw filled polygon (3+ points)
   graphics.poly(points, true);
   graphics.fill({ color: style.fill.color, alpha: style.fill.alpha });
 
