@@ -42,7 +42,7 @@ export class ContourTool extends BaseTool {
       this.initializingOpenCV = true;
       initOpenCV()
         .then(() => {
-          console.log('[ContourTool] OpenCV initialized');
+          console.log('[ContourTool] OpenCV initialized and ready');
           this.initializingOpenCV = false;
         })
         .catch(error => {
@@ -63,11 +63,13 @@ export class ContourTool extends BaseTool {
    * Handle click event - detect contour/edge at click point
    */
   onCanvasClick = async (evt: OpenSeadragon.ViewerEvent): Promise<void> => {
-    if (!this.enabled || !this.viewer || !this.annotator) return;
+    if (!this.enabled || !this.viewer || !this.annotator) {
+      return;
+    }
 
     // Only check OpenCV if using default detector
     if (this.detector === defaultDetector && !isOpenCVReady()) {
-      console.warn('[ContourTool] OpenCV not ready, still loading...');
+      console.warn('[ContourTool] OpenCV is still loading, please wait...');
       if (this.options.preventDefaultAction) {
         (evt as any).preventDefaultAction = true;
       }

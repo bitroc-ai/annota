@@ -60,21 +60,18 @@ export function ToolManager({
     [activeLayerId]
   );
   const pushTool = useMemo(() => new PushTool({ pushRadius }), [pushRadius]);
-  const contourTool = useMemo(() => {
-    if (!viewer) return null;
-    const tiledImage = viewer.world.getItemAt(0);
-    if (!tiledImage) return null;
-    return new ContourTool({
-      cv: (window as any).cv,
-      tileSource: tiledImage.source,
-      threshold,
-      annotationProperties: {
-        layer: activeLayerId,
-        category: 'positive',
-        tags: [],
-      },
-    });
-  }, [viewer, activeLayerId]);
+  const contourTool = useMemo(
+    () =>
+      new ContourTool({
+        threshold,
+        annotationProperties: {
+          layer: activeLayerId,
+          category: 'positive',
+          tags: [],
+        },
+      }),
+    [activeLayerId]
+  );
   // Update dynamic properties
   useEffect(() => {
     pushTool.setPushRadius(pushRadius);
