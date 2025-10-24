@@ -33,7 +33,7 @@ const navbar = (
           width="24"
           style={{ height: "24px", width: "auto" }}
         />
-        <span className="ms-2 select-none font-extrabold max-md:hidden">
+        <span className="ms-2 select-none font-semibold max-md:hidden">
           Annota
         </span>
       </>

@@ -7,7 +7,7 @@ import {
   AnnotaViewer,
   Annotator,
   useAnnotator,
-  loadH5Masks,
+  loadH5Coordinates,
   AnnotationEditor,
   type Annotation,
   type AnnotationStyle,
@@ -35,7 +35,7 @@ async function loadH5AnnotationsByCategory(
   const h5Path = `/playground/annotations/test/${category}/${imageId}.h5`;
 
   try {
-    const annotations = await loadH5Masks(h5Path, {
+    const annotations = await loadH5Coordinates(h5Path, {
       color: category === 'positive' ? '#00FF00' : '#FF0000',
       fillOpacity: 0.3,
       strokeWidth: 2,
