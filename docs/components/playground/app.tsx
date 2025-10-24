@@ -26,19 +26,33 @@ import type { ToolType } from '@/components/playground/toolbar';
 const DEMO_IMAGES = ['0.png', '1.png', '2.png', '3.png', '4.png'];
 
 /**
- * Load H5 annotations using the framework's loader
+ * Load H5 annotations for a specific category
  */
-async function loadH5Annotations(imageId: string): Promise<Annotation[]> {
-  const h5Path = `/playground/annotations/test/positive/${imageId}.h5`;
+async function loadH5AnnotationsByCategory(
+  imageId: string,
+  category: 'positive' | 'negative'
+): Promise<Annotation[]> {
+  const h5Path = `/playground/annotations/test/${category}/${imageId}.h5`;
 
   try {
-    return await loadH5Masks(h5Path, {
-      color: '#FF6B6B',
-      fillOpacity: 0.8,
+    const annotations = await loadH5Masks(h5Path, {
+      color: category === 'positive' ? '#00FF00' : '#FF0000',
+      fillOpacity: 0.3,
       strokeWidth: 2,
     });
-  } catch {
-    console.warn(`No H5 file found: ${h5Path}`);
+
+    // Add category and layer to each annotation
+    return annotations.map(ann => ({
+      ...ann,
+      properties: {
+        ...ann.properties,
+        layer: `annotations-${category}`,
+        category,
+        source: 'h5',
+      },
+    }));
+  } catch (error) {
+    console.warn(`No H5 file found or error loading: ${h5Path}`, error);
     return [];
   }
 }
@@ -52,15 +66,14 @@ function DemoContent({
 }) {
   const annotator = useAnnotator();
 
-  // Create H5 layer on mount
+  // Create layers on mount
   useEffect(() => {
     if (!annotator) return;
 
-    // Create a layer for H5 annotations if it doesn't exist
-    const h5Layer = annotator.getLayer('h5-annotations');
-    if (!h5Layer) {
-      annotator.createLayer('h5-annotations', {
-        name: 'H5 Annotations',
+    // Create layer for positive annotations
+    if (!annotator.getLayer('annotations-positive')) {
+      annotator.createLayer('annotations-positive', {
+        name: 'Positive Annotations',
         visible: true,
         locked: false,
         opacity: 1,
@@ -68,9 +81,19 @@ function DemoContent({
       });
     }
 
-    // Create a layer for manual annotations if it doesn't exist
-    const manualLayer = annotator.getLayer('manual-annotations');
-    if (!manualLayer) {
+    // Create layer for negative annotations
+    if (!annotator.getLayer('annotations-negative')) {
+      annotator.createLayer('annotations-negative', {
+        name: 'Negative Annotations',
+        visible: true,
+        locked: false,
+        opacity: 1,
+        zIndex: 11,
+      });
+    }
+
+    // Create layer for manual annotations
+    if (!annotator.getLayer('manual-annotations')) {
       annotator.createLayer('manual-annotations', {
         name: 'Manual Annotations',
         visible: true,
@@ -81,34 +104,35 @@ function DemoContent({
     }
   }, [annotator]);
 
-  // Load annotations from remote API when H5 toggle is enabled
+  // Load annotations when H5 toggle is enabled or image changes
   useEffect(() => {
-    if (!showH5Annotations || !annotator || typeof window === 'undefined') return;
+    if (!annotator || typeof window === 'undefined') return;
 
-    // Add small delay to ensure browser APIs are fully available
-    const timeoutId = setTimeout(async () => {
+    const loadAnnotations = async () => {
+      const imageNumber = currentImage.replace('.png', '');
+
+      // Clear existing H5 annotations from both layers
+      const allAnnotations = annotator.state.store.all();
+      const h5Annotations = allAnnotations.filter(ann => ann.properties?.source === 'h5');
+      h5Annotations.forEach(ann => annotator.state.store.delete(ann.id));
+
+      if (!showH5Annotations) return;
+
       try {
-        const imageNumber = currentImage.replace('.png', '');
+        // Load both positive and negative annotations
+        const [positiveAnnotations, negativeAnnotations] = await Promise.all([
+          loadH5AnnotationsByCategory(imageNumber, 'positive'),
+          loadH5AnnotationsByCategory(imageNumber, 'negative'),
+        ]);
 
-        // Load H5 annotations
-        const annotations = await loadH5Annotations(imageNumber);
+        const totalLoaded = positiveAnnotations.length + negativeAnnotations.length;
 
-        if (annotations.length > 0) {
-          // Add layer property to all H5 annotations
-          const h5Annotations = annotations.map(ann => ({
-            ...ann,
-            properties: {
-              ...ann.properties,
-              layer: 'h5-annotations',
-              source: 'h5',
-              category: 'positive',
-              tags: [],
-            },
-          }));
-
-          // Add all annotations at once using the convenience method
-          annotator.addAnnotations(h5Annotations);
-          toast.success(`Loaded ${annotations.length} H5 annotations`);
+        if (totalLoaded > 0) {
+          // Add all annotations at once
+          annotator.addAnnotations([...positiveAnnotations, ...negativeAnnotations]);
+          toast.success(
+            `Loaded ${positiveAnnotations.length} positive and ${negativeAnnotations.length} negative annotations`
+          );
         } else {
           toast.info('No annotations found for this image');
         }
@@ -116,8 +140,10 @@ function DemoContent({
         console.error('Failed to load annotations:', error);
         toast.error('Failed to load annotations');
       }
-    }, 100);
+    };
 
+    // Add small delay to ensure browser APIs are fully available
+    const timeoutId = setTimeout(loadAnnotations, 100);
     return () => clearTimeout(timeoutId);
   }, [showH5Annotations, currentImage, annotator]);
 
