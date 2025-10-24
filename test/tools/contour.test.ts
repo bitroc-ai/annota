@@ -97,6 +97,61 @@ describe('ContourTool', () => {
     expect(mockViewer.addHandler).toHaveBeenCalledWith('canvas-click', expect.any(Function));
   });
 
+  it('should handle canvas-click event through OpenSeadragon', async () => {
+    // OpenCV ready
+    vi.mocked(opencv.isOpenCVReady).mockReturnValue(true);
+
+    // Mock successful detection
+    const detectedPolygon = [
+      { x: 10, y: 10 },
+      { x: 50, y: 10 },
+      { x: 50, y: 50 },
+      { x: 10, y: 50 },
+    ];
+    vi.mocked(opencv.detectContour).mockReturnValue({
+      polygon: detectedPolygon,
+      confidence: 0.85,
+      area: 1600,
+      metadata: {
+        mask: { data: new Uint8ClampedArray(100 * 100 * 4), width: 100, height: 100 } as ImageData,
+        isWithinConstraints: true,
+      },
+    });
+
+    // Mock getImageData
+    const mockImageData = { data: new Uint8ClampedArray(500 * 500 * 4), width: 500, height: 500 } as ImageData;
+    mockContext.getImageData.mockReturnValue(mockImageData);
+
+    // Get the registered handler from addHandler call
+    const addHandlerCall = mockViewer.addHandler.mock.calls.find((call: any[]) => call[0] === 'canvas-click');
+    expect(addHandlerCall).toBeDefined();
+    const registeredHandler = addHandlerCall![1];
+
+    // Simulate OpenSeadragon firing the event
+    const clickEvent = {
+      originalEvent: { offsetX: 100, offsetY: 100 },
+      preventDefaultAction: false,
+    };
+
+    await registeredHandler(clickEvent);
+
+    // Should create annotation
+    expect(mockAnnotator.state.store.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: expect.stringContaining('contour-'),
+        shape: expect.objectContaining({
+          type: 'polygon',
+          points: expect.any(Array),
+        }),
+        properties: expect.objectContaining({
+          type: 'contour',
+          area: 1600,
+          confidence: 0.85,
+        }),
+      })
+    );
+  });
+
   it('should initialize OpenCV on construction', () => {
     expect(opencv.initOpenCV).toHaveBeenCalled();
   });
@@ -129,6 +184,10 @@ describe('ContourTool', () => {
   });
 
   it('should not detect when clicking existing annotation', async () => {
+    // Clear previous mock calls
+    vi.mocked(opencv.detectContour).mockClear();
+    mockAnnotator.state.store.add.mockClear();
+
     // OpenCV ready
     vi.mocked(opencv.isOpenCVReady).mockReturnValue(true);
 

@@ -74,7 +74,7 @@ export function ToolManager({
         tags: [],
       },
     });
-  }, [viewer, threshold, activeLayerId]);
+  }, [viewer, activeLayerId]);
   // Update dynamic properties
   useEffect(() => {
     pushTool.setPushRadius(pushRadius);

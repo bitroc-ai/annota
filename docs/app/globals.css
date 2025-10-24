@@ -34,7 +34,11 @@ html {
   transition-duration: 150ms;
 }
 
-/* Custom card hover effects */
+/* Custom card styling */
+.nextra-card {
+  padding: 1rem;
+}
+
 .nextra-card:hover {
   transform: translateY(-2px);
   transition: all 0.2s ease-in-out;
