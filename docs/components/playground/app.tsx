@@ -216,6 +216,35 @@ export function PlaygroundApp() {
     }
   }, [viewer, imageVisible]);
 
+  // Handle keyboard shortcuts
+  const annotator = useAnnotator();
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Delete/Backspace: delete selected annotations
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedIds = annotator.state.selection.selected;
+        if (selectedIds.length > 0) {
+          // Prevent backspace from navigating back in browser
+          event.preventDefault();
+
+          selectedIds.forEach(id => {
+            annotator.state.store.delete(id);
+          });
+
+          // Clear selection
+          annotator.state.selection.selected = [];
+
+          toast.success(`Deleted ${selectedIds.length} annotation(s)`);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [annotator]);
+
   return (
     <AnnotaProvider>
       <div className="h-[calc(100vh-4rem)] w-full bg-slate-50 dark:bg-slate-950">
