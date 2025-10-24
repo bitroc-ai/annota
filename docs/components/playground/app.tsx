@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   AnnotaProvider,
@@ -149,6 +149,25 @@ export function PlaygroundApp() {
 
   const currentImage = DEMO_IMAGES[currentImageIndex];
 
+  // Memoize viewer options to prevent unnecessary viewer.open() calls
+  const viewerOptions = useMemo(
+    () => ({
+      tileSources: {
+        type: "image" as const,
+        url: `/playground/images/test/${currentImage}`,
+      },
+      showNavigationControl: false,
+      visibilityRatio: 1,
+      minZoomLevel: 0.5,
+      maxZoomLevel: 10,
+      gestureSettingsMouse: {
+        clickToZoom: false,
+        dblClickToZoom: false,
+      },
+    }),
+    [currentImage]
+  );
+
   // Category-based styling: red for negative, green for positive
   const categoryStyleFunction = useCallback(
     (annotation: Annotation): AnnotationStyle => {
@@ -204,20 +223,7 @@ export function PlaygroundApp() {
         <div className="relative h-full">
           <AnnotaViewer
             className="h-full"
-            options={{
-              tileSources: {
-                type: "image",
-                url: `/playground/images/test/${currentImage}`,
-              },
-              showNavigationControl: false,
-              visibilityRatio: 1,
-              minZoomLevel: 0.5,
-              maxZoomLevel: 10,
-              gestureSettingsMouse: {
-                clickToZoom: false,
-                dblClickToZoom: false,
-              },
-            }}
+            options={viewerOptions}
             onViewerReady={setViewer}
           />
           <Annotator viewer={viewer} style={categoryStyleFunction}>
