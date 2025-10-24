@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useLayerManager } from 'annota';
-import { Eye, EyeOff, Lock, Unlock, Plus, X, Star } from 'lucide-react';
+import { useState } from "react";
+import { useLayerManager } from "annota";
+import { Eye, EyeOff, Lock, Unlock, Plus, X, Star } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface LayerPanelProps {
   trigger: React.ReactNode;
@@ -25,7 +25,7 @@ export function LayerPanel({
   onImageVisibleChange,
 }: LayerPanelProps) {
   const layerManager = useLayerManager();
-  const [newLayerName, setNewLayerName] = useState('');
+  const [newLayerName, setNewLayerName] = useState("");
   const [showAddLayer, setShowAddLayer] = useState(false);
 
   const handleAddLayer = () => {
@@ -40,13 +40,13 @@ export function LayerPanel({
       zIndex: layerManager.layers.length,
     });
 
-    setNewLayerName('');
+    setNewLayerName("");
     setShowAddLayer(false);
   };
 
   // Filter out image layer only (it's shown separately below)
   const sortedLayers = [...layerManager.layers]
-    .filter(layer => layer.id !== 'image')
+    .filter((layer) => layer.id !== "image")
     .sort((a, b) => b.zIndex - a.zIndex);
 
   return (
@@ -54,6 +54,7 @@ export function LayerPanel({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
+        side="right"
         className="w-[320px] bg-card border-border p-0"
       >
         {/* Header */}
@@ -74,8 +75,8 @@ export function LayerPanel({
             <input
               type="text"
               value={newLayerName}
-              onChange={e => setNewLayerName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddLayer()}
+              onChange={(e) => setNewLayerName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddLayer()}
               placeholder="Layer name..."
               className="w-full px-2 py-1 text-sm bg-background border border-input rounded text-foreground placeholder-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               autoFocus
@@ -90,7 +91,7 @@ export function LayerPanel({
               <button
                 onClick={() => {
                   setShowAddLayer(false);
-                  setNewLayerName('');
+                  setNewLayerName("");
                 }}
                 className="flex-1 px-3 py-1 text-xs bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded transition-colors"
               >
@@ -108,7 +109,7 @@ export function LayerPanel({
               <button
                 onClick={() => onImageVisibleChange?.(!imageVisible)}
                 className="p-1 hover:bg-accent rounded transition-colors"
-                title={imageVisible ? 'Hide image' : 'Show image'}
+                title={imageVisible ? "Hide image" : "Show image"}
               >
                 {imageVisible ? (
                   <Eye className="w-4 h-4 text-primary" />
@@ -116,7 +117,9 @@ export function LayerPanel({
                   <EyeOff className="w-4 h-4 text-muted-foreground" />
                 )}
               </button>
-              <span className="flex-1 text-sm text-foreground font-semibold">Image</span>
+              <span className="flex-1 text-sm text-foreground font-semibold">
+                Image
+              </span>
               <span className="text-xs text-muted-foreground">Background</span>
             </div>
           </div>
@@ -128,13 +131,13 @@ export function LayerPanel({
             </div>
           ) : (
             <div className="py-1">
-              {sortedLayers.map(layer => {
+              {sortedLayers.map((layer) => {
                 const isActive = activeLayerId === layer.id;
                 return (
                   <div
                     key={layer.id}
                     className={`px-3 py-2 hover:bg-accent/50 transition-colors group relative ${
-                      isActive ? 'bg-accent' : ''
+                      isActive ? "bg-accent" : ""
                     }`}
                   >
                     {/* Active indicator bar on left */}
@@ -147,22 +150,29 @@ export function LayerPanel({
                       <button
                         onClick={() => onActiveLayerChange?.(layer.id)}
                         className="p-1 hover:bg-accent rounded transition-colors"
-                        title={isActive ? 'Active layer' : 'Set as active layer'}
+                        title={
+                          isActive ? "Active layer" : "Set as active layer"
+                        }
                       >
                         <Star
                           className={`w-4 h-4 ${
                             isActive
-                              ? 'text-primary fill-primary'
-                              : 'text-muted-foreground hover:text-foreground'
+                              ? "text-primary fill-primary"
+                              : "text-muted-foreground hover:text-foreground"
                           }`}
                         />
                       </button>
 
                       {/* Visibility Toggle */}
                       <button
-                        onClick={() => layerManager.setLayerVisibility(layer.id, !layer.visible)}
+                        onClick={() =>
+                          layerManager.setLayerVisibility(
+                            layer.id,
+                            !layer.visible
+                          )
+                        }
                         className="p-1 hover:bg-accent rounded transition-colors"
-                        title={layer.visible ? 'Hide layer' : 'Show layer'}
+                        title={layer.visible ? "Hide layer" : "Show layer"}
                       >
                         {layer.visible ? (
                           <Eye className="w-4 h-4 text-primary" />
@@ -173,9 +183,11 @@ export function LayerPanel({
 
                       {/* Lock Toggle */}
                       <button
-                        onClick={() => layerManager.setLayerLocked(layer.id, !layer.locked)}
+                        onClick={() =>
+                          layerManager.setLayerLocked(layer.id, !layer.locked)
+                        }
                         className="p-1 hover:bg-accent rounded transition-colors"
-                        title={layer.locked ? 'Unlock layer' : 'Lock layer'}
+                        title={layer.locked ? "Unlock layer" : "Lock layer"}
                       >
                         {layer.locked ? (
                           <Lock className="w-4 h-4 text-orange-500" />
@@ -186,13 +198,17 @@ export function LayerPanel({
 
                       {/* Layer Name */}
                       <span
-                        className={`flex-1 text-sm truncate ${isActive ? 'text-primary font-semibold' : 'text-foreground'}`}
+                        className={`flex-1 text-sm truncate ${
+                          isActive
+                            ? "text-primary font-semibold"
+                            : "text-foreground"
+                        }`}
                       >
                         {layer.name}
                       </span>
 
                       {/* Delete Button (only show for non-default layers) */}
-                      {layer.id !== 'default' && (
+                      {layer.id !== "default" && (
                         <button
                           onClick={() => layerManager.deleteLayer(layer.id)}
                           className="p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 rounded transition-all"
@@ -205,15 +221,20 @@ export function LayerPanel({
 
                     {/* Opacity Slider */}
                     <div className="flex items-center gap-2 ml-10">
-                      <span className="text-xs text-muted-foreground w-16">Opacity:</span>
+                      <span className="text-xs text-muted-foreground w-16">
+                        Opacity:
+                      </span>
                       <input
                         type="range"
                         min="0"
                         max="1"
                         step="0.1"
                         value={layer.opacity}
-                        onChange={e =>
-                          layerManager.setLayerOpacity(layer.id, parseFloat(e.target.value))
+                        onChange={(e) =>
+                          layerManager.setLayerOpacity(
+                            layer.id,
+                            parseFloat(e.target.value)
+                          )
                         }
                         className="flex-1 h-1 bg-muted rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
                       />
