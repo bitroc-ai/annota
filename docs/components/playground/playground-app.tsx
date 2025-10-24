@@ -14,14 +14,14 @@ import {
 } from 'annota';
 import { Toaster } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
-import { DemoToolbar } from '@/components/demo/toolbar';
-import { ToolSettings } from '@/components/demo/tool-settings';
-import { DebugPanel } from '@/components/demo/debug-panel';
-import { ToolManager } from '@/components/demo/tool-manager';
-import { PopupEditor } from '@/components/demo/popup-editor';
-import { LayerPanel } from '@/components/demo/layer-panel';
+import { DemoToolbar } from '@/components/playground/toolbar';
+import { ToolSettings } from '@/components/playground/tool-settings';
+import { DebugPanel } from '@/components/playground/debug-panel';
+import { ToolManager } from '@/components/playground/tool-manager';
+import { PopupEditor } from '@/components/playground/popup-editor';
+import { LayerPanel } from '@/components/playground/layer-panel';
 import { Layers } from 'lucide-react';
-import type { ToolType } from '@/components/demo/toolbar';
+import type { ToolType } from '@/components/playground/toolbar';
 
 const DEMO_IMAGES = ['0.png', '1.png', '2.png', '3.png', '4.png'];
 
@@ -29,7 +29,7 @@ const DEMO_IMAGES = ['0.png', '1.png', '2.png', '3.png', '4.png'];
  * Load H5 annotations using the framework's loader
  */
 async function loadH5Annotations(imageId: string): Promise<Annotation[]> {
-  const h5Path = `/demo/annotations/test/positive/${imageId}.h5`;
+  const h5Path = `/playground/annotations/test/positive/${imageId}.h5`;
 
   try {
     return await loadH5Masks(h5Path, {
@@ -124,7 +124,7 @@ function DemoContent({
   return null; // This component just handles the side effect
 }
 
-export function DemoApp() {
+export function PlaygroundApp() {
   const [viewer, setViewer] = useState<any>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [tool, setTool] = useState<ToolType>('pan');
@@ -191,7 +191,7 @@ export function DemoApp() {
           <AnnotaViewer
             className="h-full"
             options={{
-              tileSources: { type: 'image', url: `/demo/images/test/${currentImage}` },
+              tileSources: { type: 'image', url: `/playground/images/test/${currentImage}` },
               showNavigationControl: false,
               visibilityRatio: 1,
               minZoomLevel: 0.5,

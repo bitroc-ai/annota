@@ -10,10 +10,10 @@ export default {
     title: 'API Reference',
     type: 'page',
   },
-  demo: {
-    title: 'Demo',
+  playground: {
+    title: 'Playground',
     type: 'page',
-    href: '/demo',
+    href: '/playground',
   },
   github: {
     title: 'GitHub',
