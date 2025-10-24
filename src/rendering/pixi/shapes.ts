@@ -35,8 +35,12 @@ export function renderPoint(
   // Draw circle at image coordinates
   graphics
     .circle(point.x, point.y, radius)
-    .fill(style.fill.color)
-    .stroke({ width: style.stroke.width / scale, color: style.stroke.color });
+    .fill({ color: style.fill.color, alpha: style.fill.alpha })
+    .stroke({
+      width: style.stroke.width / scale,
+      color: style.stroke.color,
+      alpha: style.stroke.alpha,
+    });
 }
 
 /**

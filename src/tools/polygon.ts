@@ -5,7 +5,7 @@
 import type OpenSeadragon from 'openseadragon';
 import type { Annotation, Point } from '../core/types';
 import { calculateBounds } from '../core/types';
-import { BaseInteraction } from './base';
+import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 
 const DOUBLE_CLICK_THRESHOLD = 300; // ms
@@ -14,7 +14,7 @@ const CLOSE_THRESHOLD = 10; // pixels in image space
 /**
  * Tool for drawing polygon annotations
  */
-export class PolygonTool extends BaseInteraction {
+export class PolygonTool extends BaseTool {
   private points: Point[] = [];
   private currentAnnotationId: string | null = null;
   private lastClickTime = 0;

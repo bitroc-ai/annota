@@ -41,6 +41,17 @@ export interface OpenSeadragonAnnotatorState {
 }
 
 /**
+ * Event types for annotator
+ */
+export type AnnotatorEvent =
+  | 'createAnnotation'
+  | 'updateAnnotation'
+  | 'deleteAnnotation'
+  | 'selectionChanged';
+
+export type AnnotatorEventHandler = (data: any) => void;
+
+/**
  * OpenSeadragon Annotator
  * Integrates annotation system with OpenSeadragon viewer
  */
@@ -53,8 +64,13 @@ export interface OpenSeadragonAnnotator {
   addAnnotations(annotations: import('../../core/types').Annotation[]): void;
   updateAnnotation(id: string, annotation: import('../../core/types').Annotation): void;
   deleteAnnotation(id: string): void;
+  removeAnnotation(id: string): void; // Alias for deleteAnnotation
   clearAnnotations(): void;
   getAnnotations(): import('../../core/types').Annotation[];
+
+  // Selection management
+  setSelected(id: string | string[]): void;
+  getSelected(): string[];
 
   // Layer management
   createLayer(id: string, config: LayerConfig): Layer;
@@ -72,6 +88,11 @@ export interface OpenSeadragonAnnotator {
   setFilter(filter?: Filter): void;
   setVisible(visible: boolean): void;
 
+  // Event emitter methods
+  on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  off(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  emit(event: AnnotatorEvent, data: any): void;
+
   // Lifecycle
   destroy(): void;
 }
@@ -87,6 +108,14 @@ export async function createOpenSeadragonAnnotator(
   const layerManager = options.layerManager || createLayerManager();
   const hover: { current: string | undefined } = { current: undefined };
   const selection: { selected: string[] } = { selected: [] };
+
+  // Event emitter state
+  const eventHandlers: Map<AnnotatorEvent, Set<AnnotatorEventHandler>> = new Map([
+    ['createAnnotation', new Set()],
+    ['updateAnnotation', new Set()],
+    ['deleteAnnotation', new Set()],
+    ['selectionChanged', new Set()],
+  ]);
 
   // Check if viewer canvas is ready
   if (!viewer.canvas) {
@@ -138,6 +167,20 @@ export async function createOpenSeadragonAnnotator(
     stage.addAnnotation(annotation);
   });
 
+  // Helper to emit events to registered handlers
+  const emitEvent = (event: AnnotatorEvent, data: any) => {
+    const handlers = eventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach(handler => {
+        try {
+          handler(data);
+        } catch (error) {
+          console.error(`Error in ${event} handler:`, error);
+        }
+      });
+    }
+  };
+
   // Sync with store changes
   const onStoreChange = (event: StoreChangeEvent) => {
     console.log('[OpenSeadragonAnnotator] Store changed:', {
@@ -148,6 +191,7 @@ export async function createOpenSeadragonAnnotator(
     event.created.forEach(annotation => {
       console.log('[OpenSeadragonAnnotator] Adding annotation to stage:', annotation.id);
       stage.addAnnotation(annotation);
+      emitEvent('createAnnotation', annotation);
     });
     event.updated.forEach(({ oldValue, newValue }) => {
       console.log(
@@ -157,10 +201,12 @@ export async function createOpenSeadragonAnnotator(
         newValue.id
       );
       stage.updateAnnotation(oldValue, newValue);
+      emitEvent('updateAnnotation', newValue);
     });
     event.deleted.forEach(annotation => {
       console.log('[OpenSeadragonAnnotator] Removing annotation from stage:', annotation.id);
       stage.removeAnnotation(annotation);
+      emitEvent('deleteAnnotation', annotation);
     });
     console.log('[OpenSeadragonAnnotator] Calling stage.redraw()');
     stage.redraw();
@@ -170,12 +216,15 @@ export async function createOpenSeadragonAnnotator(
   console.log('[OpenSeadragonAnnotator] Store observer attached');
 
   // Sync with viewport changes
+  // Use 'animation-start' for immediate sync at the START of pan/zoom
+  // This keeps annotations perfectly in sync with image tiles during interaction
   const onViewportUpdate = () => {
     stage.redraw();
   };
 
-  viewer.addHandler('update-viewport', onViewportUpdate);
+  viewer.addHandler('animation-start', onViewportUpdate);
   viewer.addHandler('animation', onViewportUpdate);
+  viewer.addHandler('update-viewport', onViewportUpdate);
 
   // Handle resize
   const onResize = () => {
@@ -237,18 +286,23 @@ export async function createOpenSeadragonAnnotator(
       if (hit) {
         console.log('[OpenSeadragonAnnotator] Annotation clicked:', hit.id);
         // Toggle selection
+        const previousSelection = [...selection.selected];
         if (selection.selected.includes(hit.id)) {
           selection.selected = selection.selected.filter(id => id !== hit.id);
         } else {
           selection.selected = [hit.id];
         }
         stage.setSelected(selection.selected);
+        if (JSON.stringify(previousSelection) !== JSON.stringify(selection.selected)) {
+          emitEvent('selectionChanged', { selected: selection.selected });
+        }
       } else {
         // Click on empty area - clear selection
         if (selection.selected.length > 0) {
           console.log('[OpenSeadragonAnnotator] Empty area clicked - clearing selection');
           selection.selected = [];
           stage.setSelected([]);
+          emitEvent('selectionChanged', { selected: [] });
         }
       }
     }
@@ -289,12 +343,32 @@ export async function createOpenSeadragonAnnotator(
       store.delete(id);
     },
 
+    removeAnnotation(id) {
+      // Alias for deleteAnnotation
+      store.delete(id);
+    },
+
     clearAnnotations() {
       store.clear();
     },
 
     getAnnotations() {
       return store.all();
+    },
+
+    // Selection management
+    setSelected(id) {
+      const ids = Array.isArray(id) ? id : [id];
+      const previousSelection = [...selection.selected];
+      selection.selected = ids;
+      stage.setSelected(ids);
+      if (JSON.stringify(previousSelection) !== JSON.stringify(ids)) {
+        emitEvent('selectionChanged', { selected: ids });
+      }
+    },
+
+    getSelected() {
+      return selection.selected;
     },
 
     // Layer management (delegate to layer manager)
@@ -347,6 +421,25 @@ export async function createOpenSeadragonAnnotator(
       stage.setVisible(visible);
     },
 
+    // Event emitter methods
+    on(event, handler) {
+      const handlers = eventHandlers.get(event);
+      if (handlers) {
+        handlers.add(handler);
+      }
+    },
+
+    off(event, handler) {
+      const handlers = eventHandlers.get(event);
+      if (handlers) {
+        handlers.delete(handler);
+      }
+    },
+
+    emit(event, data) {
+      emitEvent(event, data);
+    },
+
     destroy() {
       store.unobserve(onStoreChange);
       layerManager.unobserve(onLayerChange);
@@ -357,6 +450,8 @@ export async function createOpenSeadragonAnnotator(
       resizeObserver.disconnect();
       stage.destroy();
       canvas.remove();
+      // Clear all event handlers
+      eventHandlers.forEach(handlers => handlers.clear());
     },
   };
 }

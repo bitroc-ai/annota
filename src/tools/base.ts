@@ -6,12 +6,12 @@ import OpenSeadragon from 'openseadragon';
 import type { OpenSeadragonAnnotator as Annotator } from '../adapters/openseadragon/annotator';
 import type { Annotation } from '../core/types';
 import { isAnnotationEditable } from '../core/layer';
-import type { InteractionHandler, ToolHandlerOptions } from './types';
+import type { ToolHandler, ToolHandlerOptions } from './types';
 
 /**
  * Abstract base class for all interaction handlers
  */
-export abstract class BaseInteraction implements InteractionHandler {
+export abstract class BaseTool implements ToolHandler {
   readonly id: string;
   enabled: boolean = false;
 

@@ -27,6 +27,7 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
 
     useImperativeHandle(ref, () => viewerRef.current, []);
 
+    // Create viewer once on mount
     useEffect(() => {
       if (!elementRef.current || viewerRef.current) return;
 
@@ -44,6 +45,16 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Only create viewer once on mount
+
+    // Update tile source when options.tileSources changes
+    useEffect(() => {
+      const viewer = viewerRef.current;
+      if (!viewer || !options.tileSources) return;
+
+      // Use viewer.open() to update tile source without recreating viewer
+      // This is much faster than destroying and recreating the entire viewer
+      viewer.open(options.tileSources);
+    }, [options.tileSources]);
 
     return <div ref={elementRef} className={className} style={style} />;
   }

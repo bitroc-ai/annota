@@ -5,13 +5,13 @@
 import type OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
-import { BaseInteraction } from './base';
+import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 
 /**
  * Tool for adding point annotations
  */
-export class PointTool extends BaseInteraction {
+export class PointTool extends BaseTool {
   constructor(options: ToolHandlerOptions = {}) {
     super('point', {
       preventDefaultAction: true,

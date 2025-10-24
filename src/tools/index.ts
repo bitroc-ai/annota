@@ -8,4 +8,4 @@ export * from './point';
 export * from './rectangle';
 export * from './polygon';
 export * from './push';
-export * from './cellDetect';
+export * from './contour';

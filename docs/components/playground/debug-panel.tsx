@@ -1,19 +1,15 @@
-import { ChevronRight, FileStack } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useAnnotations } from 'annota';
 import { Button } from '@/components/ui/button';
 
 interface DebugPanelProps {
   currentImage: string;
   onNextImage: () => void;
-  showH5Annotations: boolean;
-  onToggleH5: () => void;
 }
 
 export function DebugPanel({
   currentImage,
   onNextImage,
-  showH5Annotations,
-  onToggleH5,
 }: DebugPanelProps) {
   const annotations = useAnnotations();
 
@@ -33,20 +29,6 @@ export function DebugPanel({
         >
           <ChevronRight className="w-3 h-3" />
           {currentImage}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleH5}
-          className={`h-6 px-2 text-xs ${
-            showH5Annotations
-              ? 'bg-orange-600 hover:bg-orange-700 text-white'
-              : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-200'
-          }`}
-          title="Toggle H5 annotations"
-        >
-          <FileStack className="w-3 h-3 " />
-          H5
         </Button>
       </div>
     </div>

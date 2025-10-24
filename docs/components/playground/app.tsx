@@ -59,10 +59,8 @@ async function loadH5AnnotationsByCategory(
 
 function DemoContent({
   currentImage,
-  showH5Annotations,
 }: {
   currentImage: string;
-  showH5Annotations: boolean;
 }) {
   const annotator = useAnnotator();
 
@@ -104,7 +102,7 @@ function DemoContent({
     }
   }, [annotator]);
 
-  // Load annotations when H5 toggle is enabled or image changes
+  // Load annotations when image changes
   useEffect(() => {
     if (!annotator || typeof window === 'undefined') return;
 
@@ -115,8 +113,6 @@ function DemoContent({
       const allAnnotations = annotator.state.store.all();
       const h5Annotations = allAnnotations.filter(ann => ann.properties?.source === 'h5');
       h5Annotations.forEach(ann => annotator.state.store.delete(ann.id));
-
-      if (!showH5Annotations) return;
 
       try {
         // Load both positive and negative annotations
@@ -145,7 +141,7 @@ function DemoContent({
     // Add small delay to ensure browser APIs are fully available
     const timeoutId = setTimeout(loadAnnotations, 100);
     return () => clearTimeout(timeoutId);
-  }, [showH5Annotations, currentImage, annotator]);
+  }, [currentImage, annotator]);
 
   return null; // This component just handles the side effect
 }
@@ -156,7 +152,6 @@ export function PlaygroundApp() {
   const [tool, setTool] = useState<ToolType>('pan');
   const [threshold, setThreshold] = useState(8);
   const [pushRadius, setPushRadius] = useState(30);
-  const [showH5Annotations, setShowH5Annotations] = useState(true);
   const [activeLayerId, setActiveLayerId] = useState<string>('manual-annotations');
   const [imageVisible, setImageVisible] = useState(true);
 
@@ -188,10 +183,6 @@ export function PlaygroundApp() {
 
   const handleNextImage = () => {
     setCurrentImageIndex(prev => (prev + 1) % DEMO_IMAGES.length);
-  };
-
-  const handleToggleH5 = () => {
-    setShowH5Annotations(prev => !prev);
   };
 
   // Apply image opacity when imageVisible changes
@@ -239,7 +230,7 @@ export function PlaygroundApp() {
             />
             <PopupEditor viewer={viewer} />
             <AnnotationEditor viewer={viewer} />
-            <DemoContent currentImage={currentImage} showH5Annotations={showH5Annotations} />
+            <DemoContent currentImage={currentImage} />
           </Annotator>
           <div className="absolute top-4 left-4 z-10 space-y-2">
             <DemoToolbar
@@ -276,8 +267,6 @@ export function PlaygroundApp() {
           <DebugPanel
             currentImage={currentImage}
             onNextImage={handleNextImage}
-            showH5Annotations={showH5Annotations}
-            onToggleH5={handleToggleH5}
           />
         </div>
       </div>

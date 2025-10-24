@@ -57,7 +57,7 @@ export default async function RootLayout({
           navbar={navbar}
           editLink="Edit this page on GitHub"
           docsRepositoryBase="https://github.com/bitroc-ai/annota"
-          sidebar={{ defaultMenuCollapseLevel: 1 }}
+          sidebar={{ defaultMenuCollapseLevel: 2 }}
           pageMap={pageMap}
         >
           {children}

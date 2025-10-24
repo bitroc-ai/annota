@@ -5,13 +5,13 @@
 import type OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
-import { BaseInteraction } from './base';
+import { BaseTool } from './base';
 import type { PushToolOptions } from './types';
 
 /**
  * Tool for pushing polygon vertices to adjust shapes
  */
-export class PushTool extends BaseInteraction {
+export class PushTool extends BaseTool {
   private isPushing = false;
   private affectedAnnotations = new Map<string, { x: number; y: number }[]>();
   private cursorPos: { x: number; y: number } | null = null;

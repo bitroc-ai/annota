@@ -15,8 +15,4 @@ export default {
     type: 'page',
     href: '/playground',
   },
-  github: {
-    title: 'GitHub',
-    href: 'https://github.com/bitroc-ai/annota',
-  },
 }

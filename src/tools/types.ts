@@ -9,12 +9,12 @@ import type { Annotation } from '../core/types';
 /**
  * Tool types supported by the framework
  */
-export type ToolType = 'pan' | 'point' | 'push' | 'move' | 'cell-detect';
+export type ToolType = 'pan' | 'point' | 'push' | 'move' | 'contour';
 
 /**
  * Base interface for all interaction handlers
  */
-export interface InteractionHandler {
+export interface ToolHandler {
   /** Unique identifier for this handler */
   readonly id: string;
 
@@ -72,9 +72,9 @@ export interface PushToolOptions extends ToolHandlerOptions {
 }
 
 /**
- * Options for the cell detection tool
+ * Options for the contour detection tool
  */
-export interface CellDetectOptions extends ToolHandlerOptions {
+export interface ContourDetectOptions extends ToolHandlerOptions {
   /** OpenCV instance */
   cv: any;
 

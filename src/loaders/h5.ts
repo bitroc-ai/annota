@@ -38,7 +38,7 @@ export async function loadH5Masks(
   try {
     // Dynamically import jsfive (only when needed)
     // @ts-ignore - jsfive doesn't have type definitions
-    const { File } = await import('jsfive');
+    const { default: hdf5 } = await import('jsfive');
 
     // Fetch the H5 file
     const response = await fetch(h5Path);
@@ -47,27 +47,26 @@ export async function loadH5Masks(
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const f = new File(arrayBuffer);
+    const f = new hdf5.File(arrayBuffer);
 
     // Try to find the masks dataset (common names: 'masks', 'instances', 'labels')
     let masks: any;
-    const availableKeys = Object.keys(f.keys);
-
     if (f.get('masks')) {
       masks = f.get('masks');
     } else if (f.get('instances')) {
       masks = f.get('instances');
     } else if (f.get('labels')) {
       masks = f.get('labels');
-    } else if (availableKeys.length > 0) {
+    } else {
       // Get the first dataset
-      console.log(`Available H5 datasets: ${availableKeys.join(', ')}`);
-      masks = f.get(availableKeys[0]);
-      console.log(`Using first available dataset: ${availableKeys[0]}`);
+      const keys = Object.keys(f.keys);
+      if (keys.length > 0) {
+        masks = f.get(keys[0]);
+      }
     }
 
     if (!masks) {
-      throw new Error(`No mask dataset found in H5 file. Available keys: ${availableKeys.join(', ') || 'none'}`);
+      throw new Error('No mask dataset found in H5 file');
     }
 
     const maskData = masks.value;

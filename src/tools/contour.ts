@@ -1,26 +1,26 @@
 /**
- * Cell Detection Tool - Detect cell edges using OpenCV
+ * Contour Detection Tool - Detect contours/edges using OpenCV
  */
 
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, PolygonShape } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { detectCellEdge, isOpenCVReady, initOpenCV } from '../extensions/opencv';
-import { BaseInteraction } from './base';
-import type { CellDetectOptions } from './types';
+import { BaseTool } from './base';
+import type { ContourDetectOptions } from './types';
 
 /**
- * Tool for detecting cell edges using OpenCV
+ * Tool for detecting contours/edges using OpenCV
  * OpenCV is automatically initialized when the tool is created
  */
-export class CellDetectTool extends BaseInteraction {
-  private detectOptions: Required<Omit<CellDetectOptions, 'annotationProperties'>> & {
+export class ContourTool extends BaseTool {
+  private detectOptions: Required<Omit<ContourDetectOptions, 'annotationProperties'>> & {
     annotationProperties?: Record<string, any>;
   };
   private initializingOpenCV = false;
 
-  constructor(options: CellDetectOptions) {
-    super('cell-detect', {
+  constructor(options: ContourDetectOptions) {
+    super('contour', {
       preventDefaultAction: true,
       checkAnnotationHits: true,
       annotationStyle: {

@@ -2,14 +2,11 @@
  * Annota Loaders
  */
 
-export {
-  h5ToAnnotations,
-  parseH5JSON,
-  h5JSONToAnnotations,
-  annotationsToH5,
-  annotationsToH5JSON,
-} from './h5';
-export type { H5Data, H5LoaderOptions } from './h5';
+export { loadH5Masks } from './h5';
+export type { H5MaskLoaderOptions } from './h5';
+
+export { loadH5Coordinates } from './h5-coordinates';
+export type { H5CoordinateLoaderOptions } from './h5-coordinates';
 
 export { loadJSONFile, annotationsToJSON, parseJSON } from './json';
 

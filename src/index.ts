@@ -28,7 +28,7 @@ export {
   useAnnotations,
   useAnnotation,
   useSelection,
-  useInteraction,
+  useTool,
   usePushToolCursor,
   useViewer,
   usePopup,
@@ -36,6 +36,7 @@ export {
   useLayers,
   useLayer,
   useLayerManager,
+  useImageLayerVisibility,
 } from './react/hooks';
 export type { UseLayerManagerResult } from './react/hooks';
 
@@ -51,13 +52,17 @@ export type { PointEditorProps, RectangleEditorProps, PolygonEditorProps } from 
 // Annotator Instance Type
 // ============================================
 
-export type { OpenSeadragonAnnotator as AnnotatorInstance } from './adapters/openseadragon/annotator';
+export type {
+  OpenSeadragonAnnotator as AnnotatorInstance,
+  AnnotatorEvent,
+  AnnotatorEventHandler,
+} from './adapters/openseadragon/annotator';
 
 // ============================================
 // Tools (High-Level Only)
 // ============================================
 
-export { PointTool, RectangleTool, PolygonTool, PushTool, CellDetectTool } from './interactions';
+export { PointTool, RectangleTool, PolygonTool, PushTool, ContourTool } from './tools';
 
 // ============================================
 // Loaders
@@ -65,3 +70,6 @@ export { PointTool, RectangleTool, PolygonTool, PushTool, CellDetectTool } from 
 
 export { loadH5Masks } from './loaders/h5';
 export type { H5MaskLoaderOptions } from './loaders/h5';
+
+export { loadH5Coordinates } from './loaders/h5-coordinates';
+export type { H5CoordinateLoaderOptions } from './loaders/h5-coordinates';

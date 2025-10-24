@@ -88,7 +88,16 @@ class LayerManagerImpl implements LayerManager {
     this.layers = new Map();
     this.observers = [];
 
-    // Create default layer
+    // Create image layer (background, lowest zIndex)
+    this.createLayer('image', {
+      name: 'Image',
+      visible: true,
+      locked: true, // Image layer is locked by default
+      opacity: 1,
+      zIndex: -1, // Below all annotation layers
+    });
+
+    // Create default layer for annotations
     this.createLayer('default', {
       name: 'Default',
       visible: true,
@@ -159,8 +168,8 @@ class LayerManagerImpl implements LayerManager {
   }
 
   deleteLayer(id: string): void {
-    if (id === 'default') {
-      console.warn('Cannot delete default layer');
+    if (id === 'default' || id === 'image') {
+      console.warn(`Cannot delete ${id} layer`);
       return;
     }
 

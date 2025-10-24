@@ -4,13 +4,13 @@
 
 import type OpenSeadragon from 'openseadragon';
 import type { Annotation, Point } from '../core/types';
-import { BaseInteraction } from './base';
+import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 
 /**
  * Tool for drawing rectangle annotations
  */
-export class RectangleTool extends BaseInteraction {
+export class RectangleTool extends BaseTool {
   private startPoint: Point | null = null;
   private isDragging = false;
   private currentAnnotationId: string | null = null;

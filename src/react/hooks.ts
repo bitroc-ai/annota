@@ -8,7 +8,7 @@ import OpenSeadragon from 'openseadragon';
 import { useAnnotator, useAnnotationStore } from './Provider';
 import type { Annotation } from '../core/types';
 import type { Layer, LayerConfig } from '../core/layer';
-import type { InteractionHandler } from '../interactions/types';
+import type { ToolHandler } from '../tools/types';
 
 /**
  * Hook to get all annotations
@@ -124,16 +124,16 @@ export function useSelection(): Annotation[] {
 }
 
 /**
- * Options for useInteraction hook
+ * Options for useTool hook
  */
-export interface UseInteractionOptions {
+export interface UseToolOptions {
   /** OpenSeadragon viewer instance */
   viewer: OpenSeadragon.Viewer | undefined;
 
-  /** The interaction handler to use (can be null if not yet initialized) */
-  handler: InteractionHandler | null;
+  /** The tool handler to use (can be null if not yet initialized) */
+  handler: ToolHandler | null;
 
-  /** Whether the interaction is enabled */
+  /** Whether the tool is enabled */
   enabled: boolean;
 }
 
@@ -146,14 +146,14 @@ export interface UseInteractionOptions {
  * @example
  * ```tsx
  * const moveInteraction = useMemo(() => new MoveInteraction(), []);
- * useInteraction({
+ * useTool({
  *   viewer,
  *   handler: moveInteraction,
  *   enabled: tool === 'pan' || tool === 'move'
  * });
  * ```
  */
-export function useInteraction({ viewer, handler, enabled }: UseInteractionOptions): void {
+export function useTool({ viewer, handler, enabled }: UseToolOptions): void {
   const annotator = useAnnotator();
   const initializedRef = useRef(false);
 
@@ -564,6 +564,7 @@ export function useAnnotationDoubleClick(
     viewer.element.addEventListener('click', handleClick);
 
     return () => {
+      // Check if viewer.element still exists before removing listener
       if (viewer?.element) {
         viewer.element.removeEventListener('click', handleClick);
       }
@@ -785,4 +786,40 @@ export function useLayerManager(): UseLayerManagerResult {
     setLayerZIndex,
     getLayersByZIndex,
   };
+}
+
+/**
+ * Hook to automatically control OpenSeadragon image layer visibility
+ *
+ * This hook observes the 'image' layer in the layer manager and controls
+ * the OpenSeadragon canvas opacity accordingly.
+ *
+ * @param viewer OpenSeadragon viewer instance
+ *
+ * @example
+ * ```tsx
+ * function MyViewer() {
+ *   const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
+ *   useImageLayerVisibility(viewer);
+ *
+ *   return <AnnotaViewer onViewerReady={setViewer} />;
+ * }
+ * ```
+ */
+export function useImageLayerVisibility(viewer: OpenSeadragon.Viewer | undefined): void {
+  const imageLayer = useLayer('image');
+
+  useEffect(() => {
+    if (!viewer || !imageLayer) return;
+
+    // Target the OpenSeadragon canvas element that contains the image
+    const osdCanvas = viewer.element?.querySelector('.openseadragon-canvas');
+    if (osdCanvas) {
+      // Find the canvas element inside (the image canvas, not annotation canvas)
+      const imageCanvas = osdCanvas.querySelector('canvas:not(.annota-pixi-canvas)');
+      if (imageCanvas instanceof HTMLElement) {
+        imageCanvas.style.opacity = imageLayer.visible ? '1' : '0';
+      }
+    }
+  }, [viewer, imageLayer?.visible]);
 }

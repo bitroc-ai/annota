@@ -22,11 +22,16 @@ export interface StageOptions {
 }
 
 /**
- * Annotation graphics entry
+ * Annotation graphics entry with render cache
  */
 interface AnnotationGraphics {
   annotation: Annotation;
   graphics: PIXI.Graphics;
+  lastRenderedScale?: number; // Track last scale for LOD changes
+  lastRenderedState?: {
+    hovered: boolean;
+    selected: boolean;
+  };
 }
 
 /**
@@ -138,6 +143,10 @@ export class PixiStage {
     // Update the annotation reference in the map
     entry.annotation = newAnnotation;
 
+    // Invalidate cache to force re-render
+    entry.lastRenderedScale = undefined;
+    entry.lastRenderedState = undefined;
+
     // Re-render with updated annotation
     this.renderAnnotation(newAnnotation.id);
   }
@@ -188,8 +197,54 @@ export class PixiStage {
       graphics.alpha = computedStyle.fill.alpha ?? 1;
     }
 
-    // Render shape
-    renderShape(graphics, annotation.shape, computedStyle, this.scale);
+    // LOD (Level of Detail): Simplify rendering when zoomed out
+    // Only apply to complex shapes (polygons, rectangles) - not to points which are already simple
+    const pixelSize = this.getAnnotationPixelSize(annotation);
+    const isComplexShape = annotation.shape.type !== 'point';
+
+    if (isComplexShape && pixelSize < 3) {
+      // When complex annotation is < 3 pixels, simplify to a point
+      this.renderSimplifiedAnnotation(graphics, annotation, computedStyle);
+    } else {
+      // Normal detailed rendering (includes all point annotations)
+      renderShape(graphics, annotation.shape, computedStyle, this.scale);
+    }
+  }
+
+  /**
+   * Get annotation size in screen pixels at current scale
+   */
+  private getAnnotationPixelSize(annotation: Annotation): number {
+    return this.getAnnotationPixelSizeAtScale(annotation, this.scale);
+  }
+
+  /**
+   * Get annotation size in screen pixels at a specific scale
+   */
+  private getAnnotationPixelSizeAtScale(annotation: Annotation, scale: number): number {
+    const bounds = annotation.shape.bounds;
+    const width = (bounds.maxX - bounds.minX) * scale;
+    const height = (bounds.maxY - bounds.minY) * scale;
+    return Math.max(width, height);
+  }
+
+  /**
+   * Render simplified version of annotation (for LOD)
+   */
+  private renderSimplifiedAnnotation(
+    graphics: PIXI.Graphics,
+    annotation: Annotation,
+    style: any
+  ): void {
+    graphics.clear();
+
+    // Just draw a small point/circle at annotation center
+    const bounds = annotation.shape.bounds;
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+
+    graphics.circle(cx, cy, 2 / this.scale); // 2 pixel radius
+    graphics.fill({ color: style.fill.color, alpha: style.fill.alpha ?? 1 });
   }
 
   /**
@@ -197,6 +252,11 @@ export class PixiStage {
    */
   setStyle(style?: StyleExpression): void {
     this.style = style;
+    // Invalidate all caches since style affects rendering
+    this.annotationMap.forEach(entry => {
+      entry.lastRenderedScale = undefined;
+      entry.lastRenderedState = undefined;
+    });
     this.redraw();
   }
 
@@ -260,9 +320,18 @@ export class PixiStage {
   }
 
   /**
-   * Redraw all annotations
+   * Redraw all annotations (immediate execution for perfect sync)
    */
   redraw(): void {
+    // Execute immediately for perfect sync with OpenSeadragon viewport
+    // OSD's event handlers already provide natural throttling
+    this.performRedraw();
+  }
+
+  /**
+   * Perform the actual redraw (called by RAF throttle)
+   */
+  private performRedraw(): void {
     if (!this.viewer.viewport) return;
 
     // ANNOTORIOUS PATTERN: Get current scale
@@ -286,10 +355,84 @@ export class PixiStage {
     this.container.position.set(dx, dy);
     this.container.scale.set(this.scale, this.scale);
 
-    // Render all annotations
-    this.annotationMap.forEach((_, id) => {
-      this.renderAnnotation(id);
+    // Viewport culling: Only render annotations visible in current viewport
+    // Add margin to include annotations just outside viewport (prevents pop-in)
+    const margin = 100; // pixels
+    const viewportWithMargin = {
+      minX: viewportBounds.x - margin / this.scale,
+      minY: viewportBounds.y - margin / this.scale,
+      maxX: viewportBounds.x + viewportBounds.width + margin / this.scale,
+      maxY: viewportBounds.y + viewportBounds.height + margin / this.scale,
+    };
+
+    // Render only visible annotations
+    // Smart caching: only re-render graphics if LOD or state changed
+    let culled = 0;
+    let visible = 0;
+    let rerendered = 0;
+
+    this.annotationMap.forEach((entry, id) => {
+      const bounds = entry.annotation.shape.bounds;
+
+      // Check if annotation bounds intersect with viewport
+      const isVisible =
+        bounds.maxX >= viewportWithMargin.minX &&
+        bounds.minX <= viewportWithMargin.maxX &&
+        bounds.maxY >= viewportWithMargin.minY &&
+        bounds.minY <= viewportWithMargin.maxY;
+
+      if (isVisible) {
+        entry.graphics.visible = true;
+        visible++;
+
+        // Check if we need to re-render the graphics
+        const currentState = {
+          hovered: this.hoveredId === id,
+          selected: this.selectedIds.has(id),
+        };
+
+        const pixelSize = this.getAnnotationPixelSize(entry.annotation);
+        const isComplexShape = entry.annotation.shape.type !== 'point';
+        const currentLOD = isComplexShape && pixelSize < 3;
+        const lastLOD = entry.lastRenderedScale
+          ? isComplexShape &&
+            this.getAnnotationPixelSizeAtScale(entry.annotation, entry.lastRenderedScale) < 3
+          : null;
+
+        const stateChanged =
+          !entry.lastRenderedState ||
+          entry.lastRenderedState.hovered !== currentState.hovered ||
+          entry.lastRenderedState.selected !== currentState.selected;
+
+        const lodChanged = lastLOD !== currentLOD;
+
+        // Check if scale changed significantly (for counter-scaled elements)
+        // Use 1% threshold - smaller changes are visually imperceptible
+        const scaleChanged =
+          !entry.lastRenderedScale ||
+          Math.abs(entry.lastRenderedScale - this.scale) / this.scale > 0.01;
+
+        // Re-render if state, LOD, or scale changed
+        if (stateChanged || lodChanged || scaleChanged) {
+          this.renderAnnotation(id);
+          entry.lastRenderedScale = this.scale;
+          entry.lastRenderedState = currentState;
+          rerendered++;
+        }
+      } else {
+        // Hide off-screen annotation (no re-render needed)
+        entry.graphics.visible = false;
+        culled++;
+      }
     });
+
+    // Performance logging (can be disabled in production)
+    // Disabled to avoid requiring @types/node in browser environment
+    // if (process.env.NODE_ENV === 'development' && visible + culled > 50) {
+    //   console.log(
+    //     `[PixiStage] Culling: ${visible} visible, ${culled} culled, ${rerendered} re-rendered`
+    //   );
+    // }
   }
 
   /**
