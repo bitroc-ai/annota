@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import {
-  useInteraction,
+  useTool,
   usePushToolCursor,
   PointTool,
   RectangleTool,
   PolygonTool,
   PushTool,
-  CellDetectTool,
+  ContourTool,
 } from 'annota';
 import type { ToolType } from './toolbar';
 
@@ -60,11 +60,11 @@ export function ToolManager({
     [activeLayerId]
   );
   const pushTool = useMemo(() => new PushTool({ pushRadius }), [pushRadius]);
-  const cellDetectTool = useMemo(() => {
+  const contourTool = useMemo(() => {
     if (!viewer) return null;
     const tiledImage = viewer.world.getItemAt(0);
     if (!tiledImage) return null;
-    return new CellDetectTool({
+    return new ContourTool({
       cv: (window as any).cv,
       tileSource: tiledImage.source,
       threshold,
@@ -81,18 +81,18 @@ export function ToolManager({
   }, [pushTool, pushRadius]);
 
   useEffect(() => {
-    cellDetectTool?.setThreshold(threshold);
-  }, [cellDetectTool, threshold]);
+    contourTool?.setThreshold(threshold);
+  }, [contourTool, threshold]);
 
   // Enable tools based on selection (disabled when viewer is null)
-  useInteraction({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
-  useInteraction({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' && !!viewer });
-  useInteraction({ viewer, handler: polygonTool, enabled: tool === 'polygon' && !!viewer });
-  useInteraction({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
-  useInteraction({
+  useTool({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
+  useTool({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' && !!viewer });
+  useTool({ viewer, handler: polygonTool, enabled: tool === 'polygon' && !!viewer });
+  useTool({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
+  useTool({
     viewer,
-    handler: cellDetectTool,
-    enabled: tool === 'cell-detect' && !!cellDetectTool && !!viewer,
+    handler: contourTool,
+    enabled: tool === 'cell-detect' && !!contourTool && !!viewer,
   });
 
   // Render push cursor (disabled when viewer is null)

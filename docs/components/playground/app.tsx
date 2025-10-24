@@ -37,13 +37,14 @@ async function loadH5AnnotationsByCategory(
   try {
     const annotations = await loadH5Coordinates(h5Path, {
       color: category === 'positive' ? '#00FF00' : '#FF0000',
-      fillOpacity: 0.3,
-      strokeWidth: 2,
+      fillOpacity: 0.8,
+      strokeWidth: 1,
     });
 
-    // Add category and layer to each annotation
+    // Add category and layer to each annotation, and make IDs unique
     return annotations.map(ann => ({
       ...ann,
+      id: `${category}-${ann.id}`, // Prefix ID with category to avoid conflicts
       properties: {
         ...ann.properties,
         layer: `annotations-${category}`,
@@ -202,7 +203,7 @@ export function PlaygroundApp() {
 
   return (
     <AnnotaProvider>
-      <div className="h-[calc(100vh-4rem)] w-full bg-neutral-900">
+      <div className="h-[calc(100vh-4rem)] w-full bg-slate-50 dark:bg-slate-950">
         <Toaster />
         <div className="relative h-full">
           <AnnotaViewer
@@ -232,7 +233,7 @@ export function PlaygroundApp() {
             <AnnotationEditor viewer={viewer} />
             <DemoContent currentImage={currentImage} />
           </Annotator>
-          <div className="absolute top-4 left-4 z-10 space-y-2">
+          <div className="absolute top-4 left-4 bottom-4 z-10">
             <DemoToolbar
               tool={tool}
               onToolChange={setTool}

@@ -30,12 +30,10 @@ const navbar = (
           src="/logo.png"
           alt="Annota"
           height="24"
-          width="24"
-          style={{ height: "24px", width: "auto" }}
+          width="128"
+          className="w-auto h-6 mr-2"
         />
-        <span className="ms-2 select-none font-semibold max-md:hidden">
-          Annota
-        </span>
+        <span className="font-semibold">Annota</span>
       </>
     }
     projectLink="https://github.com/bitroc-ai/annota"

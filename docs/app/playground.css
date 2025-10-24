@@ -1,0 +1,128 @@
+/* Playground-specific styles to fix shadcn/ui conflicts with Nextra */
+
+/* Shadcn UI Theme Colors - Only for playground */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+}
+
+/* Playground-specific styles to fix shadcn/ui conflicts with Nextra */
+
+/* Fix Button component styles */
+button {
+  /* Ghost variant - default state */
+  &[class*="ghost"] {
+    background-color: transparent !important;
+
+    /* Hover state */
+    &:hover {
+      background-color: hsl(var(--accent)) !important;
+      color: hsl(var(--accent-foreground)) !important;
+    }
+  }
+
+  /* Default/Primary variant - active state */
+  &[class*="bg-primary"],
+  &[class*="bg-blue"] {
+    background-color: hsl(220 90% 56%) !important;
+    color: white !important;
+
+    &:hover {
+      background-color: hsl(220 90% 50%) !important;
+    }
+  }
+
+  /* Green variant (push tool) */
+  &[class*="bg-green"] {
+    background-color: hsl(142 76% 36%) !important;
+    color: white !important;
+
+    &:hover {
+      background-color: hsl(142 76% 30%) !important;
+    }
+  }
+
+  /* Purple variant (cell-detect tool) */
+  &[class*="bg-purple"] {
+    background-color: hsl(271 76% 53%) !important;
+    color: white !important;
+
+    &:hover {
+      background-color: hsl(271 76% 47%) !important;
+    }
+  }
+
+  /* Secondary variant */
+  &[class*="variant-secondary"] {
+    background-color: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+
+    &:hover {
+      background-color: hsl(var(--secondary) / 0.8) !important;
+    }
+  }
+}
+
+/* Fix Card component backgrounds - more specific selector */
+/* Light mode */
+div[class*="rounded-lg"][class*="border"][class*="shadow"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgb(229, 231, 235) !important;
+  color: rgb(15, 23, 42) !important;
+}
+
+/* Dark mode */
+.dark div[class*="rounded-lg"][class*="border"][class*="shadow"] {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgb(51, 65, 85) !important;
+  color: rgb(248, 250, 252) !important;
+}
+
+/* Fix debug panel and other panels with backdrop-blur */
+/* Light mode */
+div[class*="backdrop-blur"] {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgb(229, 231, 235) !important;
+  color: rgb(15, 23, 42) !important;
+}
+
+/* Dark mode */
+.dark div[class*="backdrop-blur"] {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  border-color: rgb(51, 65, 85) !important;
+  color: rgb(248, 250, 252) !important;
+}

@@ -27,7 +27,7 @@ export function PopupEditor({ viewer }: PopupEditorProps) {
       options={{ anchor: 'bottom-center', offset: { x: 0, y: 20 } }}
       onClose={popup.hide}
     >
-      <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 shadow-xl min-w-[250px]">
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl min-w-[250px]">
         <div className="flex justify-between items-start mb-3">
           <div className="text-sm font-medium text-white">Edit Annotation</div>
           <button
@@ -46,7 +46,7 @@ export function PopupEditor({ viewer }: PopupEditorProps) {
               onChange={e =>
                 popup.updateProperties(popup.annotation!.id, { layer: e.target.value })
               }
-              className="w-full px-2 py-1 text-sm bg-neutral-800 text-white border border-neutral-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm bg-slate-800 text-white border border-slate-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="">No Layer</option>
               {layerManager.layers.map(layer => (
@@ -65,7 +65,7 @@ export function PopupEditor({ viewer }: PopupEditorProps) {
               onChange={e =>
                 popup.updateProperties(popup.annotation!.id, { category: e.target.value })
               }
-              className="w-full px-2 py-1 text-sm bg-neutral-800 text-white border border-neutral-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm bg-slate-800 text-white border border-slate-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="positive">Positive</option>
               <option value="negative">Negative</option>
@@ -82,7 +82,7 @@ export function PopupEditor({ viewer }: PopupEditorProps) {
               onChange={e =>
                 popup.updateProperties(popup.annotation!.id, { group: e.target.value })
               }
-              className="w-full px-2 py-1 text-sm bg-neutral-800 text-white border border-neutral-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm bg-slate-800 text-white border border-slate-700 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 

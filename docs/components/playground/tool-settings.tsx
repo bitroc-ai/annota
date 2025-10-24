@@ -18,7 +18,7 @@ export function ToolSettings({
 }: ToolSettingsProps) {
   if (tool === 'cell-detect') {
     return (
-      <Card className="bg-neutral-900/95 border-neutral-800 backdrop-blur">
+      <Card className="bg-slate-900/95 border-slate-800 backdrop-blur">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-white">Cell Detection</CardTitle>
         </CardHeader>
@@ -41,7 +41,7 @@ export function ToolSettings({
 
   if (tool === 'push') {
     return (
-      <Card className="bg-neutral-900/95 border-neutral-800 backdrop-blur">
+      <Card className="bg-slate-900/95 border-slate-800 backdrop-blur">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-white">Push Tool</CardTitle>
         </CardHeader>

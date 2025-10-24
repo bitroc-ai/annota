@@ -1,5 +1,9 @@
 # Annota
 
+[![npm version](https://img.shields.io/npm/v/annota.svg)](https://www.npmjs.com/package/annota)
+[![npm downloads](https://img.shields.io/npm/dm/annota.svg)](https://www.npmjs.com/package/annota)
+[![license](https://img.shields.io/npm/l/annota.svg)](https://github.com/bitroc-ai/annota/blob/main/LICENSE)
+
 A lightweight, viewer-agnostic annotation framework for digital pathology and whole slide imaging.
 
 ## Features

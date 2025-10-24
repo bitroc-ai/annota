@@ -41,7 +41,7 @@ export async function loadH5Coordinates(
     // Dynamically import jsfive (only when needed)
     console.log('[loadH5Coordinates] 📦 Importing jsfive...');
     // @ts-ignore - jsfive doesn't have type definitions
-    const { default: hdf5 } = await import('jsfive');
+    const { File } = await import('jsfive');
     console.log('[loadH5Coordinates] ✅ jsfive imported');
 
     // Fetch the H5 file
@@ -56,7 +56,7 @@ export async function loadH5Coordinates(
     const arrayBuffer = await response.arrayBuffer();
     console.log('[loadH5Coordinates] 📦 Buffer size:', arrayBuffer.byteLength, 'bytes');
 
-    const f = new hdf5.File(arrayBuffer);
+    const f = new File(arrayBuffer);
     console.log('[loadH5Coordinates] ✅ HDF5 file opened');
 
     // Get the coordinates dataset

@@ -2,7 +2,7 @@
 @import "nextra-theme-docs/style.css";
 @variant dark (&:where(.dark *));
 
-/* Override Nextra's default max-width constraints for full-width layout */
+/* Nextra-specific overrides */
 :root {
   --nextra-content-width: 100vw !important;
   --nextra-sidebar-width: 320px !important;
@@ -25,12 +25,6 @@ html {
   html {
     overflow-y: scroll;
   }
-}
-
-/* Custom gradient backgrounds for dark mode */
-.dark {
-  --gradient-from: theme('colors.gray.900');
-  --gradient-to: theme('colors.gray.800');
 }
 
 /* Enhanced button hover effects */

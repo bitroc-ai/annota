@@ -4,7 +4,6 @@ import {
   Layers,
   Zap,
   Package,
-  Gamepad,
   BookOpen,
   ChevronRight,
   MonitorPlay,
@@ -20,20 +19,12 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 container mx-auto px-6 py-16 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-900/30 backdrop-blur-sm border border-blue-200 dark:border-blue-800 px-3 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300 mb-6">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
-            </span>
-            High-Performance Annotation Framework
-          </div>
-
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tight">
             Annota
           </h1>
 
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-5 font-light">
-            Digital Pathology Annotation Framework
+            High-Performance Annotation Framework
           </p>
 
           <p className="text-base md:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">

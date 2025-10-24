@@ -51,14 +51,14 @@ export function LayerPanel({
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="w-[320px] bg-neutral-800 border-neutral-700 p-0"
+        className="w-[320px] bg-slate-800 border-slate-700 p-0"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-700">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
           <h3 className="text-sm font-semibold text-white">Layers</h3>
           <button
             onClick={() => setShowAddLayer(!showAddLayer)}
-            className="p-1 hover:bg-neutral-700 rounded transition-colors"
+            className="p-1 hover:bg-slate-700 rounded transition-colors"
             title="Add layer"
           >
             <Plus className="w-4 h-4 text-neutral-400" />
@@ -67,14 +67,14 @@ export function LayerPanel({
 
         {/* Add Layer Form */}
         {showAddLayer && (
-          <div className="px-4 py-3 border-b border-neutral-700 space-y-2">
+          <div className="px-4 py-3 border-b border-slate-700 space-y-2">
             <input
               type="text"
               value={newLayerName}
               onChange={e => setNewLayerName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleAddLayer()}
               placeholder="Layer name..."
-              className="w-full px-2 py-1 text-sm bg-neutral-900 border border-neutral-600 rounded text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-sm bg-slate-900 border border-slate-600 rounded text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               autoFocus
             />
             <div className="flex gap-2">
@@ -89,7 +89,7 @@ export function LayerPanel({
                   setShowAddLayer(false);
                   setNewLayerName('');
                 }}
-                className="flex-1 px-3 py-1 text-xs bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+                className="flex-1 px-3 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded transition-colors"
               >
                 Cancel
               </button>
@@ -100,27 +100,27 @@ export function LayerPanel({
         {/* Layer List */}
         <div className="max-h-[400px] overflow-y-auto">
           {/* Image Layer (Special) */}
-          <div className="px-4 py-2 bg-neutral-900/50 border-b border-neutral-700">
+          <div className="px-4 py-2 bg-slate-900/50 border-b border-slate-700">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onImageVisibleChange?.(!imageVisible)}
-                className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                className="p-1 hover:bg-slate-600 rounded transition-colors"
                 title={imageVisible ? 'Hide image' : 'Show image'}
               >
                 {imageVisible ? (
                   <Eye className="w-4 h-4 text-blue-400" />
                 ) : (
-                  <EyeOff className="w-4 h-4 text-neutral-500" />
+                  <EyeOff className="w-4 h-4 text-slate-500" />
                 )}
               </button>
               <span className="flex-1 text-sm text-neutral-300 font-semibold">Image</span>
-              <span className="text-xs text-neutral-500">Background</span>
+              <span className="text-xs text-slate-500">Background</span>
             </div>
           </div>
 
           {/* Annotation Layers */}
           {sortedLayers.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-neutral-500">
+            <div className="px-4 py-6 text-center text-sm text-slate-500">
               No annotation layers
             </div>
           ) : (
@@ -130,7 +130,7 @@ export function LayerPanel({
                 return (
                   <div
                     key={layer.id}
-                    className={`px-3 py-2 hover:bg-neutral-700/50 transition-colors group relative ${
+                    className={`px-3 py-2 hover:bg-slate-700/50 transition-colors group relative ${
                       isActive ? 'bg-green-900/30' : ''
                     }`}
                   >
@@ -143,7 +143,7 @@ export function LayerPanel({
                       {/* Active Layer Indicator - Star icon */}
                       <button
                         onClick={() => onActiveLayerChange?.(layer.id)}
-                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                        className="p-1 hover:bg-slate-600 rounded transition-colors"
                         title={isActive ? 'Active layer' : 'Set as active layer'}
                       >
                         <Star
@@ -158,26 +158,26 @@ export function LayerPanel({
                       {/* Visibility Toggle */}
                       <button
                         onClick={() => layerManager.setLayerVisibility(layer.id, !layer.visible)}
-                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                        className="p-1 hover:bg-slate-600 rounded transition-colors"
                         title={layer.visible ? 'Hide layer' : 'Show layer'}
                       >
                         {layer.visible ? (
                           <Eye className="w-4 h-4 text-blue-400" />
                         ) : (
-                          <EyeOff className="w-4 h-4 text-neutral-500" />
+                          <EyeOff className="w-4 h-4 text-slate-500" />
                         )}
                       </button>
 
                       {/* Lock Toggle */}
                       <button
                         onClick={() => layerManager.setLayerLocked(layer.id, !layer.locked)}
-                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                        className="p-1 hover:bg-slate-600 rounded transition-colors"
                         title={layer.locked ? 'Unlock layer' : 'Lock layer'}
                       >
                         {layer.locked ? (
                           <Lock className="w-4 h-4 text-orange-400" />
                         ) : (
-                          <Unlock className="w-4 h-4 text-neutral-500" />
+                          <Unlock className="w-4 h-4 text-slate-500" />
                         )}
                       </button>
 
@@ -202,7 +202,7 @@ export function LayerPanel({
 
                     {/* Opacity Slider */}
                     <div className="flex items-center gap-2 ml-10">
-                      <span className="text-xs text-neutral-500 w-16">Opacity:</span>
+                      <span className="text-xs text-slate-500 w-16">Opacity:</span>
                       <input
                         type="range"
                         min="0"
@@ -212,7 +212,7 @@ export function LayerPanel({
                         onChange={e =>
                           layerManager.setLayerOpacity(layer.id, parseFloat(e.target.value))
                         }
-                        className="flex-1 h-1 bg-neutral-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                        className="flex-1 h-1 bg-slate-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
                       />
                       <span className="text-xs text-neutral-400 w-8 text-right">
                         {Math.round(layer.opacity * 100)}%
