@@ -68,35 +68,8 @@ export async function initOpenCV(): Promise<boolean> {
     return loadPromise;
   }
 
-  // Check if script already exists in DOM
-  const existingScript = document.querySelector('script[src*="opencv.js"]');
-  if (existingScript && !window.cv?.Mat) {
-    // Script exists but not ready yet, wait for it
-    console.log('[OpenCV] Script exists, waiting for initialization...');
-    isLoading = true;
-    loadPromise = new Promise((resolve, reject) => {
-      const checkReady = setInterval(() => {
-        if (window.cv && window.cv.Mat) {
-          clearInterval(checkReady);
-          isLoading = false;
-          loadPromise = null;
-          console.log('[OpenCV] Initialized successfully (existing script)');
-          resolve(true);
-        }
-      }, 100);
-
-      setTimeout(() => {
-        clearInterval(checkReady);
-        isLoading = false;
-        loadPromise = null;
-        reject(new Error('OpenCV initialization timeout'));
-      }, 10000);
-    });
-    return loadPromise;
-  }
-
-  // Load OpenCV.js from CDN
-  console.log('[OpenCV] Loading from CDN...');
+  // Load OpenCV.js script from official CDN
+  console.log('[OpenCV] Loading from official CDN...');
   isLoading = true;
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -104,6 +77,17 @@ export async function initOpenCV(): Promise<boolean> {
     script.src = 'https://docs.opencv.org/4.x/opencv.js';
 
     script.onload = () => {
+      console.log('[OpenCV] Script loaded, waiting for initialization...');
+
+      // Check if cv is already available (sometimes it initializes immediately)
+      if (window.cv && window.cv.Mat) {
+        isLoading = false;
+        loadPromise = null;
+        console.log('[OpenCV] Initialized successfully (immediate)');
+        resolve(true);
+        return;
+      }
+
       // Wait for cv to be fully initialized
       const checkReady = setInterval(() => {
         if (window.cv && window.cv.Mat) {
@@ -115,13 +99,14 @@ export async function initOpenCV(): Promise<boolean> {
         }
       }, 100);
 
-      // Timeout after 10 seconds
+      // Increase timeout to 30 seconds for large file (11MB)
       setTimeout(() => {
         clearInterval(checkReady);
         isLoading = false;
         loadPromise = null;
+        console.error('[OpenCV] Initialization timeout - cv.Mat not available after 30s');
         reject(new Error('OpenCV initialization timeout'));
-      }, 10000);
+      }, 30000);
     };
 
     script.onerror = () => {
@@ -383,15 +368,20 @@ export function maskToPolygon(mask: ImageData, simplify = true): Point[] | null 
 
   const cv = window.cv;
   let mat: any = null;
+  let gray: any = null;
   let contours: any = null;
   let hierarchy: any = null;
 
   try {
     mat = cv.matFromImageData(mask);
 
+    // Convert to grayscale for contour detection
+    gray = new cv.Mat();
+    cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY);
+
     contours = new cv.MatVector();
     hierarchy = new cv.Mat();
-    cv.findContours(mat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+    cv.findContours(gray, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
     if (contours.size() === 0) {
       return null;
@@ -436,8 +426,12 @@ export function maskToPolygon(mask: ImageData, simplify = true): Point[] | null 
       }
       return polygon;
     }
+  } catch (error) {
+    console.error('[OpenCV] Error in maskToPolygon:', error);
+    throw error;
   } finally {
     if (mat) mat.delete();
+    if (gray) gray.delete();
     if (contours) contours.delete();
     if (hierarchy) hierarchy.delete();
   }

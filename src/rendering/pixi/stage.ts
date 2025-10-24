@@ -190,11 +190,24 @@ export class PixiStage {
     });
 
     // Apply layer opacity if layer manager is present
+    // Multiply layer opacity with individual annotation's fill/stroke alpha
+    let finalStyle = computedStyle;
     if (this.layerManager) {
       const layerOpacity = getEffectiveOpacity(annotation, this.layerManager);
-      graphics.alpha = layerOpacity;
+      finalStyle = {
+        fill: {
+          color: computedStyle.fill.color,
+          alpha: computedStyle.fill.alpha * layerOpacity,
+        },
+        stroke: {
+          color: computedStyle.stroke.color,
+          alpha: computedStyle.stroke.alpha * layerOpacity,
+          width: computedStyle.stroke.width,
+        },
+      };
+      graphics.alpha = 1; // Keep graphics alpha at 1, opacity is in the style
     } else {
-      graphics.alpha = computedStyle.fill.alpha ?? 1;
+      graphics.alpha = 1;
     }
 
     // LOD (Level of Detail): Simplify rendering when zoomed out
@@ -204,10 +217,10 @@ export class PixiStage {
 
     if (isComplexShape && pixelSize < 3) {
       // When complex annotation is < 3 pixels, simplify to a point
-      this.renderSimplifiedAnnotation(graphics, annotation, computedStyle);
+      this.renderSimplifiedAnnotation(graphics, annotation, finalStyle);
     } else {
       // Normal detailed rendering (includes all point annotations)
-      renderShape(graphics, annotation.shape, computedStyle, this.scale);
+      renderShape(graphics, annotation.shape, finalStyle, this.scale);
     }
   }
 

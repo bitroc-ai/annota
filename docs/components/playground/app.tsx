@@ -135,7 +135,10 @@ function DemoContent({ currentImage }: { currentImage: string }) {
             color: "#FFFF00", // Yellow for masks
             fillOpacity: 0.3,
             strokeWidth: 2,
-          }).catch(() => [] as Annotation[]), // Fallback to empty if no mask file
+          }).catch((err) => {
+            console.warn('[Playground] Failed to load mask:', err);
+            return [] as Annotation[];
+          }), // Fallback to empty if no mask file
         ]);
 
         const totalH5 = positiveAnnotations.length + negativeAnnotations.length;
@@ -143,11 +146,19 @@ function DemoContent({ currentImage }: { currentImage: string }) {
 
         if (totalH5 > 0 || totalMasks > 0) {
           // Add all annotations at once
-          annotator.addAnnotations([
+          const allAnnotations = [
             ...positiveAnnotations,
             ...negativeAnnotations,
             ...maskAnnotations,
-          ]);
+          ];
+
+          console.log('[Playground] Adding annotations:', {
+            total: allAnnotations.length,
+            masks: totalMasks,
+            firstMask: maskAnnotations.length > 0 ? maskAnnotations[0] : null,
+          });
+
+          annotator.addAnnotations(allAnnotations);
 
           const messages = [];
           if (totalH5 > 0) {
