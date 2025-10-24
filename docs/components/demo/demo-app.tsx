@@ -129,7 +129,7 @@ export function DemoApp() {
   const [tool, setTool] = useState<ToolType>('pan');
   const [threshold, setThreshold] = useState(8);
   const [pushRadius, setPushRadius] = useState(30);
-  const [showH5Annotations, setShowH5Annotations] = useState(false);
+  const [showH5Annotations, setShowH5Annotations] = useState(true);
   const [activeLayerId, setActiveLayerId] = useState<string>('manual-annotations');
   const [imageVisible, setImageVisible] = useState(true);
 
@@ -184,7 +184,7 @@ export function DemoApp() {
 
   return (
     <AnnotaProvider>
-      <div className="h-screen w-screen bg-neutral-900">
+      <div className="h-[calc(100vh-4rem)] w-full bg-neutral-900">
         <Toaster />
         <div className="relative h-full">
           <AnnotaViewer
