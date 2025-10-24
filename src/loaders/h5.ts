@@ -51,22 +51,23 @@ export async function loadH5Masks(
 
     // Try to find the masks dataset (common names: 'masks', 'instances', 'labels')
     let masks: any;
+    const availableKeys = Object.keys(f.keys);
+
     if (f.get('masks')) {
       masks = f.get('masks');
     } else if (f.get('instances')) {
       masks = f.get('instances');
     } else if (f.get('labels')) {
       masks = f.get('labels');
-    } else {
+    } else if (availableKeys.length > 0) {
       // Get the first dataset
-      const keys = Object.keys(f.keys);
-      if (keys.length > 0) {
-        masks = f.get(keys[0]);
-      }
+      console.log(`Available H5 datasets: ${availableKeys.join(', ')}`);
+      masks = f.get(availableKeys[0]);
+      console.log(`Using first available dataset: ${availableKeys[0]}`);
     }
 
     if (!masks) {
-      throw new Error('No mask dataset found in H5 file');
+      throw new Error(`No mask dataset found in H5 file. Available keys: ${availableKeys.join(', ') || 'none'}`);
     }
 
     const maskData = masks.value;
