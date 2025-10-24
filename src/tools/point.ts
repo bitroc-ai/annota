@@ -61,6 +61,9 @@ export class PointTool extends BaseTool {
 
     this.annotator.state.store.add(annotation);
 
+    // Select the newly created annotation
+    this.selectAnnotation(annotation.id);
+
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;
     }

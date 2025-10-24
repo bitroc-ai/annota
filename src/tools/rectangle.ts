@@ -118,6 +118,8 @@ export class RectangleTool extends BaseTool {
   onCanvasRelease = (evt: OpenSeadragon.ViewerEvent): void => {
     if (!this.isDragging) return;
 
+    let shouldSelect = false;
+
     // If rectangle is too small, delete it
     if (this.currentAnnotationId && this.annotator) {
       const annotation = this.annotator.state.store.get(this.currentAnnotationId);
@@ -126,8 +128,15 @@ export class RectangleTool extends BaseTool {
         // Delete if smaller than 5 pixels in either dimension
         if (width < 5 || height < 5) {
           this.annotator.state.store.delete(this.currentAnnotationId);
+        } else {
+          shouldSelect = true;
         }
       }
+    }
+
+    // Select the newly created annotation
+    if (shouldSelect && this.currentAnnotationId) {
+      this.selectAnnotation(this.currentAnnotationId);
     }
 
     // Reset state

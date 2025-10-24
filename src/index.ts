@@ -59,6 +59,13 @@ export type {
 } from './adapters/openseadragon/annotator';
 
 // ============================================
+// Keyboard Shortcuts
+// ============================================
+
+export { initKeyboardCommands } from './core/shortcuts';
+export type { KeyboardCommandsOptions } from './core/shortcuts';
+
+// ============================================
 // Tools (High-Level Only)
 // ============================================
 

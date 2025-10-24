@@ -142,6 +142,15 @@ export abstract class BaseTool implements ToolHandler {
     return { x: imageCoords.x, y: imageCoords.y };
   }
 
+  /**
+   * Select a newly created annotation
+   * Should be called after creating an annotation to provide immediate visual feedback
+   */
+  protected selectAnnotation(annotationId: string): void {
+    if (!this.annotator) return;
+    this.annotator.setSelected(annotationId);
+  }
+
   // Optional event handlers (to be implemented by subclasses)
   onCanvasClick?(evt: OpenSeadragon.ViewerEvent): void;
   onCanvasPress?(evt: OpenSeadragon.ViewerEvent): void;

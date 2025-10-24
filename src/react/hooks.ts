@@ -531,7 +531,7 @@ export function useAnnotationDoubleClick(
   const lastClickRef = useRef<{ id: string; time: number } | null>(null);
 
   useEffect(() => {
-    if (!viewer || !annotator || !store) return;
+    if (!viewer || !annotator || !store || !viewer.element) return;
 
     const handleClick = (event: any) => {
       // Get annotation at click position

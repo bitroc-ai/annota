@@ -169,11 +169,20 @@ export class PolygonTool extends BaseTool {
    * Finish the current polygon
    */
   private finishPolygon(): void {
+    let shouldSelect = false;
+
     if (!this.isDrawing || this.points.length < 3) {
       // Cancel if less than 3 points
       if (this.currentAnnotationId && this.annotator) {
         this.annotator.state.store.delete(this.currentAnnotationId);
       }
+    } else {
+      shouldSelect = true;
+    }
+
+    // Select the newly created annotation
+    if (shouldSelect && this.currentAnnotationId) {
+      this.selectAnnotation(this.currentAnnotationId);
     }
 
     // Reset state

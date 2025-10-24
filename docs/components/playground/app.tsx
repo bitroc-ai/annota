@@ -9,6 +9,7 @@ import {
   useAnnotator,
   loadH5Coordinates,
   AnnotationEditor,
+  initKeyboardCommands,
   type Annotation,
   type AnnotationStyle,
 } from "annota";
@@ -60,6 +61,17 @@ async function loadH5AnnotationsByCategory(
 
 function DemoContent({ currentImage }: { currentImage: string }) {
   const annotator = useAnnotator();
+
+  // Initialize keyboard commands
+  useEffect(() => {
+    if (!annotator) return;
+
+    const commands = initKeyboardCommands(annotator, {
+      enableDelete: true,
+    });
+
+    return () => commands.destroy();
+  }, [annotator]);
 
   // Create layers on mount
   useEffect(() => {
@@ -215,35 +227,6 @@ export function PlaygroundApp() {
       }
     }
   }, [viewer, imageVisible]);
-
-  // Handle keyboard shortcuts
-  const annotator = useAnnotator();
-  useEffect(() => {
-    if (!annotator) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Delete/Backspace: delete selected annotations
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        const selectedIds = annotator.state.selection.selected;
-        if (selectedIds.length > 0) {
-          // Prevent backspace from navigating back in browser
-          event.preventDefault();
-
-          selectedIds.forEach(id => {
-            annotator.state.store.delete(id);
-          });
-
-          // Clear selection
-          annotator.state.selection.selected = [];
-
-          toast.success(`Deleted ${selectedIds.length} annotation(s)`);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [annotator]);
 
   return (
     <AnnotaProvider>

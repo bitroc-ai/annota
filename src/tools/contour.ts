@@ -188,6 +188,9 @@ export class ContourTool extends BaseTool {
 
         this.annotator.state.store.add(annotation);
         console.log('[ContourTool] Contour annotation added');
+
+        // Select the newly created annotation
+        this.selectAnnotation(annotation.id);
       } else {
         console.warn('[ContourTool] No contour detected at click point');
       }
