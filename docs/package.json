@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "annota": "^0.1.6",
+    "@theguild/remark-mermaid": "^0.3.0",
+    "annota": "link:..",
     "lucide-react": "^0.460.0",
     "next": "^15.1.4",
     "next-themes": "^0.4.6",

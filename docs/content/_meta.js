@@ -1,5 +1,6 @@
 export default {
   index: {
+    title: 'Home',
     display: 'hidden',
   },
   docs: {

@@ -1,0 +1,63 @@
+# Custom Styling Example
+
+Examples of dynamic annotation styling based on properties and state.
+
+## Category-Based Styling
+
+```tsx
+import { Annotator } from 'annota';
+
+const categoryStyles = {
+  tumor: { fill: '#FF0000', fillOpacity: 0.4, stroke: '#CC0000' },
+  healthy: { fill: '#00FF00', fillOpacity: 0.3, stroke: '#00CC00' },
+  uncertain: { fill: '#FFFF00', fillOpacity: 0.3, stroke: '#CCCC00' },
+};
+
+<Annotator
+  viewer={viewer}
+  style={(annotation) => {
+    const category = annotation.properties?.category || 'uncertain';
+    return categoryStyles[category];
+  }}
+/>
+```
+
+## Confidence-Based Opacity
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: '#FF0000',
+    fillOpacity: annotation.properties?.confidence || 0.3,
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  })}
+/>
+```
+
+## Selection Highlighting
+
+```tsx
+function StyledAnnotator({ viewer }) {
+  const selection = useSelection();
+  const selectedIds = new Set(selection.map(s => s.id));
+
+  return (
+    <Annotator
+      viewer={viewer}
+      style={(annotation) => ({
+        fill: '#FF0000',
+        fillOpacity: selectedIds.has(annotation.id) ? 0.6 : 0.3,
+        stroke: selectedIds.has(annotation.id) ? '#FFFF00' : '#FFFFFF',
+        strokeWidth: selectedIds.has(annotation.id) ? 3 : 2,
+      })}
+    />
+  );
+}
+```
+
+## Next Steps
+
+- [Event Handling](/docs/examples/event-handling) - Respond to annotation events
+- [Styling Guide](/docs/guides/styling) - Complete styling documentation

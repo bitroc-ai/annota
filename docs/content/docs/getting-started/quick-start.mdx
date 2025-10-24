@@ -1,0 +1,352 @@
+# Quick Start
+
+Build your first annotation viewer in minutes with Annota.
+
+## Minimal Example
+
+Here's the simplest possible annotation viewer:
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
+import { useState } from 'react';
+import 'annota/dist/index.css';
+
+function App() {
+  const [viewer, setViewer] = useState(null);
+
+  return (
+    <AnnotaProvider slideId="my-slide">
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <AnnotaViewer
+          options={{
+            tileSources: '/path/to/image.dzi',
+            prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </AnnotaProvider>
+  );
+}
+
+export default App;
+```
+
+That's it! You now have a working image viewer with annotation capabilities.
+
+## Understanding the Code
+
+Let's break down what each component does:
+
+### 1. AnnotaProvider
+
+```tsx
+<AnnotaProvider slideId="my-slide">
+```
+
+The `AnnotaProvider` wraps your application and provides annotation context. The `slideId` prop identifies this slide's annotations (useful for multi-slide applications).
+
+### 2. AnnotaViewer
+
+```tsx
+<AnnotaViewer
+  options={{
+    tileSources: '/path/to/image.dzi',
+    prefixUrl: '...',
+  }}
+  onViewerReady={setViewer}
+/>
+```
+
+The `AnnotaViewer` component creates and manages the OpenSeadragon viewer. It accepts:
+- `options`: OpenSeadragon configuration options
+- `onViewerReady`: Callback when the viewer is initialized
+
+### 3. Annotator
+
+```tsx
+<Annotator viewer={viewer} />
+```
+
+The `Annotator` component creates the annotation overlay layer. It must receive the OpenSeadragon viewer instance.
+
+## Adding Annotation Tools
+
+Let's add tools for creating annotations:
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from 'annota';
+import { PointTool, RectangleTool, PolygonTool } from 'annota';
+import { useState } from 'react';
+
+function App() {
+  const [viewer, setViewer] = useState(null);
+  const [tool, setTool] = useState('point');
+
+  return (
+    <AnnotaProvider slideId="my-slide">
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <Toolbar tool={tool} onToolChange={setTool} />
+
+        <AnnotaViewer
+          options={{
+            tileSources: '/path/to/image.dzi',
+            prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          }}
+          onViewerReady={setViewer}
+        />
+
+        <Annotator viewer={viewer}>
+          <ToolController viewer={viewer} tool={tool} />
+        </Annotator>
+      </div>
+    </AnnotaProvider>
+  );
+}
+
+function Toolbar({ tool, onToolChange }) {
+  return (
+    <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+      <button onClick={() => onToolChange('point')}>Point</button>
+      <button onClick={() => onToolChange('rectangle')}>Rectangle</button>
+      <button onClick={() => onToolChange('polygon')}>Polygon</button>
+      <button onClick={() => onToolChange('pan')}>Pan</button>
+    </div>
+  );
+}
+
+function ToolController({ viewer, tool }) {
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  useTool({
+    viewer,
+    handler: tool === 'pan' ? null : tools[tool],
+    enabled: tool !== 'pan',
+  });
+
+  return null;
+}
+```
+
+Now you have a complete annotation interface with multiple tools!
+
+## Accessing Annotations
+
+Use hooks to access and display annotations:
+
+```tsx
+import { useAnnotations, useSelection } from 'annota';
+
+function AnnotationList() {
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  return (
+    <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+      <h3>Annotations ({annotations.length})</h3>
+      <ul>
+        {annotations.map(ann => (
+          <li key={ann.id}>
+            {ann.shape.type}
+            {selection.some(s => s.id === ann.id) && ' (selected)'}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+Add this component inside `AnnotaProvider`:
+
+```tsx
+<AnnotaProvider slideId="my-slide">
+  {/* ... other components ... */}
+  <AnnotationList />
+</AnnotaProvider>
+```
+
+## Full Example
+
+Here's a complete, production-ready example:
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotations,
+  useSelection,
+  useTool,
+  PointTool,
+  RectangleTool,
+  PolygonTool,
+} from 'annota';
+import { useState } from 'react';
+import 'annota/dist/index.css';
+
+export default function AnnotationApp() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithTools />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithTools() {
+  const [viewer, setViewer] = useState(null);
+  const [tool, setTool] = useState('pan');
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  // Tool instances
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  // Activate the selected tool
+  useTool({
+    viewer,
+    handler: tool === 'pan' ? null : tools[tool],
+    enabled: tool !== 'pan',
+  });
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Toolbar */}
+      <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+        <button onClick={() => setTool('pan')}>Pan</button>
+        <button onClick={() => setTool('point')}>Point</button>
+        <button onClick={() => setTool('rectangle')}>Rectangle</button>
+        <button onClick={() => setTool('polygon')}>Polygon</button>
+      </div>
+
+      {/* Info panel */}
+      <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+        <div>Annotations: {annotations.length}</div>
+        <div>Selected: {selection.length}</div>
+      </div>
+
+      {/* Viewer */}
+      <AnnotaViewer
+        options={{
+          tileSources: '/path/to/image.dzi',
+          prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          showNavigationControl: false,
+        }}
+        onViewerReady={setViewer}
+      />
+
+      {/* Annotation overlay */}
+      <Annotator viewer={viewer} />
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+Now that you have a working annotation viewer:
+
+- [Core Concepts](/docs/getting-started/concepts) - Understand annotations, layers, and tools
+- [Annotation Tools](/docs/guides/tools) - Learn about all available tools
+- [Layer System](/docs/guides/layers) - Organize annotations into layers
+- [Events](/docs/guides/events) - Respond to annotation changes
+- [API Reference](/api) - Explore the complete API
+
+## Common Patterns
+
+### Loading Existing Annotations
+
+```tsx
+import { useAnnotator } from 'annota';
+import { useEffect } from 'react';
+
+function LoadAnnotations() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    // Load annotations from your API
+    fetch('/api/annotations/slide-001')
+      .then(res => res.json())
+      .then(annotations => {
+        annotator.addAnnotations(annotations);
+      });
+  }, [annotator]);
+
+  return null;
+}
+```
+
+### Saving Annotations
+
+```tsx
+import { useAnnotations } from 'annota';
+
+function SaveButton() {
+  const annotations = useAnnotations();
+
+  const handleSave = () => {
+    fetch('/api/annotations/slide-001', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(annotations),
+    });
+  };
+
+  return <button onClick={handleSave}>Save</button>;
+}
+```
+
+### Custom Styling
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+    fillOpacity: 0.3,
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  })}
+/>
+```
+
+## Troubleshooting
+
+### Annotations not appearing
+
+Make sure:
+1. The `Annotator` component receives a valid `viewer` prop
+2. The `viewer` prop is updated when OpenSeadragon initializes
+3. You're adding annotations after the annotator is ready
+
+### Tools not working
+
+Check that:
+1. `useTool` hook receives a valid `viewer` prop
+2. The `enabled` prop is `true`
+3. The tool handler is properly instantiated
+
+### TypeScript errors
+
+Ensure you have installed the type definitions:
+
+```bash
+npm install --save-dev @types/openseadragon
+```
+
+## Getting Help
+
+- [Examples](/docs/examples) - More complete examples
+- [GitHub Issues](https://github.com/bitroc-ai/annota/issues) - Report bugs
+- [API Reference](/api) - Detailed API documentation

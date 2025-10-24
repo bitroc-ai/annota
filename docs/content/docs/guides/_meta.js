@@ -1,7 +1,10 @@
 export default {
-  integration: 'Integration Guide',
+  tools: 'Annotation Tools',
+  events: 'Event System',
   layers: 'Layer System',
+  styling: 'Styling',
+  loaders: 'Data Loaders',
   popups: 'Popup System',
-  'demo-features': 'Demo Application',
+  integration: 'Integration Guide',
   advanced: 'Advanced Features',
 };

@@ -1,0 +1,179 @@
+# Layer Management Example
+
+A complete example showing how to organize annotations using layers.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useLayerManager,
+  useLayers,
+  useAnnotator,
+  PointTool,
+  useTool,
+} from 'annota';
+import { useState } from 'react';
+import 'annota/dist/index.css';
+
+export default function LayerManagementExample() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithLayers />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithLayers() {
+  const [viewer, setViewer] = useState(null);
+  const layerManager = useLayerManager();
+  const layers = useLayers();
+  const annotator = useAnnotator();
+  const [activeLayerId, setActiveLayerId] = useState('default');
+
+  // Create layers on mount
+  useEffect(() => {
+    if (!annotator) return;
+
+    // Create tumor layer
+    if (!layerManager.getLayer('tumor')) {
+      layerManager.createLayer('tumor', {
+        name: 'Tumor Annotations',
+        visible: true,
+        opacity: 1,
+        zIndex: 10,
+      });
+    }
+
+    // Create healthy layer
+    if (!layerManager.getLayer('healthy')) {
+      layerManager.createLayer('healthy', {
+        name: 'Healthy Tissue',
+        visible: true,
+        opacity: 1,
+        zIndex: 11,
+      });
+    }
+  }, [annotator, layerManager]);
+
+  // Set active layer for new annotations
+  useEffect(() => {
+    annotator?.setCurrentLayer(activeLayerId);
+  }, [annotator, activeLayerId]);
+
+  const pointTool = new PointTool({
+    properties: {
+      layer: activeLayerId,
+    },
+  });
+
+  useTool({ viewer, handler: pointTool, enabled: true });
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Layer Panel */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        zIndex: 10,
+        background: 'white',
+        padding: '16px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        minWidth: '200px',
+      }}>
+        <h3 style={{ margin: 0, marginBottom: '12px' }}>Layers</h3>
+
+        {layers.map(layer => (
+          <div key={layer.id} style={{ marginBottom: '12px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              {layer.name}
+            </div>
+
+            {/* Visibility toggle */}
+            <label style={{ display: 'block', marginBottom: '4px' }}>
+              <input
+                type="checkbox"
+                checked={layer.visible}
+                onChange={(e) =>
+                  layerManager.setLayerVisibility(layer.id, e.target.checked)
+                }
+              />
+              {' '}Visible
+            </label>
+
+            {/* Opacity slider */}
+            <label style={{ display: 'block', marginBottom: '4px' }}>
+              Opacity: {layer.opacity.toFixed(2)}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={layer.opacity}
+                onChange={(e) =>
+                  layerManager.setLayerOpacity(layer.id, parseFloat(e.target.value))
+                }
+                style={{ width: '100%' }}
+              />
+            </label>
+
+            {/* Active layer selector */}
+            {layer.id !== 'image' && (
+              <label style={{ display: 'block' }}>
+                <input
+                  type="radio"
+                  name="activeLayer"
+                  checked={activeLayerId === layer.id}
+                  onChange={() => setActiveLayerId(layer.id)}
+                />
+                {' '}Draw here
+              </label>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Viewer */}
+      <AnnotaViewer
+        options={{
+          tileSources: '/path/to/image.dzi',
+          prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+        }}
+        onViewerReady={setViewer}
+      />
+
+      <Annotator
+        viewer={viewer}
+        style={(annotation) => {
+          const layerId = annotation.properties?.layer;
+          if (layerId === 'tumor') {
+            return { fill: '#FF0000', fillOpacity: 0.5 };
+          }
+          if (layerId === 'healthy') {
+            return { fill: '#00FF00', fillOpacity: 0.5 };
+          }
+          return { fill: '#CCCCCC', fillOpacity: 0.3 };
+        }}
+      />
+    </div>
+  );
+}
+```
+
+## Key Features
+
+- **Multiple layers**: Separate tumor and healthy tissue annotations
+- **Layer visibility**: Toggle layer visibility on/off
+- **Opacity control**: Adjust layer opacity with sliders
+- **Active layer**: Select which layer new annotations are created on
+- **Layer-based styling**: Different colors for different layers
+
+## Next Steps
+
+- [Custom Styling](/docs/examples/custom-styling) - Dynamic annotation styling
+- [Event Handling](/docs/examples/event-handling) - Respond to changes
+- [Layer Guide](/docs/guides/layers) - Complete layer documentation

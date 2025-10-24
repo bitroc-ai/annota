@@ -1,0 +1,544 @@
+# Annotator Instance
+
+The annotator instance provides programmatic access to annotations, layers, selection, and events.
+
+## Getting the Instance
+
+Access the annotator instance using the `useAnnotator` hook:
+
+```tsx
+import { useAnnotator } from 'annota';
+
+function MyComponent() {
+  const annotator = useAnnotator();
+
+  // Use annotator methods
+  const handleAddAnnotation = () => {
+    annotator?.addAnnotation({
+      id: 'ann-1',
+      shape: { type: 'point', point: { x: 100, y: 100 }, bounds: {...} },
+    });
+  };
+
+  return <button onClick={handleAddAnnotation}>Add Annotation</button>;
+}
+```
+
+## Interface
+
+```typescript
+interface OpenSeadragonAnnotator {
+  // Annotation CRUD
+  addAnnotation(annotation: Annotation): void;
+  addAnnotations(annotations: Annotation[]): void;
+  updateAnnotation(id: string, updates: Partial<Annotation>): void;
+  deleteAnnotation(id: string): void;
+  removeAnnotation(id: string): void;  // Alias for deleteAnnotation
+  getAnnotation(id: string): Annotation | undefined;
+  getAllAnnotations(): Annotation[];
+
+  // Spatial queries
+  getAnnotationsInBounds(bounds: Bounds): Annotation[];
+
+  // Selection
+  setSelected(id: string | string[]): void;
+  getSelected(): string[];
+
+  // Layer management
+  setCurrentLayer(layerId: string): void;
+  getCurrentLayer(): string;
+  createLayer(id: string, config: LayerConfig): void;
+  getLayer(id: string): Layer | undefined;
+
+  // Events
+  on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  off(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  emit(event: AnnotatorEvent, data: any): void;
+
+  // Lifecycle
+  destroy(): void;
+
+  // Internal state (read-only access)
+  state: {
+    store: AnnotationStore;
+    layerManager: LayerManager;
+  };
+}
+```
+
+## Annotation CRUD Operations
+
+### addAnnotation
+
+Add a single annotation.
+
+```typescript
+addAnnotation(annotation: Annotation): void
+```
+
+**Example:**
+
+```tsx
+annotator.addAnnotation({
+  id: 'ann-1',
+  shape: {
+    type: 'point',
+    point: { x: 500, y: 300 },
+    bounds: { minX: 500, minY: 300, maxX: 500, maxY: 300 },
+  },
+  properties: {
+    type: 'cell',
+    layer: 'default',
+  },
+  style: {
+    fill: '#FF0000',
+    fillOpacity: 0.8,
+  },
+});
+```
+
+### addAnnotations
+
+Add multiple annotations at once (more efficient than multiple `addAnnotation` calls).
+
+```typescript
+addAnnotations(annotations: Annotation[]): void
+```
+
+**Example:**
+
+```tsx
+const annotations = [
+  { id: 'ann-1', shape: {...}, properties: {...} },
+  { id: 'ann-2', shape: {...}, properties: {...} },
+  { id: 'ann-3', shape: {...}, properties: {...} },
+];
+
+annotator.addAnnotations(annotations);
+```
+
+### updateAnnotation
+
+Update an existing annotation.
+
+```typescript
+updateAnnotation(id: string, updates: Partial<Annotation>): void
+```
+
+**Example:**
+
+```tsx
+// Update properties
+annotator.updateAnnotation('ann-1', {
+  properties: {
+    type: 'tumor',
+    confidence: 0.95,
+  },
+});
+
+// Update style
+annotator.updateAnnotation('ann-1', {
+  style: {
+    fill: '#00FF00',
+    fillOpacity: 0.5,
+  },
+});
+
+// Update shape (for editing)
+annotator.updateAnnotation('ann-1', {
+  shape: {
+    type: 'rectangle',
+    x: 100,
+    y: 100,
+    width: 200,
+    height: 150,
+    bounds: { minX: 100, minY: 100, maxX: 300, maxY: 250 },
+  },
+});
+```
+
+### deleteAnnotation
+
+Delete an annotation by ID.
+
+```typescript
+deleteAnnotation(id: string): void
+```
+
+**Example:**
+
+```tsx
+annotator.deleteAnnotation('ann-1');
+```
+
+### removeAnnotation
+
+Alias for `deleteAnnotation`.
+
+```typescript
+removeAnnotation(id: string): void
+```
+
+### getAnnotation
+
+Get a specific annotation by ID.
+
+```typescript
+getAnnotation(id: string): Annotation | undefined
+```
+
+**Example:**
+
+```tsx
+const annotation = annotator.getAnnotation('ann-1');
+if (annotation) {
+  console.log('Found annotation:', annotation);
+}
+```
+
+### getAllAnnotations
+
+Get all annotations.
+
+```typescript
+getAllAnnotations(): Annotation[]
+```
+
+**Example:**
+
+```tsx
+const allAnnotations = annotator.getAllAnnotations();
+console.log(`Total annotations: ${allAnnotations.length}`);
+```
+
+## Spatial Queries
+
+### getAnnotationsInBounds
+
+Get all annotations within a bounding box (uses R-tree for fast queries).
+
+```typescript
+getAnnotationsInBounds(bounds: Bounds): Annotation[]
+```
+
+**Parameters:**
+
+```typescript
+interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+```
+
+**Example:**
+
+```tsx
+// Get annotations in a specific region
+const annotations = annotator.getAnnotationsInBounds({
+  minX: 0,
+  minY: 0,
+  maxX: 1000,
+  maxY: 1000,
+});
+
+console.log(`Found ${annotations.length} annotations in region`);
+```
+
+## Selection Management
+
+### setSelected
+
+Set the selected annotation(s).
+
+```typescript
+setSelected(id: string | string[]): void
+```
+
+**Examples:**
+
+```tsx
+// Select single annotation
+annotator.setSelected('ann-1');
+
+// Select multiple annotations
+annotator.setSelected(['ann-1', 'ann-2', 'ann-3']);
+
+// Clear selection
+annotator.setSelected([]);
+```
+
+### getSelected
+
+Get currently selected annotation IDs.
+
+```typescript
+getSelected(): string[]
+```
+
+**Example:**
+
+```tsx
+const selectedIds = annotator.getSelected();
+console.log(`Selected: ${selectedIds.length} annotations`);
+```
+
+## Layer Management
+
+### setCurrentLayer
+
+Set the active layer for new annotations.
+
+```typescript
+setCurrentLayer(layerId: string): void
+```
+
+**Example:**
+
+```tsx
+annotator.setCurrentLayer('tumor');
+
+// New annotations will be created on the 'tumor' layer
+```
+
+### getCurrentLayer
+
+Get the current active layer ID.
+
+```typescript
+getCurrentLayer(): string
+```
+
+**Example:**
+
+```tsx
+const currentLayer = annotator.getCurrentLayer();
+console.log(`Active layer: ${currentLayer}`);
+```
+
+### createLayer
+
+Create a new layer.
+
+```typescript
+createLayer(id: string, config: LayerConfig): void
+```
+
+**Parameters:**
+
+```typescript
+interface LayerConfig {
+  name: string;
+  visible?: boolean;   // Default: true
+  locked?: boolean;    // Default: false
+  opacity?: number;    // Default: 1 (0-1 range)
+  zIndex?: number;     // Default: 0
+}
+```
+
+**Example:**
+
+```tsx
+annotator.createLayer('tumor', {
+  name: 'Tumor Annotations',
+  visible: true,
+  locked: false,
+  opacity: 1,
+  zIndex: 10,
+});
+```
+
+### getLayer
+
+Get a layer by ID.
+
+```typescript
+getLayer(id: string): Layer | undefined
+```
+
+**Example:**
+
+```tsx
+const layer = annotator.getLayer('tumor');
+if (layer) {
+  console.log(`Layer: ${layer.name}, visible: ${layer.visible}`);
+}
+```
+
+## Event System
+
+### on
+
+Register an event handler.
+
+```typescript
+on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void
+```
+
+**Event types:**
+
+```typescript
+type AnnotatorEvent =
+  | 'createAnnotation'
+  | 'updateAnnotation'
+  | 'deleteAnnotation'
+  | 'selectionChanged';
+```
+
+**Example:**
+
+```tsx
+const handleCreate = (annotation: Annotation) => {
+  console.log('Created:', annotation.id);
+};
+
+annotator.on('createAnnotation', handleCreate);
+```
+
+### off
+
+Remove an event handler.
+
+```typescript
+off(event: AnnotatorEvent, handler: AnnotatorEventHandler): void
+```
+
+**Example:**
+
+```tsx
+annotator.off('createAnnotation', handleCreate);
+```
+
+### emit
+
+Emit a custom event (primarily for internal use).
+
+```typescript
+emit(event: AnnotatorEvent, data: any): void
+```
+
+**Example:**
+
+```tsx
+// Manually trigger selection changed event
+annotator.emit('selectionChanged', { selected: ['ann-1', 'ann-2'] });
+```
+
+## Lifecycle
+
+### destroy
+
+Clean up the annotator instance and remove all event listeners.
+
+```typescript
+destroy(): void
+```
+
+**Example:**
+
+```tsx
+useEffect(() => {
+  // Create annotator
+  const annotator = createAnnotator(viewer);
+
+  return () => {
+    // Clean up on unmount
+    annotator.destroy();
+  };
+}, [viewer]);
+```
+
+## Internal State
+
+The annotator exposes internal state for advanced use cases:
+
+### state.store
+
+Access the annotation store directly:
+
+```typescript
+interface AnnotationStore {
+  add(annotation: Annotation): void;
+  update(id: string, updates: Partial<Annotation>): void;
+  delete(id: string): void;
+  get(id: string): Annotation | undefined;
+  all(): Annotation[];
+  search(bounds: Bounds): Annotation[];
+  subscribe(callback: () => void): () => void;
+}
+```
+
+**Example:**
+
+```tsx
+// Direct store access
+const allAnnotations = annotator.state.store.all();
+
+// Subscribe to store changes
+const unsubscribe = annotator.state.store.subscribe(() => {
+  console.log('Store updated');
+});
+```
+
+### state.layerManager
+
+Access the layer manager directly:
+
+```typescript
+const layers = annotator.state.layerManager.getAllLayers();
+console.log(`Layers: ${layers.length}`);
+```
+
+## Usage Patterns
+
+### Batch Operations
+
+For better performance, batch operations:
+
+```tsx
+// ✅ Good - single batch operation
+annotator.addAnnotations([ann1, ann2, ann3]);
+
+// ❌ Avoid - multiple separate operations
+annotator.addAnnotation(ann1);
+annotator.addAnnotation(ann2);
+annotator.addAnnotation(ann3);
+```
+
+### Event Cleanup
+
+Always clean up event listeners:
+
+```tsx
+useEffect(() => {
+  if (!annotator) return;
+
+  const handler = (annotation: Annotation) => {
+    console.log('Created:', annotation);
+  };
+
+  annotator.on('createAnnotation', handler);
+
+  return () => {
+    annotator.off('createAnnotation', handler);
+  };
+}, [annotator]);
+```
+
+### Conditional Updates
+
+Check if annotation exists before updating:
+
+```tsx
+const annotation = annotator.getAnnotation('ann-1');
+if (annotation) {
+  annotator.updateAnnotation('ann-1', { properties: { type: 'tumor' } });
+}
+```
+
+## Next Steps
+
+- [React Hooks](/api/hooks) - Use hooks instead of direct instance access
+- [Events Guide](/docs/guides/events) - Event system details
+- [TypeScript Types](/api/types) - Type definitions

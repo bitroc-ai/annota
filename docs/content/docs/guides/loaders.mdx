@@ -1,0 +1,275 @@
+# Data Loaders
+
+Annota provides built-in loaders for importing annotations from various file formats.
+
+## Overview
+
+| Loader | Format | Use Case |
+|--------|--------|----------|
+| `loadH5Masks` | HDF5 masks | Segmentation masks from analysis pipelines |
+| `loadH5Coordinates` | HDF5 coordinates | Point annotations from detection algorithms |
+| `loadJSON` | JSON | Standard annotation interchange |
+| `loadPGM` | PGM masks | Legacy mask format |
+
+## H5 Mask Loader
+
+Load segmentation masks from HDF5 files and convert them to polygon annotations.
+
+### Basic Usage
+
+```tsx
+import { loadH5Masks, useAnnotator } from 'annota';
+
+function LoadMasks() {
+  const annotator = useAnnotator();
+
+  const handleLoad = async () => {
+    const annotations = await loadH5Masks('/annotations/masks.h5', {
+      color: '#FF0000',
+      fillOpacity: 0.3,
+    });
+
+    annotator?.addAnnotations(annotations);
+  };
+
+  return <button onClick={handleLoad}>Load H5 Masks</button>;
+}
+```
+
+### Options
+
+```typescript
+interface H5MaskLoaderOptions {
+  color?: string;          // Annotation color (default: '#00FF00')
+  fillOpacity?: number;    // Fill opacity (default: 0.3)
+  strokeWidth?: number;    // Stroke width (default: 2)
+  dataset?: string;        // Dataset path in H5 file (auto-detected if not specified)
+  properties?: Record<string, any>;  // Custom properties for annotations
+}
+```
+
+### Dataset Detection
+
+The loader automatically detects the mask dataset. If your H5 file has a non-standard structure, specify the dataset path:
+
+```tsx
+const annotations = await loadH5Masks('/annotations/masks.h5', {
+  dataset: '/masks/nuclei',  // Explicit dataset path
+});
+```
+
+### Error Handling
+
+```tsx
+async function loadMasksWithErrorHandling() {
+  try {
+    const annotations = await loadH5Masks('/annotations/masks.h5');
+    console.log(`Loaded ${annotations.length} annotations`);
+    return annotations;
+  } catch (error) {
+    console.error('Failed to load H5 masks:', error);
+    // Error includes available datasets if detection fails
+    return [];
+  }
+}
+```
+
+## H5 Coordinate Loader
+
+Load point coordinates from HDF5 files (e.g., cell detections from AI models).
+
+### Basic Usage
+
+```tsx
+import { loadH5Coordinates } from 'annota';
+
+async function loadCells() {
+  const annotations = await loadH5Coordinates('/annotations/cells.h5', {
+    color: '#00FF00',
+    fillOpacity: 0.8,
+  });
+
+  return annotations;
+}
+```
+
+### Options
+
+```typescript
+interface H5CoordinateLoaderOptions {
+  color?: string;          // Point color (default: '#00FF00')
+  fillOpacity?: number;    // Fill opacity (default: 0.8)
+  strokeWidth?: number;    // Stroke width (default: 2)
+  properties?: Record<string, any>;  // Custom properties
+}
+```
+
+### Expected Format
+
+The H5 file should contain a `coordinates` dataset with shape `[N, 2]`:
+
+```
+coordinates/
+  shape: [1000, 2]  # 1000 points with (x, y) coordinates
+  data: [
+    [x0, y0],
+    [x1, y1],
+    ...
+  ]
+```
+
+### Example: Loading Multiple Categories
+
+```tsx
+async function loadMultipleCategoriesannot() {
+  const [positiveAnnotations, negativeAnnotations] = await Promise.all([
+    loadH5Coordinates('/annotations/positive.h5', {
+      color: '#00FF00',
+      properties: { category: 'positive' },
+    }),
+    loadH5Coordinates('/annotations/negative.h5', {
+      color: '#FF0000',
+      properties: { category: 'negative' },
+    }),
+  ]);
+
+  return [...positiveAnnotations, ...negativeAnnotations];
+}
+```
+
+## JSON Loader
+
+Load annotations from JSON files.
+
+### Format
+
+```json
+[
+  {
+    "id": "ann-1",
+    "shape": {
+      "type": "point",
+      "point": { "x": 100, "y": 200 },
+      "bounds": { "minX": 100, "minY": 200, "maxX": 100, "maxY": 200 }
+    },
+    "properties": {
+      "type": "cell"
+    },
+    "style": {
+      "fill": "#FF0000",
+      "fillOpacity": 0.8
+    }
+  }
+]
+```
+
+### Loading
+
+```tsx
+async function loadJSONAnnotations(path: string) {
+  const response = await fetch(path);
+  const annotations = await response.json();
+  return annotations;
+}
+```
+
+## PGM Loader
+
+Load legacy PGM mask files.
+
+### Basic Usage
+
+```tsx
+import { loadPGMMasks } from 'annota';
+
+const annotations = await loadPGMMasks('/annotations/mask.pgm', {
+  color: '#0000FF',
+  fillOpacity: 0.3,
+});
+```
+
+## Best Practices
+
+### 1. Show Loading State
+
+```tsx
+function MaskLoader() {
+  const [loading, setLoading] = useState(false);
+  const annotator = useAnnotator();
+
+  const handleLoad = async () => {
+    setLoading(true);
+    try {
+      const annotations = await loadH5Masks('/annotations/masks.h5');
+      annotator?.addAnnotations(annotations);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleLoad} disabled={loading}>
+      {loading ? 'Loading...' : 'Load Masks'}
+    </button>
+  );
+}
+```
+
+### 2. Layer Organization
+
+Assign loaded annotations to specific layers:
+
+```tsx
+const annotations = await loadH5Masks('/annotations/masks.h5', {
+  properties: {
+    layer: 'imported-masks',  // Assign to specific layer
+    source: 'h5',
+  },
+});
+```
+
+### 3. Batch Loading
+
+Load multiple files efficiently:
+
+```tsx
+async function loadAllAnnotations(files: string[]) {
+  const results = await Promise.all(
+    files.map(file => loadH5Masks(file))
+  );
+
+  return results.flat();
+}
+```
+
+### 4. Progress Tracking
+
+For large files, track loading progress:
+
+```tsx
+function ProgressLoader({ files }: { files: string[] }) {
+  const [progress, setProgress] = useState(0);
+  const annotator = useAnnotator();
+
+  const loadAll = async () => {
+    for (let i = 0; i < files.length; i++) {
+      const annotations = await loadH5Masks(files[i]);
+      annotator?.addAnnotations(annotations);
+      setProgress(((i + 1) / files.length) * 100);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={loadAll}>Load All</button>
+      <div>Progress: {progress.toFixed(0)}%</div>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+- [API Reference](/api) - Complete loader API documentation
+- [Examples](/docs/examples/h5-loading) - See practical loading examples
+- [Events](/docs/guides/events) - Handle post-load events

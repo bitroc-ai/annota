@@ -1,0 +1,147 @@
+# Installation
+
+Install Annota and its peer dependencies in your React project.
+
+## Package Manager
+
+### npm
+
+```bash
+npm install annota openseadragon
+```
+
+### pnpm
+
+```bash
+pnpm add annota openseadragon
+```
+
+### yarn
+
+```bash
+yarn add annota openseadragon
+```
+
+## Peer Dependencies
+
+Annota requires the following peer dependencies:
+
+- **openseadragon**: `^4.0.0 || ^5.0.0`
+- **react**: `^18.0.0 || ^19.0.0`
+- **react-dom**: `^18.0.0 || ^19.0.0`
+
+These should already be installed in your React project. If not, install them:
+
+```bash
+npm install react react-dom openseadragon
+```
+
+## TypeScript Support
+
+Annota is written in TypeScript and includes type definitions out of the box. For OpenSeadragon types, install:
+
+```bash
+npm install --save-dev @types/openseadragon
+```
+
+## CSS Imports
+
+Import the Annota stylesheet in your application:
+
+```tsx
+import 'annota/dist/index.css';
+```
+
+Or in your global CSS file:
+
+```css
+@import 'annota/dist/index.css';
+```
+
+## Verify Installation
+
+Create a simple test file to verify the installation:
+
+```tsx
+import { AnnotaProvider } from 'annota';
+import 'annota/dist/index.css';
+
+function App() {
+  return (
+    <AnnotaProvider slideId="test">
+      <div>Annota is installed!</div>
+    </AnnotaProvider>
+  );
+}
+
+export default App;
+```
+
+If this compiles without errors, you're ready to go!
+
+## Next Steps
+
+- [Quick Start](/docs/getting-started/quick-start) - Build your first annotation viewer
+- [Core Concepts](/docs/getting-started/concepts) - Learn about annotations, layers, and tools
+
+## Optional Dependencies
+
+### H5 File Loading
+
+If you plan to load annotations from HDF5 files, `jsfive` is already included as a dependency. No additional installation required.
+
+### OpenCV Integration
+
+For advanced features like contour detection, you may want to install OpenCV.js:
+
+```bash
+npm install @techstark/opencv-js
+```
+
+See the [Advanced Features](/docs/guides/advanced) guide for more details.
+
+## Troubleshooting
+
+### Module not found errors
+
+If you see module resolution errors, ensure your bundler (webpack, vite, etc.) is configured to resolve the `annota` package correctly.
+
+For Vite, you may need to add to `vite.config.ts`:
+
+```ts
+export default defineConfig({
+  optimizeDeps: {
+    include: ['annota', 'openseadragon']
+  }
+});
+```
+
+### TypeScript errors
+
+If you see TypeScript errors related to OpenSeadragon, make sure you have installed the type definitions:
+
+```bash
+npm install --save-dev @types/openseadragon
+```
+
+### CSS not loading
+
+Make sure you're importing the CSS file in your application entry point or component:
+
+```tsx
+import 'annota/dist/index.css';
+```
+
+## Version Compatibility
+
+| Annota | React | OpenSeadragon | Node.js |
+|--------|-------|---------------|---------|
+| 0.1.x  | 18-19 | 4-5          | 16+     |
+
+## Getting Help
+
+If you encounter issues during installation:
+
+1. Check the [GitHub Issues](https://github.com/bitroc-ai/annota/issues)
+2. Review the [Troubleshooting Guide](/docs/guides/troubleshooting)
+3. Open a new issue with your error details

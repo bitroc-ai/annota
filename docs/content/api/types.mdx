@@ -1,0 +1,355 @@
+# TypeScript Types
+
+Complete TypeScript type definitions for Annota.
+
+## Core Types
+
+### Annotation
+
+```typescript
+interface Annotation {
+  id: string;
+  shape: PointShape | RectangleShape | PolygonShape;
+  properties?: Record<string, any>;
+  style?: AnnotationStyle;
+}
+```
+
+The main annotation type. Every annotation has:
+- `id`: Unique identifier (string)
+- `shape`: Geometry definition
+- `properties`: Optional custom metadata
+- `style`: Optional visual styling
+
+### AnnotationStyle
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;          // Fill color (CSS color string)
+  fillOpacity?: number;   // Fill opacity (0-1)
+  stroke?: string;        // Stroke color (CSS color string)
+  strokeWidth?: number;   // Stroke width in image coordinates
+  strokeOpacity?: number; // Stroke opacity (0-1)
+}
+```
+
+Visual styling for annotations. All properties are optional.
+
+## Shape Types
+
+### PointShape
+
+```typescript
+interface PointShape {
+  type: 'point';
+  point: Point;
+  bounds: Bounds;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+```
+
+A single point on the image.
+
+**Example:**
+
+```typescript
+const pointShape: PointShape = {
+  type: 'point',
+  point: { x: 100, y: 200 },
+  bounds: { minX: 100, minY: 200, maxX: 100, maxY: 200 },
+};
+```
+
+### RectangleShape
+
+```typescript
+interface RectangleShape {
+  type: 'rectangle';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  bounds: Bounds;
+}
+```
+
+A rectangular region.
+
+**Example:**
+
+```typescript
+const rectangleShape: RectangleShape = {
+  type: 'rectangle',
+  x: 100,
+  y: 100,
+  width: 200,
+  height: 150,
+  bounds: { minX: 100, minY: 100, maxX: 300, maxY: 250 },
+};
+```
+
+### PolygonShape
+
+```typescript
+interface PolygonShape {
+  type: 'polygon';
+  points: Point[];
+  bounds: Bounds;
+}
+```
+
+A polygon defined by vertices.
+
+**Example:**
+
+```typescript
+const polygonShape: PolygonShape = {
+  type: 'polygon',
+  points: [
+    { x: 100, y: 100 },
+    { x: 200, y: 100 },
+    { x: 200, y: 200 },
+    { x: 100, y: 200 },
+  ],
+  bounds: { minX: 100, minY: 100, maxX: 200, maxY: 200 },
+};
+```
+
+### Bounds
+
+```typescript
+interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+```
+
+Bounding box for spatial queries and rendering optimization.
+
+## Layer Types
+
+### Layer
+
+```typescript
+interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;   // 0-1
+  zIndex: number;
+}
+```
+
+Layer definition with visibility and styling controls.
+
+### LayerConfig
+
+```typescript
+interface LayerConfig {
+  name: string;
+  visible?: boolean;   // Default: true
+  locked?: boolean;    // Default: false
+  opacity?: number;    // Default: 1
+  zIndex?: number;     // Default: 0
+}
+```
+
+Configuration for creating new layers.
+
+## Event Types
+
+### AnnotatorEvent
+
+```typescript
+type AnnotatorEvent =
+  | 'createAnnotation'
+  | 'updateAnnotation'
+  | 'deleteAnnotation'
+  | 'selectionChanged';
+```
+
+Event types emitted by the annotator.
+
+### AnnotatorEventHandler
+
+```typescript
+type AnnotatorEventHandler = (data: any) => void;
+```
+
+Event handler function type.
+
+## Tool Types
+
+### ToolHandler
+
+```typescript
+interface ToolHandler {
+  enable(): void;
+  disable(): void;
+  destroy(): void;
+}
+```
+
+Base interface for annotation tools.
+
+### UseToolOptions
+
+```typescript
+interface UseToolOptions {
+  viewer: OpenSeadragon.Viewer | undefined;
+  handler: ToolHandler | null;
+  enabled: boolean;
+}
+```
+
+Options for the `useTool` hook.
+
+## Hook Return Types
+
+### UseLayerManagerResult
+
+```typescript
+interface UseLayerManagerResult {
+  createLayer(id: string, config: LayerConfig): void;
+  deleteLayer(id: string): void;
+  getLayer(id: string): Layer | undefined;
+  setLayerVisibility(id: string, visible: boolean): void;
+  setLayerOpacity(id: string, opacity: number): void;
+  setLayerLocked(id: string, locked: boolean): void;
+}
+```
+
+Return type for `useLayerManager` hook.
+
+## Loader Types
+
+### H5MaskLoaderOptions
+
+```typescript
+interface H5MaskLoaderOptions {
+  color?: string;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  dataset?: string;
+  properties?: Record<string, any>;
+}
+```
+
+Options for `loadH5Masks` loader.
+
+### H5CoordinateLoaderOptions
+
+```typescript
+interface H5CoordinateLoaderOptions {
+  color?: string;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  properties?: Record<string, any>;
+}
+```
+
+Options for `loadH5Coordinates` loader.
+
+## Component Props
+
+### AnnotaProviderProps
+
+```typescript
+interface AnnotaProviderProps {
+  slideId?: string;
+  children: React.ReactNode;
+}
+```
+
+### AnnotaViewerProps
+
+```typescript
+interface ViewerProps {
+  options: OpenSeadragon.Options;
+  onViewerReady?: (viewer: OpenSeadragon.Viewer) => void;
+  className?: string;
+}
+```
+
+### AnnotatorProps
+
+```typescript
+interface AnnotatorProps {
+  viewer: OpenSeadragon.Viewer | undefined;
+  style?: (annotation: Annotation) => AnnotationStyle;
+  children?: React.ReactNode;
+}
+```
+
+### AnnotationEditorProps
+
+```typescript
+interface AnnotationEditorProps {
+  viewer: OpenSeadragon.Viewer | undefined;
+}
+```
+
+## Type Guards
+
+### Shape Type Guards
+
+```typescript
+function isPointShape(shape: Shape): shape is PointShape {
+  return shape.type === 'point';
+}
+
+function isRectangleShape(shape: Shape): shape is RectangleShape {
+  return shape.type === 'rectangle';
+}
+
+function isPolygonShape(shape: Shape): shape is PolygonShape {
+  return shape.type === 'polygon';
+}
+```
+
+**Usage:**
+
+```typescript
+const annotation: Annotation = {...};
+
+if (isPointShape(annotation.shape)) {
+  // TypeScript knows annotation.shape is PointShape
+  console.log(annotation.shape.point.x, annotation.shape.point.y);
+}
+```
+
+## Utility Types
+
+### Partial Annotation
+
+For updates:
+
+```typescript
+type PartialAnnotation = Partial<Annotation>;
+
+// Update only specific fields
+annotator.updateAnnotation('ann-1', {
+  properties: { type: 'tumor' },
+} as PartialAnnotation);
+```
+
+### Annotation Without ID
+
+For creating annotations (ID will be auto-generated):
+
+```typescript
+type AnnotationInput = Omit<Annotation, 'id'> & { id?: string };
+```
+
+## Next Steps
+
+- [React Hooks](/api/hooks) - Hooks that use these types
+- [Annotator Instance](/api/annotator) - API methods with type signatures
+- [Components](/api/components) - Component props and types

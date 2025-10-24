@@ -1,0 +1,169 @@
+# Basic Viewer Example
+
+A complete, minimal annotation viewer with point, rectangle, and polygon tools.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotations,
+  useTool,
+  PointTool,
+  RectangleTool,
+  PolygonTool,
+} from 'annota';
+import { useState } from 'react';
+import 'annota/dist/index.css';
+
+export default function BasicAnnotationViewer() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerInterface />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerInterface() {
+  const [viewer, setViewer] = useState(null);
+  const [tool, setTool] = useState('pan');
+  const annotations = useAnnotations();
+
+  // Tool instances
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  // Activate selected tool
+  useTool({
+    viewer,
+    handler: tool === 'pan' ? null : tools[tool],
+    enabled: tool !== 'pan',
+  });
+
+  return (
+    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+      {/* Toolbar */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        zIndex: 10,
+        display: 'flex',
+        gap: '8px',
+      }}>
+        <button
+          onClick={() => setTool('pan')}
+          style={{ fontWeight: tool === 'pan' ? 'bold' : 'normal' }}
+        >
+          Pan
+        </button>
+        <button
+          onClick={() => setTool('point')}
+          style={{ fontWeight: tool === 'point' ? 'bold' : 'normal' }}
+        >
+          Point
+        </button>
+        <button
+          onClick={() => setTool('rectangle')}
+          style={{ fontWeight: tool === 'rectangle' ? 'bold' : 'normal' }}
+        >
+          Rectangle
+        </button>
+        <button
+          onClick={() => setTool('polygon')}
+          style={{ fontWeight: tool === 'polygon' ? 'bold' : 'normal' }}
+        >
+          Polygon
+        </button>
+      </div>
+
+      {/* Info panel */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        zIndex: 10,
+        background: 'white',
+        padding: '12px',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      }}>
+        <h3 style={{ margin: 0, marginBottom: '8px' }}>Annotations</h3>
+        <div>Total: {annotations.length}</div>
+      </div>
+
+      {/* Viewer */}
+      <AnnotaViewer
+        options={{
+          tileSources: '/path/to/image.dzi',
+          prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          showNavigationControl: false,
+        }}
+        onViewerReady={setViewer}
+      />
+
+      {/* Annotation overlay */}
+      <Annotator viewer={viewer} />
+    </div>
+  );
+}
+```
+
+## Key Features
+
+- **Tool switching**: Click buttons to switch between pan, point, rectangle, and polygon tools
+- **Annotation count**: Real-time display of total annotations
+- **Clean UI**: Minimal interface focusing on core functionality
+
+## Customization
+
+### Add Custom Styling
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: '#FF0000',
+    fillOpacity: 0.3,
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  })}
+/>
+```
+
+### Add Annotation Editor
+
+```tsx
+import { AnnotationEditor } from 'annota';
+
+<Annotator viewer={viewer}>
+  <AnnotationEditor viewer={viewer} />
+</Annotator>
+```
+
+### Add Keyboard Shortcuts
+
+```tsx
+useEffect(() => {
+  const handleKeyPress = (e: KeyboardEvent) => {
+    if (e.key === 'p') setTool('point');
+    if (e.key === 'r') setTool('rectangle');
+    if (e.key === 'g') setTool('polygon');
+    if (e.key === 'v') setTool('pan');
+  };
+
+  window.addEventListener('keydown', handleKeyPress);
+  return () => window.removeEventListener('keydown', handleKeyPress);
+}, []);
+```
+
+## Next Steps
+
+- [Layer Management Example](/docs/examples/layer-management) - Organize annotations with layers
+- [Custom Styling Example](/docs/examples/custom-styling) - Dynamic annotation styling
+- [Event Handling Example](/docs/examples/event-handling) - Respond to annotation changes

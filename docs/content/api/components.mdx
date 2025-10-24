@@ -1,0 +1,410 @@
+# React Components
+
+React components for building annotation applications.
+
+## AnnotaProvider
+
+The root provider component that manages annotation context and state.
+
+### Props
+
+```typescript
+interface AnnotaProviderProps {
+  slideId?: string;        // Unique identifier for this slide (for persistence)
+  children: React.ReactNode;
+}
+```
+
+### Usage
+
+Wrap your application with `AnnotaProvider`:
+
+```tsx
+import { AnnotaProvider } from 'annota';
+
+function App() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <YourAnnotationInterface />
+    </AnnotaProvider>
+  );
+}
+```
+
+### Context
+
+The provider creates a context that includes:
+- Annotator instance
+- Annotation store
+- Layer manager
+- Selection state
+
+Access the context with hooks:
+
+```tsx
+import { useAnnotator, useAnnotations, useSelection } from 'annota';
+
+function MyComponent() {
+  const annotator = useAnnotator();
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  return <div>...</div>;
+}
+```
+
+## AnnotaViewer
+
+OpenSeadragon viewer component with annotation support.
+
+### Props
+
+```typescript
+interface ViewerProps {
+  options: OpenSeadragon.Options;
+  onViewerReady?: (viewer: OpenSeadragon.Viewer) => void;
+  className?: string;
+}
+```
+
+### Usage
+
+```tsx
+import { AnnotaViewer } from 'annota';
+import { useState } from 'react';
+
+function ViewerComponent() {
+  const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
+
+  return (
+    <AnnotaViewer
+      options={{
+        tileSources: '/path/to/image.dzi',
+        prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+        showNavigationControl: false,
+        minZoomLevel: 0.5,
+        maxZoomLevel: 10,
+      }}
+      onViewerReady={setViewer}
+      className="h-full w-full"
+    />
+  );
+}
+```
+
+### OpenSeadragon Options
+
+The `options` prop accepts all standard OpenSeadragon options. Common options:
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `tileSources` | string \| object | Image source (DZI, IIIF, etc.) |
+| `prefixUrl` | string | Path to OpenSeadragon image assets |
+| `showNavigationControl` | boolean | Show zoom/home controls |
+| `minZoomLevel` | number | Minimum zoom level |
+| `maxZoomLevel` | number | Maximum zoom level |
+| `visibilityRatio` | number | Portion of image that must stay visible |
+
+See [OpenSeadragon documentation](https://openseadragon.github.io/docs/) for all options.
+
+### onViewerReady
+
+Called when the OpenSeadragon viewer is initialized:
+
+```tsx
+const handleViewerReady = (viewer: OpenSeadragon.Viewer) => {
+  console.log('Viewer ready:', viewer);
+  // You can now use the viewer instance
+};
+
+<AnnotaViewer options={...} onViewerReady={handleViewerReady} />
+```
+
+## Annotator
+
+Annotation overlay component that manages the annotation layer.
+
+### Props
+
+```typescript
+interface AnnotatorProps {
+  viewer: OpenSeadragon.Viewer | undefined;
+  style?: (annotation: Annotation) => AnnotationStyle;
+  children?: React.ReactNode;
+}
+```
+
+### Usage
+
+```tsx
+import { Annotator } from 'annota';
+
+function AnnotationInterface({ viewer }) {
+  return (
+    <Annotator viewer={viewer}>
+      {/* Child components can use annotation hooks */}
+      <ToolManager />
+      <AnnotationEditor />
+    </Annotator>
+  );
+}
+```
+
+### Style Function
+
+Provide a dynamic style function:
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+    fillOpacity: 0.3,
+    stroke: '#FFFFFF',
+    strokeWidth: 2,
+  })}
+/>
+```
+
+### Children
+
+The `Annotator` component can contain child components that use annotation hooks and tools:
+
+```tsx
+<Annotator viewer={viewer}>
+  <ToolController />
+  <AnnotationEditor />
+  <PopupEditor />
+</Annotator>
+```
+
+## AnnotationEditor
+
+Visual editor for annotations with drag-and-drop handles.
+
+### Props
+
+```typescript
+interface AnnotationEditorProps {
+  viewer: OpenSeadragon.Viewer | undefined;
+}
+```
+
+### Usage
+
+```tsx
+import { AnnotationEditor } from 'annota';
+
+<Annotator viewer={viewer}>
+  <AnnotationEditor viewer={viewer} />
+</Annotator>
+```
+
+### Features
+
+- **Drag vertices**: Click and drag polygon/rectangle vertices
+- **Add vertices**: Click on edges to add new vertices (polygons)
+- **Delete vertices**: Right-click vertices to delete (polygons)
+- **Move shapes**: Drag entire shapes to move them
+
+### Custom Editors
+
+Register custom shape editors:
+
+```tsx
+import { registerShapeEditor } from 'annota';
+
+registerShapeEditor('point', {
+  component: PointEditor,
+  props: {},
+});
+```
+
+Available editors:
+- `PointEditor` - Edit point annotations
+- `RectangleEditor` - Edit rectangles
+- `PolygonEditor` - Edit polygons
+
+## AnnotationPopup
+
+Popup component for displaying annotation details.
+
+### Props
+
+```typescript
+interface AnnotationPopupProps {
+  viewer: OpenSeadragon.Viewer | undefined;
+  annotation: Annotation | null;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+```
+
+### Usage
+
+```tsx
+import { AnnotationPopup, usePopup, useAnnotationDoubleClick } from 'annota';
+
+function PopupEditor({ viewer }) {
+  const popup = usePopup();
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    popup.show(annotation.id);
+  });
+
+  return (
+    <AnnotationPopup
+      viewer={viewer}
+      annotation={popup.annotation}
+      onClose={popup.hide}
+    >
+      <div className="p-4">
+        <h3>Annotation {popup.annotation?.id}</h3>
+        <input
+          value={popup.annotation?.properties?.label || ''}
+          onChange={(e) =>
+            popup.updateProperties(popup.annotation!.id, {
+              label: e.target.value,
+            })
+          }
+        />
+      </div>
+    </AnnotationPopup>
+  );
+}
+```
+
+### Positioning
+
+The popup automatically positions itself near the annotation, adjusting to stay within viewport bounds.
+
+## Component Composition
+
+Typical component structure:
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  AnnotationEditor,
+  AnnotationPopup,
+  useTool,
+  usePopup,
+  PointTool,
+} from 'annota';
+import { useState } from 'react';
+
+export default function AnnotationApp() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithTools />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithTools() {
+  const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
+  const [tool, setTool] = useState('point');
+  const popup = usePopup();
+
+  const tools = {
+    point: new PointTool(),
+  };
+
+  useTool({
+    viewer,
+    handler: tool === 'pan' ? null : tools[tool],
+    enabled: tool !== 'pan',
+  });
+
+  return (
+    <div style={{ width: '100vw', height: '100vh' }}>
+      {/* Toolbar */}
+      <Toolbar tool={tool} onToolChange={setTool} />
+
+      {/* Viewer */}
+      <AnnotaViewer
+        options={{
+          tileSources: '/image.dzi',
+          prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+        }}
+        onViewerReady={setViewer}
+      />
+
+      {/* Annotation overlay */}
+      <Annotator viewer={viewer}>
+        <AnnotationEditor viewer={viewer} />
+        <AnnotationPopup
+          viewer={viewer}
+          annotation={popup.annotation}
+          onClose={popup.hide}
+        >
+          <PopupContent annotation={popup.annotation} />
+        </AnnotationPopup>
+      </Annotator>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Single Provider
+
+Use one `AnnotaProvider` at the root of your annotation interface:
+
+```tsx
+// ✅ Good
+<AnnotaProvider slideId="slide-001">
+  <App />
+</AnnotaProvider>
+
+// ❌ Bad - multiple providers
+<AnnotaProvider slideId="slide-001">
+  <AnnotaProvider slideId="slide-002">
+    <App />
+  </AnnotaProvider>
+</AnnotaProvider>
+```
+
+### 2. Viewer State Management
+
+Store the viewer instance in state:
+
+```tsx
+const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
+
+<AnnotaViewer onViewerReady={setViewer} ... />
+```
+
+### 3. Conditional Rendering
+
+Check if viewer is ready before rendering annotation components:
+
+```tsx
+{viewer && (
+  <Annotator viewer={viewer}>
+    <ToolManager viewer={viewer} />
+  </Annotator>
+)}
+```
+
+### 4. Style Memoization
+
+Memoize style functions to avoid unnecessary re-renders:
+
+```tsx
+const styleFunction = useCallback((annotation: Annotation) => ({
+  fill: annotation.properties?.color || '#FF0000',
+  fillOpacity: 0.3,
+}), []);
+
+<Annotator viewer={viewer} style={styleFunction} />
+```
+
+## Next Steps
+
+- [React Hooks](/api/hooks) - Hooks for annotation management
+- [Annotator Instance](/api/annotator) - Annotator API reference
+- [Examples](/docs/examples) - Practical component examples
