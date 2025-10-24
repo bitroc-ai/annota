@@ -8,6 +8,7 @@ import {
   Annotator,
   useAnnotator,
   loadH5Coordinates,
+  loadMaskPolygons,
   AnnotationEditor,
   initKeyboardCommands,
   type Annotation,
@@ -77,6 +78,17 @@ function DemoContent({ currentImage }: { currentImage: string }) {
   useEffect(() => {
     if (!annotator) return;
 
+    // Create layer for masks
+    if (!annotator.getLayer("masks")) {
+      annotator.createLayer("masks", {
+        name: "Masks",
+        visible: true,
+        locked: false,
+        opacity: 0.5,
+        zIndex: 5,
+      });
+    }
+
     // Create layer for positive annotations
     if (!annotator.getLayer("annotations-positive")) {
       annotator.createLayer("annotations-positive", {
@@ -107,32 +119,44 @@ function DemoContent({ currentImage }: { currentImage: string }) {
     const loadAnnotations = async () => {
       const imageNumber = currentImage.replace(".png", "");
 
-      // Clear existing H5 annotations from both layers
+      // Clear existing H5 and mask annotations
       const allAnnotations = annotator.state.store.all();
-      const h5Annotations = allAnnotations.filter(
-        (ann) => ann.properties?.source === "h5"
+      const loadedAnnotations = allAnnotations.filter(
+        (ann) => ann.properties?.source === "h5" || ann.properties?.source === "png-mask" || ann.properties?.source === "pgm"
       );
-      h5Annotations.forEach((ann) => annotator.state.store.delete(ann.id));
+      loadedAnnotations.forEach((ann) => annotator.state.store.delete(ann.id));
 
       try {
-        // Load both positive and negative annotations
-        const [positiveAnnotations, negativeAnnotations] = await Promise.all([
+        // Load H5 annotations (points) and mask polygons in parallel
+        const [positiveAnnotations, negativeAnnotations, maskAnnotations] = await Promise.all([
           loadH5AnnotationsByCategory(imageNumber, "positive"),
           loadH5AnnotationsByCategory(imageNumber, "negative"),
+          loadMaskPolygons(`/playground/masks/test/${imageNumber}.png`, {
+            color: "#FFFF00", // Yellow for masks
+            fillOpacity: 0.3,
+            strokeWidth: 2,
+          }).catch(() => [] as Annotation[]), // Fallback to empty if no mask file
         ]);
 
-        const totalLoaded =
-          positiveAnnotations.length + negativeAnnotations.length;
+        const totalH5 = positiveAnnotations.length + negativeAnnotations.length;
+        const totalMasks = maskAnnotations.length;
 
-        if (totalLoaded > 0) {
+        if (totalH5 > 0 || totalMasks > 0) {
           // Add all annotations at once
           annotator.addAnnotations([
             ...positiveAnnotations,
             ...negativeAnnotations,
+            ...maskAnnotations,
           ]);
-          toast.success(
-            `Loaded ${positiveAnnotations.length} positive and ${negativeAnnotations.length} negative annotations`
-          );
+
+          const messages = [];
+          if (totalH5 > 0) {
+            messages.push(`${positiveAnnotations.length} positive, ${negativeAnnotations.length} negative`);
+          }
+          if (totalMasks > 0) {
+            messages.push(`${totalMasks} mask(s)`);
+          }
+          toast.success(`Loaded ${messages.join(", ")}`);
         } else {
           toast.info("No annotations found for this image");
         }

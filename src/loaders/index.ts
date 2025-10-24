@@ -10,4 +10,7 @@ export type { H5CoordinateLoaderOptions } from './h5-coordinates';
 
 export { loadJSONFile, annotationsToJSON, parseJSON } from './json';
 
-export { loadPGMFile, annotationsToPGM, annotationToPGM } from './pgm';
+export { loadPgmFile, loadPgmPolygons, annotationsToPgm, annotationToPgm } from './pgm';
+export type { PgmLoaderOptions } from './pgm';
+
+export { loadMaskPolygons } from './masks';

@@ -19,7 +19,7 @@ interface PGMHeader {
 /**
  * Parse PGM file header
  */
-function parsePGMHeader(data: string | ArrayBuffer): PGMHeader {
+function parsePgmHeader(data: string | ArrayBuffer): PGMHeader {
   let lines: string[];
 
   if (typeof data === 'string') {
@@ -51,12 +51,58 @@ function parsePGMHeader(data: string | ArrayBuffer): PGMHeader {
 }
 
 /**
+ * Options for loading PGM polygon annotations
+ */
+export interface PgmLoaderOptions {
+  /** Base style to apply to all annotations */
+  color?: string;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  /** Layer to assign annotations to (default: 'masks') */
+  layer?: string;
+}
+
+/**
+ * Load PGM file from URL and extract polygon contours
+ * Fetches the file and converts to polygon annotations
+ */
+export async function loadPgmPolygons(
+  url: string,
+  options: PgmLoaderOptions = {}
+): Promise<Annotation[]> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to load PGM file: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const annotations = await loadPgmFile(arrayBuffer);
+
+  const layer = options.layer || 'masks';
+
+  // Apply layer and styling options
+  return annotations.map((ann: Annotation) => ({
+    ...ann,
+    properties: {
+      ...ann.properties,
+      layer,
+    },
+    style: {
+      ...ann.style,
+      ...(options.color && { fill: options.color, stroke: options.color }),
+      ...(options.fillOpacity !== undefined && { fillOpacity: options.fillOpacity }),
+      ...(options.strokeWidth !== undefined && { strokeWidth: options.strokeWidth }),
+    },
+  }));
+}
+
+/**
  * Load PGM file and extract polygon contours
  * PGM files contain region masks (255 = foreground, 0 = background)
  */
-export async function loadPGMFile(file: File | ArrayBuffer): Promise<Annotation[]> {
+export async function loadPgmFile(file: File | ArrayBuffer): Promise<Annotation[]> {
   const data = file instanceof File ? await file.arrayBuffer() : file;
-  const header = parsePGMHeader(data);
+  const header = parsePgmHeader(data);
 
   // Create ImageData from PGM
   const imageData = new ImageData(header.width, header.height);
@@ -147,7 +193,7 @@ function findHeaderEnd(data: ArrayBuffer): number {
  * Export annotations to PGM format
  * Converts polygon annotations to binary masks
  */
-export function annotationsToPGM(
+export function annotationsToPgm(
   annotations: Annotation[],
   width: number,
   height: number
@@ -217,10 +263,10 @@ function rasterizePolygon(mask: Uint8Array, width: number, height: number, point
 /**
  * Export single annotation to PGM
  */
-export function annotationToPGM(
+export function annotationToPgm(
   annotation: Annotation,
   width: number,
   height: number
 ): ArrayBuffer {
-  return annotationsToPGM([annotation], width, height);
+  return annotationsToPgm([annotation], width, height);
 }
