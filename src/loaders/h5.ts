@@ -38,7 +38,7 @@ export async function loadH5Masks(
   try {
     // Dynamically import jsfive (only when needed)
     // @ts-ignore - jsfive doesn't have type definitions
-    const { default: hdf5 } = await import('jsfive');
+    const { File } = await import('jsfive');
 
     // Fetch the H5 file
     const response = await fetch(h5Path);
@@ -47,7 +47,7 @@ export async function loadH5Masks(
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const f = new hdf5.File(arrayBuffer);
+    const f = new File(arrayBuffer);
 
     // Try to find the masks dataset (common names: 'masks', 'instances', 'labels')
     let masks: any;

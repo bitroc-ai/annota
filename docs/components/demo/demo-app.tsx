@@ -83,9 +83,10 @@ function DemoContent({
 
   // Load annotations from remote API when H5 toggle is enabled
   useEffect(() => {
-    if (!showH5Annotations || !annotator) return;
+    if (!showH5Annotations || !annotator || typeof window === 'undefined') return;
 
-    const loadAnnotations = async () => {
+    // Add small delay to ensure browser APIs are fully available
+    const timeoutId = setTimeout(async () => {
       try {
         const imageNumber = currentImage.replace('.png', '');
 
@@ -115,9 +116,9 @@ function DemoContent({
         console.error('Failed to load annotations:', error);
         toast.error('Failed to load annotations');
       }
-    };
+    }, 100);
 
-    loadAnnotations();
+    return () => clearTimeout(timeoutId);
   }, [showH5Annotations, currentImage, annotator]);
 
   return null; // This component just handles the side effect
