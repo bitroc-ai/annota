@@ -1,6 +1,5 @@
 "use client";
 
-import "../playground.css";
 import dynamic from "next/dynamic";
 
 const PlaygroundApp = dynamic(

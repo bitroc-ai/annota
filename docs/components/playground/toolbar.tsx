@@ -56,7 +56,7 @@ export function DemoToolbar({
   };
 
   return (
-    <Card className="p-2 backdrop-blur-sm bg-card/95">
+    <Card className="p-2 backdrop-blur-sm bg-white/95 dark:bg-slate-950/95">
       <div className="flex flex-col items-center gap-1">
         <Button
           variant={tool === "pan" ? "default" : "ghost"}
@@ -127,7 +127,7 @@ export function DemoToolbar({
         >
           <Wand className="w-4 h-4" />
         </Button>
-        <div className="h-px w-8 bg-border my-1" />
+        <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
         <Button
           variant="ghost"
           size="icon"
@@ -155,7 +155,7 @@ export function DemoToolbar({
         >
           <Maximize2 className="w-4 h-4" />
         </Button>
-        <div className="h-px w-8 bg-border my-1" />
+        <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
         {layerPanel}
         <Button
           variant="secondary"
