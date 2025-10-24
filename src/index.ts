@@ -80,3 +80,8 @@ export type { H5MaskLoaderOptions } from './loaders/h5';
 
 export { loadH5Coordinates } from './loaders/h5-coordinates';
 export type { H5CoordinateLoaderOptions } from './loaders/h5-coordinates';
+
+export { loadPgmFile, loadPgmPolygons, annotationsToPgm, annotationToPgm } from './loaders/pgm';
+export type { PgmLoaderOptions } from './loaders/pgm';
+
+export { loadMaskPolygons } from './loaders/masks';
