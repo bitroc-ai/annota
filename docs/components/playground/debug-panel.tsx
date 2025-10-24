@@ -12,11 +12,11 @@ export function DebugPanel({ currentImage, onNextImage }: DebugPanelProps) {
 
   return (
     <div className="absolute bottom-2 right-2 z-10">
-      <div className="bg-background border backdrop-blur p-1 rounded-md flex items-center gap-3">
-        <span className="text-xs">
+      <div className="bg-card/95 border-border border backdrop-blur p-1 rounded-md flex items-center gap-3">
+        <span className="text-xs text-foreground">
           Annotations: <span className="font-mono">{annotations.length}</span>
         </span>
-        <div className="w-px h-4" />
+        <div className="w-px h-4 bg-border" />
         <Button
           variant="ghost"
           size="sm"

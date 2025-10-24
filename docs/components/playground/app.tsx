@@ -90,17 +90,6 @@ function DemoContent({
         zIndex: 11,
       });
     }
-
-    // Create layer for manual annotations
-    if (!annotator.getLayer('manual-annotations')) {
-      annotator.createLayer('manual-annotations', {
-        name: 'Manual Annotations',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        zIndex: 20,
-      });
-    }
   }, [annotator]);
 
   // Load annotations when image changes
@@ -153,7 +142,7 @@ export function PlaygroundApp() {
   const [tool, setTool] = useState<ToolType>('pan');
   const [threshold, setThreshold] = useState(8);
   const [pushRadius, setPushRadius] = useState(30);
-  const [activeLayerId, setActiveLayerId] = useState<string>('manual-annotations');
+  const [activeLayerId, setActiveLayerId] = useState<string>('default');
   const [imageVisible, setImageVisible] = useState(true);
 
   const currentImage = DEMO_IMAGES[currentImageIndex];

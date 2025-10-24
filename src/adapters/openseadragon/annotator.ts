@@ -394,6 +394,7 @@ export async function createOpenSeadragonAnnotator(
 
     setLayerVisibility(id, visible) {
       layerManager.setLayerVisibility(id, visible);
+      stage.redraw(); // Trigger re-render to show/hide annotations
     },
 
     setLayerLocked(id, locked) {
@@ -402,10 +403,12 @@ export async function createOpenSeadragonAnnotator(
 
     setLayerOpacity(id, opacity) {
       layerManager.setLayerOpacity(id, opacity);
+      stage.redraw(); // Trigger re-render to update opacity
     },
 
     setLayerZIndex(id, zIndex) {
       layerManager.setLayerZIndex(id, zIndex);
+      stage.redraw(); // Trigger re-render to update z-order
     },
 
     // Rendering control
