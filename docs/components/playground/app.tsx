@@ -1,5 +1,4 @@
 "use client";
-import "./playground.css";
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -257,6 +256,8 @@ export function PlaygroundApp() {
                 />
               }
             />
+          </div>
+          <div className="absolute top-4 left-20 z-10">
             <ToolSettings
               tool={tool}
               threshold={threshold}
