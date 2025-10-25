@@ -107,10 +107,8 @@ export class PixiStage {
       return;
     }
 
-    // Check layer visibility
-    if (this.layerManager && !isAnnotationVisible(annotation, this.layerManager)) {
-      return;
-    }
+    // Don't check layer visibility here - let renderAnnotation handle it
+    // This allows annotations to be shown/hidden when layer visibility changes
 
     // Remove existing if present
     this.removeAnnotation(annotation);
