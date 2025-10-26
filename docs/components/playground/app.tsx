@@ -217,7 +217,7 @@ export function PlaygroundApp() {
 
   // Category-based styling: red for negative, green for positive
   const categoryStyleFunction = useCallback(
-    (annotation: Annotation): AnnotationStyle | undefined => {
+    (annotation: Annotation): AnnotationStyle => {
       const category = annotation.properties?.category as string | undefined;
 
       if (category === "negative") {
@@ -240,9 +240,9 @@ export function PlaygroundApp() {
         };
       }
 
-      // For other annotations (masks, contours, etc.), return undefined
-      // so they can use their own annotation.style
-      return undefined;
+      // For other annotations (masks, contours, etc.), return their own style
+      // The annotation.style will be merged on top of this
+      return annotation.style || {};
     },
     []
   );

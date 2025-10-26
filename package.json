@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.15.0",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build:docs": "pnpm build && cd docs && pnpm install && pnpm build",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
