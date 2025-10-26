@@ -1,0 +1,137 @@
+---
+title: v0.2.1 - First Major Release
+description: Initial stable release of Annota with complete annotation framework
+date: 2025-10-26
+---
+
+# v0.2.1 - First Major Release
+
+**Release Date:** October 26, 2025
+
+This is the first major release of Annota, a high-performance React annotation framework for large-scale images, built on OpenSeadragon and PixiJS.
+
+## 🎉 Highlights
+
+Annota provides a complete solution for annotating large images with thousands of annotations while maintaining smooth 60 FPS performance. Designed for digital pathology, whole slide imaging, and any application requiring high-performance image annotation at scale.
+
+## ✨ Core Features
+
+### Performance & Rendering
+- **Hardware-Accelerated Rendering** - WebGL-powered PixiJS rendering engine
+- **Viewport Culling** - Only renders annotations visible in current view
+- **Level of Detail** - Adaptive rendering based on zoom level
+- **Smart Caching** - Graphics re-rendered only when necessary
+- **R-tree Spatial Indexing** - Fast spatial queries in O(log n) time
+- **10,000+ Annotations** - Smooth interaction at 60 FPS with thousands of annotations
+
+### Annotation Tools
+- **PointTool** - Create point markers for cell counting and location marking
+- **RectangleTool** - Draw rectangular regions of interest
+- **PolygonTool** - Freeform polygon drawing with vertex editing
+  - Insert vertices by clicking on edges
+  - Delete vertices with right-click or keyboard shortcuts
+- **ContourTool** - Automated contour detection for masks
+- **PushTool** - Interactive vertex manipulation
+
+### Layer Management
+- **Multi-Layer Organization** - Organize annotations in separate layers
+- **Visibility Controls** - Toggle layer visibility independently
+- **Opacity Controls** - Adjust layer transparency
+- **Layer Locking** - Prevent accidental edits to specific layers
+- **Layer Ordering** - Control z-index and rendering order
+
+### Undo/Redo System
+- **Complete Command Pattern** - Full undo/redo support for all operations
+- **Add Annotations** - Undo/redo annotation creation
+- **Delete Annotations** - Undo/redo annotation deletion
+- **Edit Annotations** - Undo/redo vertex modifications
+- **Layer Operations** - Undo/redo layer changes
+
+### Data Loading
+- **H5 Format Support** - Load polygon masks and coordinates from HDF5 files
+  - `loadH5Masks` - Extract polygon masks from HDF5
+  - `loadH5Coordinates` - Load point coordinates from HDF5
+- **JSON Support** - Load and save annotations in JSON format
+- **PGM Image Support** - Load mask data from PGM image files
+- **16-bit PNG Support** - Load mask polygons from 16-bit PNG files with proper endianness conversion
+
+### React Integration
+- **Modern Hooks API** - React-first design with comprehensive hooks
+  - `useAnnotator()` - Access annotator instance
+  - `useAnnotations()` - Get all annotations
+  - `useSelection()` - Access selected annotations
+  - `useTool(options)` - Activate annotation tools
+  - `useLayerManager()` - Control layers
+- **TypeScript Support** - Full type definitions included
+- **Event-Driven Architecture** - Comprehensive event system for annotation lifecycle
+
+## 📦 Installation
+
+```bash
+npm install annota
+# Modern package managers (npm 7+, pnpm) automatically install peer dependencies
+# including openseadragon and react
+
+# For npm 6 or below, install peer dependencies explicitly:
+npm install annota openseadragon react react-dom
+```
+
+## 🚀 Quick Start
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
+import { useState } from 'react';
+import 'annota/dist/index.css';
+
+function App() {
+  const [viewer, setViewer] = useState(null);
+
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <div style={{ width: '100vw', height: '100vh' }}>
+        <AnnotaViewer
+          options={{
+            tileSources: '/path/to/image.dzi',
+            prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </AnnotaProvider>
+  );
+}
+```
+
+## 🔧 Technical Details
+
+- **React Compatibility** - React 18+ and React 19 supported
+- **OpenSeadragon Compatibility** - OpenSeadragon 4.x and 5.x supported
+- **Browser Support** - Chrome/Edge 90+, Firefox 88+, Safari 14+
+- **WebGL Required** - Hardware acceleration for optimal performance
+
+## 🐛 Bug Fixes
+
+- Fixed layer visibility toggle not working correctly in PixiJS stage
+- Fixed invisible mask polygons rendering issue
+- Improved 16-bit PNG mask loading with proper endianness conversion
+- Improved OpenCV initialization with better CDN and error handling
+
+## 📚 Documentation
+
+Full documentation available at [https://annota.dev](https://annota.dev)
+
+- [Getting Started Guide](https://annota.dev/docs)
+- [API Reference](https://annota.dev/api)
+- [Interactive Examples](https://annota.dev/docs/examples)
+
+## 🙏 Acknowledgments
+
+Built with [OpenSeadragon](https://openseadragon.github.io/), [PixiJS](https://pixijs.com/), [RBush](https://github.com/mourner/rbush), and [React](https://react.dev/).
+
+---
+
+**Install this version:**
+```bash
+npm install annota@0.2.1
+```
