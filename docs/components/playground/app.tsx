@@ -218,13 +218,37 @@ export function PlaygroundApp() {
   );
 
   // Category-based styling: red for negative, green for positive
+  // Also supports maskPolarity for polygon/mask annotations
   const categoryStyleFunction = useCallback(
     (annotation: Annotation): AnnotationStyle => {
       const category = annotation.properties?.category as string | undefined;
+      const maskPolarity = annotation.maskPolarity;
 
+      // Check mask polarity first (for polygon masks)
+      if (maskPolarity === "negative") {
+        return {
+          fill: "#FF0000", // Red fill for negative masks
+          fillOpacity: 0.4,
+          stroke: "#FF6666", // Light red stroke
+          strokeOpacity: 1.0,
+          strokeWidth: 2,
+        };
+      }
+
+      if (maskPolarity === "positive") {
+        return {
+          fill: "#00FF00", // Green fill for positive masks
+          fillOpacity: 0.3,
+          stroke: "#66FF66", // Light green stroke
+          strokeOpacity: 1.0,
+          strokeWidth: 2,
+        };
+      }
+
+      // Fall back to category property (for point annotations)
       if (category === "negative") {
         return {
-          fill: "#FF0000", // Red fill for negative
+          fill: "#FF0000", // Red fill for negative points
           fillOpacity: 0.3,
           stroke: "#FF6666", // Light red stroke
           strokeOpacity: 1.0,
@@ -234,7 +258,7 @@ export function PlaygroundApp() {
 
       if (category === "positive") {
         return {
-          fill: "#00FF00", // Green fill for positive
+          fill: "#00FF00", // Green fill for positive points
           fillOpacity: 0.25,
           stroke: "#FFFFFF", // White stroke
           strokeOpacity: 1.0,
