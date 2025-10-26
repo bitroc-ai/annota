@@ -6,13 +6,13 @@ Annota provides a comprehensive set of tools for creating and editing annotation
 
 Tools enable users to interact with the image and create annotations. Each tool implements a specific interaction pattern:
 
-| Tool | Purpose | Interaction |
-|------|---------|-------------|
-| **PointTool** | Create point markers | Single click |
-| **RectangleTool** | Draw rectangles | Click and drag |
-| **PolygonTool** | Draw polygons | Click vertices, double-click to finish |
-| **PushTool** | Edit polygon vertices | Click and drag to push/pull vertices |
-| **ContourTool** | Extract contours from masks | Click to detect contours |
+| Tool              | Purpose                     | Interaction                            |
+| ----------------- | --------------------------- | -------------------------------------- |
+| **PointTool**     | Create point markers        | Single click                           |
+| **RectangleTool** | Draw rectangles             | Click and drag                         |
+| **PolygonTool**   | Draw polygons               | Click vertices, double-click to finish |
+| **PushTool**      | Edit polygon vertices       | Click and drag to push/pull vertices   |
+| **ContourTool**   | Extract contours from masks | Click to detect contours               |
 
 ## Using Tools
 
@@ -21,7 +21,7 @@ Tools enable users to interact with the image and create annotations. Each tool 
 Activate a tool using the `useTool` hook:
 
 ```tsx
-import { useTool, PointTool } from 'annota';
+import { useTool, PointTool } from "annota";
 
 function MyComponent({ viewer }) {
   const pointTool = new PointTool();
@@ -41,11 +41,11 @@ function MyComponent({ viewer }) {
 Allow users to switch between tools:
 
 ```tsx
-import { useTool, PointTool, RectangleTool, PolygonTool } from 'annota';
-import { useState } from 'react';
+import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useState } from "react";
 
 function ToolController({ viewer }) {
-  const [activeTool, setActiveTool] = useState('point');
+  const [activeTool, setActiveTool] = useState("point");
 
   const tools = {
     point: new PointTool(),
@@ -55,16 +55,16 @@ function ToolController({ viewer }) {
 
   useTool({
     viewer,
-    handler: activeTool === 'pan' ? null : tools[activeTool],
-    enabled: activeTool !== 'pan',
+    handler: activeTool === "pan" ? null : tools[activeTool],
+    enabled: activeTool !== "pan",
   });
 
   return (
     <div>
-      <button onClick={() => setActiveTool('pan')}>Pan</button>
-      <button onClick={() => setActiveTool('point')}>Point</button>
-      <button onClick={() => setActiveTool('rectangle')}>Rectangle</button>
-      <button onClick={() => setActiveTool('polygon')}>Polygon</button>
+      <button onClick={() => setActiveTool("pan")}>Pan</button>
+      <button onClick={() => setActiveTool("point")}>Point</button>
+      <button onClick={() => setActiveTool("rectangle")}>Rectangle</button>
+      <button onClick={() => setActiveTool("polygon")}>Polygon</button>
     </div>
   );
 }
@@ -77,7 +77,7 @@ Create point annotations with a single click.
 ### Basic Usage
 
 ```tsx
-import { PointTool } from 'annota';
+import { PointTool } from "annota";
 
 const pointTool = new PointTool();
 ```
@@ -87,9 +87,9 @@ const pointTool = new PointTool();
 ```tsx
 const pointTool = new PointTool({
   style: {
-    fill: '#FF0000',
+    fill: "#FF0000",
     fillOpacity: 0.8,
-    stroke: '#FFFFFF',
+    stroke: "#FFFFFF",
     strokeWidth: 2,
   },
 });
@@ -109,7 +109,7 @@ Draw rectangular regions by clicking and dragging.
 ### Basic Usage
 
 ```tsx
-import { RectangleTool } from 'annota';
+import { RectangleTool } from "annota";
 
 const rectangleTool = new RectangleTool();
 ```
@@ -119,9 +119,9 @@ const rectangleTool = new RectangleTool();
 ```tsx
 const rectangleTool = new RectangleTool({
   style: {
-    fill: '#00FF00',
+    fill: "#00FF00",
     fillOpacity: 0.3,
-    stroke: '#00FF00',
+    stroke: "#00FF00",
     strokeWidth: 2,
   },
 });
@@ -147,7 +147,7 @@ Draw polygons by clicking to add vertices.
 ### Basic Usage
 
 ```tsx
-import { PolygonTool } from 'annota';
+import { PolygonTool } from "annota";
 
 const polygonTool = new PolygonTool();
 ```
@@ -157,9 +157,9 @@ const polygonTool = new PolygonTool();
 ```tsx
 const polygonTool = new PolygonTool({
   style: {
-    fill: '#0000FF',
+    fill: "#0000FF",
     fillOpacity: 0.3,
-    stroke: '#0000FF',
+    stroke: "#0000FF",
     strokeWidth: 2,
   },
 });
@@ -186,10 +186,10 @@ Edit polygon vertices by pushing and pulling.
 ### Basic Usage
 
 ```tsx
-import { PushTool } from 'annota';
+import { PushTool } from "annota";
 
 const pushTool = new PushTool({
-  radius: 30,  // Influence radius in pixels
+  radius: 30, // Influence radius in pixels
 });
 ```
 
@@ -197,9 +197,9 @@ const pushTool = new PushTool({
 
 ```tsx
 const pushTool = new PushTool({
-  radius: 50,           // Larger influence radius
-  strength: 1.0,        // Strength of the push effect (0-1)
-  showCursor: true,     // Show the cursor indicator
+  radius: 50, // Larger influence radius
+  strength: 1.0, // Strength of the push effect (0-1)
+  showCursor: true, // Show the cursor indicator
 });
 ```
 
@@ -223,10 +223,10 @@ Automatically detect contours from underlying image data.
 ### Basic Usage
 
 ```tsx
-import { ContourTool } from 'annota';
+import { ContourTool } from "annota";
 
 const contourTool = new ContourTool({
-  threshold: 128,  // Pixel value threshold
+  threshold: 128, // Pixel value threshold
 });
 ```
 
@@ -234,11 +234,11 @@ const contourTool = new ContourTool({
 
 ```tsx
 const contourTool = new ContourTool({
-  threshold: 128,        // Threshold for binary mask
-  minArea: 100,          // Minimum contour area (optional)
-  maxContours: 1000,     // Maximum number of contours (optional)
+  threshold: 128, // Threshold for binary mask
+  minArea: 100, // Minimum contour area (optional)
+  maxContours: 1000, // Maximum number of contours (optional)
   style: {
-    fill: '#FFFF00',
+    fill: "#FFFF00",
     fillOpacity: 0.3,
   },
 });
@@ -268,7 +268,7 @@ npm install @techstark/opencv-js
 Then enable it in your app:
 
 ```tsx
-import { loadOpenCV } from 'annota';
+import { loadOpenCV } from "annota";
 
 // Load OpenCV before using ContourTool
 await loadOpenCV();
@@ -287,9 +287,9 @@ Default style for created annotations:
 ```tsx
 const tool = new PointTool({
   style: {
-    fill: '#FF0000',
+    fill: "#FF0000",
     fillOpacity: 0.8,
-    stroke: '#FFFFFF',
+    stroke: "#FFFFFF",
     strokeWidth: 2,
     strokeOpacity: 1.0,
   },
@@ -302,7 +302,7 @@ Assign created annotations to a specific layer:
 
 ```tsx
 const tool = new PointTool({
-  layer: 'tumor',  // Annotations will be created on the 'tumor' layer
+  layer: "tumor", // Annotations will be created on the 'tumor' layer
 });
 ```
 
@@ -313,7 +313,7 @@ Add custom properties to created annotations:
 ```tsx
 const tool = new PointTool({
   properties: {
-    type: 'cell',
+    type: "cell",
     confidence: 1.0,
   },
 });
@@ -331,7 +331,7 @@ const [enabled, setEnabled] = useState(true);
 useTool({
   viewer,
   handler: pointTool,
-  enabled,  // Tool only active when true
+  enabled, // Tool only active when true
 });
 ```
 
@@ -350,13 +350,13 @@ Some tools maintain internal state (e.g., polygon vertices being drawn). This st
 Display custom cursors when tools are active:
 
 ```tsx
-import { usePushToolCursor } from 'annota';
+import { usePushToolCursor } from "annota";
 
 function PushToolController({ viewer, radius }) {
   const pushTool = new PushTool({ radius });
 
   useTool({ viewer, handler: pushTool, enabled: true });
-  usePushToolCursor({ viewer, radius });  // Show radius cursor
+  usePushToolCursor({ viewer, radius }); // Show radius cursor
 
   return null;
 }
@@ -369,16 +369,16 @@ Listen to tool events:
 ```tsx
 const tool = new PointTool();
 
-tool.on('start', () => {
-  console.log('Tool activated');
+tool.on("start", () => {
+  console.log("Tool activated");
 });
 
-tool.on('create', (annotation) => {
-  console.log('Annotation created:', annotation);
+tool.on("create", (annotation) => {
+  console.log("Annotation created:", annotation);
 });
 
-tool.on('cancel', () => {
-  console.log('Tool cancelled');
+tool.on("cancel", () => {
+  console.log("Tool cancelled");
 });
 ```
 
@@ -388,9 +388,10 @@ Change tool behavior based on conditions:
 
 ```tsx
 function SmartTool({ viewer, mode }) {
-  const tool = mode === 'tumor'
-    ? new PolygonTool({ style: { fill: '#FF0000' }, layer: 'tumor' })
-    : new PolygonTool({ style: { fill: '#00FF00' }, layer: 'healthy' });
+  const tool =
+    mode === "tumor"
+      ? new PolygonTool({ style: { fill: "#FF0000" }, layer: "tumor" })
+      : new PolygonTool({ style: { fill: "#00FF00" }, layer: "healthy" });
 
   useTool({ viewer, handler: tool, enabled: true });
 
@@ -413,7 +414,7 @@ const [tools] = useState({
 
 // ❌ Bad
 const tools = {
-  point: new PointTool(),  // Creates new instance every render
+  point: new PointTool(), // Creates new instance every render
   rectangle: new RectangleTool(),
 };
 ```
@@ -424,8 +425,8 @@ Show which tool is active:
 
 ```tsx
 <button
-  onClick={() => setTool('point')}
-  style={{ fontWeight: tool === 'point' ? 'bold' : 'normal' }}
+  onClick={() => setTool("point")}
+  style={{ fontWeight: tool === "point" ? "bold" : "normal" }}
 >
   Point Tool
 </button>
@@ -436,7 +437,7 @@ Show which tool is active:
 Always provide a way to disable tools (e.g., "Pan" mode):
 
 ```tsx
-<button onClick={() => setTool('pan')}>Pan Mode</button>
+<button onClick={() => setTool("pan")}>Pan Mode</button>
 ```
 
 ### 4. Keyboard Shortcuts
@@ -446,14 +447,14 @@ Add keyboard shortcuts for common tools:
 ```tsx
 useEffect(() => {
   const handleKeyPress = (e: KeyboardEvent) => {
-    if (e.key === 'p') setTool('point');
-    if (e.key === 'r') setTool('rectangle');
-    if (e.key === 'g') setTool('polygon');
-    if (e.key === 'v') setTool('pan');
+    if (e.key === "p") setTool("point");
+    if (e.key === "r") setTool("rectangle");
+    if (e.key === "g") setTool("polygon");
+    if (e.key === "v") setTool("pan");
   };
 
-  window.addEventListener('keydown', handleKeyPress);
-  return () => window.removeEventListener('keydown', handleKeyPress);
+  window.addEventListener("keydown", handleKeyPress);
+  return () => window.removeEventListener("keydown", handleKeyPress);
 }, []);
 ```
 
@@ -462,4 +463,4 @@ useEffect(() => {
 - [Custom Tools](/docs/guides/custom-tools) - Build your own annotation tools
 - [Events](/docs/guides/events) - Respond to annotation changes
 - [Styling](/docs/guides/styling) - Customize annotation appearance
-- [API Reference](/api/tools-api) - Complete tool API documentation
+- [API](/api/tools-api) - Complete tool API documentation

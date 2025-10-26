@@ -4,13 +4,13 @@ Annota provides built-in loaders for importing annotations from various file for
 
 ## Overview
 
-| Loader | Format | Use Case |
-|--------|--------|----------|
-| `loadMaskPolygons` | PNG/PGM masks | Instance segmentation masks from pathology models |
-| `loadH5Masks` | HDF5 masks | Segmentation masks from analysis pipelines |
-| `loadH5Coordinates` | HDF5 coordinates | Point annotations from detection algorithms |
-| `loadJSON` | JSON | Standard annotation interchange |
-| `loadPGM` | PGM masks | Legacy mask format |
+| Loader              | Format           | Use Case                                          |
+| ------------------- | ---------------- | ------------------------------------------------- |
+| `loadMaskPolygons`  | PNG/PGM masks    | Instance segmentation masks from pathology models |
+| `loadH5Masks`       | HDF5 masks       | Segmentation masks from analysis pipelines        |
+| `loadH5Coordinates` | HDF5 coordinates | Point annotations from detection algorithms       |
+| `loadJSON`          | JSON             | Standard annotation interchange                   |
+| `loadPGM`           | PGM masks        | Legacy mask format                                |
 
 ## PNG/PGM Mask Loader
 
@@ -19,14 +19,14 @@ Load instance segmentation masks from PNG or PGM files and convert them to polyg
 ### Basic Usage
 
 ```tsx
-import { loadMaskPolygons, useAnnotator } from 'annota';
+import { loadMaskPolygons, useAnnotator } from "annota";
 
 function LoadMasks() {
   const annotator = useAnnotator();
 
   const handleLoad = async () => {
-    const annotations = await loadMaskPolygons('/masks/instances.png', {
-      color: '#FFFF00',
+    const annotations = await loadMaskPolygons("/masks/instances.png", {
+      color: "#FFFF00",
       fillOpacity: 0.3,
       strokeWidth: 2,
     });
@@ -91,18 +91,18 @@ The loader uses OpenCV.js for contour detection:
 
 ```typescript
 interface MaskLoaderOptions {
-  color?: string;          // Polygon color (default: '#FFFF00')
-  fillOpacity?: number;    // Fill opacity (default: 0.3)
-  strokeWidth?: number;    // Stroke width (default: 2)
-  layer?: string;          // Layer name (default: 'masks')
+  color?: string; // Polygon color (default: '#FFFF00')
+  fillOpacity?: number; // Fill opacity (default: 0.3)
+  strokeWidth?: number; // Stroke width (default: 2)
+  layer?: string; // Layer name (default: 'masks')
 }
 ```
 
 ### Complete Example
 
 ```tsx
-import { loadMaskPolygons, useAnnotator } from 'annota';
-import { useState } from 'react';
+import { loadMaskPolygons, useAnnotator } from "annota";
+import { useState } from "react";
 
 function MaskImporter() {
   const [loading, setLoading] = useState(false);
@@ -112,19 +112,16 @@ function MaskImporter() {
   const loadMask = async (imageId: string) => {
     setLoading(true);
     try {
-      const annotations = await loadMaskPolygons(
-        `/masks/${imageId}.png`,
-        {
-          color: '#FFFF00',
-          fillOpacity: 0.3,
-          strokeWidth: 2,
-        }
-      );
+      const annotations = await loadMaskPolygons(`/masks/${imageId}.png`, {
+        color: "#FFFF00",
+        fillOpacity: 0.3,
+        strokeWidth: 2,
+      });
 
       annotator?.addAnnotations(annotations);
       setCount(annotations.length);
     } catch (error) {
-      console.error('Failed to load mask:', error);
+      console.error("Failed to load mask:", error);
     } finally {
       setLoading(false);
     }
@@ -132,8 +129,8 @@ function MaskImporter() {
 
   return (
     <div>
-      <button onClick={() => loadMask('slide_001')} disabled={loading}>
-        {loading ? 'Loading...' : 'Load Nuclei Mask'}
+      <button onClick={() => loadMask("slide_001")} disabled={loading}>
+        {loading ? "Loading..." : "Load Nuclei Mask"}
       </button>
       {count > 0 && <p>Loaded {count} instances</p>}
     </div>
@@ -151,15 +148,18 @@ function MaskImporter() {
 ### Troubleshooting
 
 **No polygons extracted:**
+
 - Verify PNG is 16-bit grayscale (not RGB or 8-bit)
 - Check pixel values are non-zero (0 = background)
 - Ensure OpenCV.js loaded successfully (check browser console)
 
 **Incorrect shapes:**
+
 - Verify mask uses pixel values as instance IDs (not RGB encoding)
 - Check byte order is big-endian (standard PNG format)
 
 **Memory issues:**
+
 - For very large masks (>4000x4000), consider tiling or downsampling
 - Each polygon uses memory proportional to vertex count
 
@@ -170,14 +170,14 @@ Load segmentation masks from HDF5 files and convert them to polygon annotations.
 ### Basic Usage
 
 ```tsx
-import { loadH5Masks, useAnnotator } from 'annota';
+import { loadH5Masks, useAnnotator } from "annota";
 
 function LoadMasks() {
   const annotator = useAnnotator();
 
   const handleLoad = async () => {
-    const annotations = await loadH5Masks('/annotations/masks.h5', {
-      color: '#FF0000',
+    const annotations = await loadH5Masks("/annotations/masks.h5", {
+      color: "#FF0000",
       fillOpacity: 0.3,
     });
 
@@ -192,11 +192,11 @@ function LoadMasks() {
 
 ```typescript
 interface H5MaskLoaderOptions {
-  color?: string;          // Annotation color (default: '#00FF00')
-  fillOpacity?: number;    // Fill opacity (default: 0.3)
-  strokeWidth?: number;    // Stroke width (default: 2)
-  dataset?: string;        // Dataset path in H5 file (auto-detected if not specified)
-  properties?: Record<string, any>;  // Custom properties for annotations
+  color?: string; // Annotation color (default: '#00FF00')
+  fillOpacity?: number; // Fill opacity (default: 0.3)
+  strokeWidth?: number; // Stroke width (default: 2)
+  dataset?: string; // Dataset path in H5 file (auto-detected if not specified)
+  properties?: Record<string, any>; // Custom properties for annotations
 }
 ```
 
@@ -205,8 +205,8 @@ interface H5MaskLoaderOptions {
 The loader automatically detects the mask dataset. If your H5 file has a non-standard structure, specify the dataset path:
 
 ```tsx
-const annotations = await loadH5Masks('/annotations/masks.h5', {
-  dataset: '/masks/nuclei',  // Explicit dataset path
+const annotations = await loadH5Masks("/annotations/masks.h5", {
+  dataset: "/masks/nuclei", // Explicit dataset path
 });
 ```
 
@@ -215,11 +215,11 @@ const annotations = await loadH5Masks('/annotations/masks.h5', {
 ```tsx
 async function loadMasksWithErrorHandling() {
   try {
-    const annotations = await loadH5Masks('/annotations/masks.h5');
+    const annotations = await loadH5Masks("/annotations/masks.h5");
     console.log(`Loaded ${annotations.length} annotations`);
     return annotations;
   } catch (error) {
-    console.error('Failed to load H5 masks:', error);
+    console.error("Failed to load H5 masks:", error);
     // Error includes available datasets if detection fails
     return [];
   }
@@ -233,11 +233,11 @@ Load point coordinates from HDF5 files (e.g., cell detections from AI models).
 ### Basic Usage
 
 ```tsx
-import { loadH5Coordinates } from 'annota';
+import { loadH5Coordinates } from "annota";
 
 async function loadCells() {
-  const annotations = await loadH5Coordinates('/annotations/cells.h5', {
-    color: '#00FF00',
+  const annotations = await loadH5Coordinates("/annotations/cells.h5", {
+    color: "#00FF00",
     fillOpacity: 0.8,
   });
 
@@ -249,10 +249,10 @@ async function loadCells() {
 
 ```typescript
 interface H5CoordinateLoaderOptions {
-  color?: string;          // Point color (default: '#00FF00')
-  fillOpacity?: number;    // Fill opacity (default: 0.8)
-  strokeWidth?: number;    // Stroke width (default: 2)
-  properties?: Record<string, any>;  // Custom properties
+  color?: string; // Point color (default: '#00FF00')
+  fillOpacity?: number; // Fill opacity (default: 0.8)
+  strokeWidth?: number; // Stroke width (default: 2)
+  properties?: Record<string, any>; // Custom properties
 }
 ```
 
@@ -275,13 +275,13 @@ coordinates/
 ```tsx
 async function loadMultipleCategoriesannot() {
   const [positiveAnnotations, negativeAnnotations] = await Promise.all([
-    loadH5Coordinates('/annotations/positive.h5', {
-      color: '#00FF00',
-      properties: { category: 'positive' },
+    loadH5Coordinates("/annotations/positive.h5", {
+      color: "#00FF00",
+      properties: { category: "positive" },
     }),
-    loadH5Coordinates('/annotations/negative.h5', {
-      color: '#FF0000',
-      properties: { category: 'negative' },
+    loadH5Coordinates("/annotations/negative.h5", {
+      color: "#FF0000",
+      properties: { category: "negative" },
     }),
   ]);
 
@@ -332,10 +332,10 @@ Load legacy PGM mask files.
 ### Basic Usage
 
 ```tsx
-import { loadPGMMasks } from 'annota';
+import { loadPGMMasks } from "annota";
 
-const annotations = await loadPGMMasks('/annotations/mask.pgm', {
-  color: '#0000FF',
+const annotations = await loadPGMMasks("/annotations/mask.pgm", {
+  color: "#0000FF",
   fillOpacity: 0.3,
 });
 ```
@@ -352,7 +352,7 @@ function MaskLoader() {
   const handleLoad = async () => {
     setLoading(true);
     try {
-      const annotations = await loadH5Masks('/annotations/masks.h5');
+      const annotations = await loadH5Masks("/annotations/masks.h5");
       annotator?.addAnnotations(annotations);
     } finally {
       setLoading(false);
@@ -361,7 +361,7 @@ function MaskLoader() {
 
   return (
     <button onClick={handleLoad} disabled={loading}>
-      {loading ? 'Loading...' : 'Load Masks'}
+      {loading ? "Loading..." : "Load Masks"}
     </button>
   );
 }
@@ -372,10 +372,10 @@ function MaskLoader() {
 Assign loaded annotations to specific layers:
 
 ```tsx
-const annotations = await loadH5Masks('/annotations/masks.h5', {
+const annotations = await loadH5Masks("/annotations/masks.h5", {
   properties: {
-    layer: 'imported-masks',  // Assign to specific layer
-    source: 'h5',
+    layer: "imported-masks", // Assign to specific layer
+    source: "h5",
   },
 });
 ```
@@ -386,9 +386,7 @@ Load multiple files efficiently:
 
 ```tsx
 async function loadAllAnnotations(files: string[]) {
-  const results = await Promise.all(
-    files.map(file => loadH5Masks(file))
-  );
+  const results = await Promise.all(files.map((file) => loadH5Masks(file)));
 
   return results.flat();
 }
@@ -422,6 +420,6 @@ function ProgressLoader({ files }: { files: string[] }) {
 
 ## Next Steps
 
-- [API Reference](/api) - Complete loader API documentation
+- [API](/api) - Complete loader API documentation
 - [Examples](/docs/examples/h5-loading) - See practical loading examples
 - [Events](/docs/guides/events) - Handle post-load events

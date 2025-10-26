@@ -20,7 +20,7 @@ export default {
     type: 'page', // ❌ WRONG: This puts "docs" in navbar instead of sidebar
   },
   api: {
-    title: 'API Reference',
+    title: 'API',
     type: 'page', // ❌ WRONG: This puts "api" in navbar instead of sidebar
   },
   github: {
@@ -55,7 +55,7 @@ export default {
     display: 'hidden',
   },
   docs: 'Documentation', // ✅ Will show in sidebar
-  api: 'API Reference', // ✅ Will show in sidebar
+  api: 'API', // ✅ Will show in sidebar
   github: {
     title: 'GitHub',
     href: 'https://github.com/bitroc-ai/annota',
@@ -76,7 +76,7 @@ export default {
     // Remove type: 'page' - this allows nested items
   },
   api: {
-    title: 'API Reference',
+    title: 'API',
     // Remove type: 'page'
   },
   github: {
@@ -98,7 +98,7 @@ export default {
   index: 'Introduction',
   'getting-started': 'Getting Started',
   guides: 'Guides', // ✅ Folder - shows in sidebar with nested items
-  api: 'API Reference', // ✅ Folder - shows in sidebar
+  api: 'API', // ✅ Folder - shows in sidebar
 };
 
 // Then in content/docs/guides/_meta.ts (or .js)
@@ -172,7 +172,7 @@ export default {
     display: 'hidden',
   },
   docs: 'Documentation', // Changed: removed type + object wrapper
-  api: 'API Reference', // Changed: removed type + object wrapper
+  api: 'API', // Changed: removed type + object wrapper
   github: {
     title: 'GitHub',
     href: 'https://github.com/bitroc-ai/annota',
@@ -189,7 +189,7 @@ export default {
   - Guides (expandable)
     - Layer System
     - Popup System
-- ✅ "API Reference" appears in sidebar
+- ✅ "API" appears in sidebar
 - ✅ Sidebar behaves like ticos-docs
 
 ## Additional Configuration Check

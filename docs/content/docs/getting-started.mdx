@@ -21,9 +21,9 @@ pnpm add annota openseadragon react react-dom
 Here's a minimal example to get you started:
 
 ```tsx
-import { useState } from 'react';
-import OpenSeadragon from 'openseadragon';
-import { AnnotaProvider, Annotator, AnnotationEditor } from 'annota';
+import { useState } from "react";
+import OpenSeadragon from "openseadragon";
+import { AnnotaProvider, Annotator, AnnotationEditor } from "annota";
 
 function App() {
   const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
@@ -42,6 +42,7 @@ function App() {
 ```
 
 That's it! You now have a working annotation viewer with:
+
 - Point, Rectangle, and Polygon drawing tools
 - Drag-and-drop editing of shapes
 - Selection management
@@ -53,9 +54,7 @@ That's it! You now have a working annotation viewer with:
 The `AnnotaProvider` component wraps your application and provides the annotation context:
 
 ```tsx
-<AnnotaProvider>
-  {/* Your annotation components */}
-</AnnotaProvider>
+<AnnotaProvider>{/* Your annotation components */}</AnnotaProvider>
 ```
 
 ### Annotator
@@ -86,22 +85,18 @@ The `AnnotationEditor` enables visual editing of annotations:
 Annota provides ready-to-use annotation tools:
 
 ```tsx
-import { PointTool, RectangleTool, PolygonTool } from 'annota';
+import { PointTool, RectangleTool, PolygonTool } from "annota";
 
 function ToolBar({ viewer }: { viewer: OpenSeadragon.Viewer | undefined }) {
   const [currentTool, setCurrentTool] = useState<any>(null);
 
   return (
     <div>
-      <button onClick={() => setCurrentTool(new PointTool())}>
-        Point
-      </button>
+      <button onClick={() => setCurrentTool(new PointTool())}>Point</button>
       <button onClick={() => setCurrentTool(new RectangleTool())}>
         Rectangle
       </button>
-      <button onClick={() => setCurrentTool(new PolygonTool())}>
-        Polygon
-      </button>
+      <button onClick={() => setCurrentTool(new PolygonTool())}>Polygon</button>
 
       {currentTool && viewer && (
         <ToolController viewer={viewer} tool={currentTool} />
@@ -116,7 +111,7 @@ function ToolBar({ viewer }: { viewer: OpenSeadragon.Viewer | undefined }) {
 Use hooks to access and manage annotations:
 
 ```tsx
-import { useAnnotations, useSelection } from 'annota';
+import { useAnnotations, useSelection } from "annota";
 
 function AnnotationList() {
   const annotations = useAnnotations();
@@ -124,10 +119,10 @@ function AnnotationList() {
 
   return (
     <ul>
-      {annotations.map(ann => (
+      {annotations.map((ann) => (
         <li key={ann.id}>
           {ann.shape.type} - {ann.id}
-          {selection.find(s => s.id === ann.id) && ' (selected)'}
+          {selection.find((s) => s.id === ann.id) && " (selected)"}
         </li>
       ))}
     </ul>
@@ -139,5 +134,5 @@ function AnnotationList() {
 
 - Learn about [Layers](/docs/guides/layers) for organizing annotations
 - Explore [Custom Tools](/docs/guides/custom-tools) for building specialized annotation types
-- Check out the [API Reference](/api) for detailed documentation
+- Check out the [API](/api) for detailed documentation
 - See [Examples](/docs/examples) for more complex use cases

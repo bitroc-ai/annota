@@ -7,20 +7,21 @@ Build your first annotation viewer in minutes with Annota.
 Here's the simplest possible annotation viewer:
 
 ```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
-import { useState } from 'react';
-import 'annota/dist/index.css';
+import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+import { useState } from "react";
+import "annota/dist/index.css";
 
 function App() {
   const [viewer, setViewer] = useState(null);
 
   return (
     <AnnotaProvider slideId="my-slide">
-      <div style={{ width: '100vw', height: '100vh' }}>
+      <div style={{ width: "100vw", height: "100vh" }}>
         <AnnotaViewer
           options={{
-            tileSources: '/path/to/image.dzi',
-            prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+            tileSources: "/path/to/image.dzi",
+            prefixUrl:
+              "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
           }}
           onViewerReady={setViewer}
         />
@@ -52,14 +53,15 @@ The `AnnotaProvider` wraps your application and provides annotation context. The
 ```tsx
 <AnnotaViewer
   options={{
-    tileSources: '/path/to/image.dzi',
-    prefixUrl: '...',
+    tileSources: "/path/to/image.dzi",
+    prefixUrl: "...",
   }}
   onViewerReady={setViewer}
 />
 ```
 
 The `AnnotaViewer` component creates and manages the OpenSeadragon viewer. It accepts:
+
 - `options`: OpenSeadragon configuration options
 - `onViewerReady`: Callback when the viewer is initialized
 
@@ -76,23 +78,24 @@ The `Annotator` component creates the annotation overlay layer. It must receive 
 Let's add tools for creating annotations:
 
 ```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from 'annota';
-import { PointTool, RectangleTool, PolygonTool } from 'annota';
-import { useState } from 'react';
+import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from "annota";
+import { PointTool, RectangleTool, PolygonTool } from "annota";
+import { useState } from "react";
 
 function App() {
   const [viewer, setViewer] = useState(null);
-  const [tool, setTool] = useState('point');
+  const [tool, setTool] = useState("point");
 
   return (
     <AnnotaProvider slideId="my-slide">
-      <div style={{ width: '100vw', height: '100vh' }}>
+      <div style={{ width: "100vw", height: "100vh" }}>
         <Toolbar tool={tool} onToolChange={setTool} />
 
         <AnnotaViewer
           options={{
-            tileSources: '/path/to/image.dzi',
-            prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+            tileSources: "/path/to/image.dzi",
+            prefixUrl:
+              "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
           }}
           onViewerReady={setViewer}
         />
@@ -107,11 +110,11 @@ function App() {
 
 function Toolbar({ tool, onToolChange }) {
   return (
-    <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
-      <button onClick={() => onToolChange('point')}>Point</button>
-      <button onClick={() => onToolChange('rectangle')}>Rectangle</button>
-      <button onClick={() => onToolChange('polygon')}>Polygon</button>
-      <button onClick={() => onToolChange('pan')}>Pan</button>
+    <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
+      <button onClick={() => onToolChange("point")}>Point</button>
+      <button onClick={() => onToolChange("rectangle")}>Rectangle</button>
+      <button onClick={() => onToolChange("polygon")}>Polygon</button>
+      <button onClick={() => onToolChange("pan")}>Pan</button>
     </div>
   );
 }
@@ -125,8 +128,8 @@ function ToolController({ viewer, tool }) {
 
   useTool({
     viewer,
-    handler: tool === 'pan' ? null : tools[tool],
-    enabled: tool !== 'pan',
+    handler: tool === "pan" ? null : tools[tool],
+    enabled: tool !== "pan",
   });
 
   return null;
@@ -140,20 +143,20 @@ Now you have a complete annotation interface with multiple tools!
 Use hooks to access and display annotations:
 
 ```tsx
-import { useAnnotations, useSelection } from 'annota';
+import { useAnnotations, useSelection } from "annota";
 
 function AnnotationList() {
   const annotations = useAnnotations();
   const selection = useSelection();
 
   return (
-    <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+    <div style={{ position: "absolute", top: 20, right: 20, zIndex: 10 }}>
       <h3>Annotations ({annotations.length})</h3>
       <ul>
-        {annotations.map(ann => (
+        {annotations.map((ann) => (
           <li key={ann.id}>
             {ann.shape.type}
-            {selection.some(s => s.id === ann.id) && ' (selected)'}
+            {selection.some((s) => s.id === ann.id) && " (selected)"}
           </li>
         ))}
       </ul>
@@ -186,9 +189,9 @@ import {
   PointTool,
   RectangleTool,
   PolygonTool,
-} from 'annota';
-import { useState } from 'react';
-import 'annota/dist/index.css';
+} from "annota";
+import { useState } from "react";
+import "annota/dist/index.css";
 
 export default function AnnotationApp() {
   return (
@@ -200,7 +203,7 @@ export default function AnnotationApp() {
 
 function ViewerWithTools() {
   const [viewer, setViewer] = useState(null);
-  const [tool, setTool] = useState('pan');
+  const [tool, setTool] = useState("pan");
   const annotations = useAnnotations();
   const selection = useSelection();
 
@@ -214,22 +217,22 @@ function ViewerWithTools() {
   // Activate the selected tool
   useTool({
     viewer,
-    handler: tool === 'pan' ? null : tools[tool],
-    enabled: tool !== 'pan',
+    handler: tool === "pan" ? null : tools[tool],
+    enabled: tool !== "pan",
   });
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
+    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       {/* Toolbar */}
-      <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
-        <button onClick={() => setTool('pan')}>Pan</button>
-        <button onClick={() => setTool('point')}>Point</button>
-        <button onClick={() => setTool('rectangle')}>Rectangle</button>
-        <button onClick={() => setTool('polygon')}>Polygon</button>
+      <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
+        <button onClick={() => setTool("pan")}>Pan</button>
+        <button onClick={() => setTool("point")}>Point</button>
+        <button onClick={() => setTool("rectangle")}>Rectangle</button>
+        <button onClick={() => setTool("polygon")}>Polygon</button>
       </div>
 
       {/* Info panel */}
-      <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 10 }}>
+      <div style={{ position: "absolute", top: 20, right: 20, zIndex: 10 }}>
         <div>Annotations: {annotations.length}</div>
         <div>Selected: {selection.length}</div>
       </div>
@@ -237,8 +240,9 @@ function ViewerWithTools() {
       {/* Viewer */}
       <AnnotaViewer
         options={{
-          tileSources: '/path/to/image.dzi',
-          prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+          tileSources: "/path/to/image.dzi",
+          prefixUrl:
+            "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
           showNavigationControl: false,
         }}
         onViewerReady={setViewer}
@@ -259,15 +263,15 @@ Now that you have a working annotation viewer:
 - [Annotation Tools](/docs/guides/tools) - Learn about all available tools
 - [Layer System](/docs/guides/layers) - Organize annotations into layers
 - [Events](/docs/guides/events) - Respond to annotation changes
-- [API Reference](/api) - Explore the complete API
+- [API](/api) - Explore the complete API
 
 ## Common Patterns
 
 ### Loading Existing Annotations
 
 ```tsx
-import { useAnnotator } from 'annota';
-import { useEffect } from 'react';
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
 
 function LoadAnnotations() {
   const annotator = useAnnotator();
@@ -276,9 +280,9 @@ function LoadAnnotations() {
     if (!annotator) return;
 
     // Load annotations from your API
-    fetch('/api/annotations/slide-001')
-      .then(res => res.json())
-      .then(annotations => {
+    fetch("/api/annotations/slide-001")
+      .then((res) => res.json())
+      .then((annotations) => {
         annotator.addAnnotations(annotations);
       });
   }, [annotator]);
@@ -290,15 +294,15 @@ function LoadAnnotations() {
 ### Saving Annotations
 
 ```tsx
-import { useAnnotations } from 'annota';
+import { useAnnotations } from "annota";
 
 function SaveButton() {
   const annotations = useAnnotations();
 
   const handleSave = () => {
-    fetch('/api/annotations/slide-001', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    fetch("/api/annotations/slide-001", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(annotations),
     });
   };
@@ -313,9 +317,9 @@ function SaveButton() {
 <Annotator
   viewer={viewer}
   style={(annotation) => ({
-    fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+    fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
     fillOpacity: 0.3,
-    stroke: '#FFFFFF',
+    stroke: "#FFFFFF",
     strokeWidth: 2,
   })}
 />
@@ -326,6 +330,7 @@ function SaveButton() {
 ### Annotations not appearing
 
 Make sure:
+
 1. The `Annotator` component receives a valid `viewer` prop
 2. The `viewer` prop is updated when OpenSeadragon initializes
 3. You're adding annotations after the annotator is ready
@@ -333,6 +338,7 @@ Make sure:
 ### Tools not working
 
 Check that:
+
 1. `useTool` hook receives a valid `viewer` prop
 2. The `enabled` prop is `true`
 3. The tool handler is properly instantiated
@@ -349,4 +355,4 @@ npm install --save-dev @types/openseadragon
 
 - [Examples](/docs/examples) - More complete examples
 - [GitHub Issues](https://github.com/bitroc-ai/annota/issues) - Report bugs
-- [API Reference](/api) - Detailed API documentation
+- [API](/api) - Detailed API documentation

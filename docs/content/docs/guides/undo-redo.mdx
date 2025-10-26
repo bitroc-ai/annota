@@ -19,18 +19,18 @@ The undo/redo system automatically tracks all annotation changes (create, update
 History is enabled by default when you create an annotator:
 
 ```tsx
-import { createOpenSeadragonAnnotator } from 'annota';
+import { createOpenSeadragonAnnotator } from "annota";
 
 const annotator = await createOpenSeadragonAnnotator(viewer);
 
 // All annotation operations are now tracked
-annotator.addAnnotation(annotation);  // Can be undone
-annotator.updateAnnotation(id, newAnnotation);  // Can be undone
-annotator.deleteAnnotation(id);  // Can be undone
+annotator.addAnnotation(annotation); // Can be undone
+annotator.updateAnnotation(id, newAnnotation); // Can be undone
+annotator.deleteAnnotation(id); // Can be undone
 
 // Undo and redo
-annotator.undo();  // Undo last operation
-annotator.redo();  // Redo undone operation
+annotator.undo(); // Undo last operation
+annotator.redo(); // Redo undone operation
 ```
 
 ### Keyboard Shortcuts
@@ -38,11 +38,11 @@ annotator.redo();  // Redo undone operation
 Keyboard shortcuts are automatically enabled through `initKeyboardCommands`:
 
 ```tsx
-import { initKeyboardCommands } from 'annota';
+import { initKeyboardCommands } from "annota";
 
 // Enable keyboard commands (including undo/redo)
 const keyboard = initKeyboardCommands(annotator, {
-  enableUndoRedo: true  // Default: true
+  enableUndoRedo: true, // Default: true
 });
 
 // Now users can:
@@ -58,7 +58,7 @@ const keyboard = initKeyboardCommands(annotator, {
 The `useHistory` hook provides complete history state and controls:
 
 ```tsx
-import { useHistory } from 'annota';
+import { useHistory } from "annota";
 
 function HistoryControls() {
   const history = useHistory();
@@ -85,9 +85,7 @@ function HistoryControls() {
         {history.undoSize} undos, {history.redoSize} redos
       </span>
 
-      <button onClick={history.clear}>
-        Clear History
-      </button>
+      <button onClick={history.clear}>Clear History</button>
     </div>
   );
 }
@@ -98,7 +96,7 @@ function HistoryControls() {
 For simple use cases, use `useCanUndo` and `useCanRedo`:
 
 ```tsx
-import { useCanUndo, useCanRedo, useAnnotator } from 'annota';
+import { useCanUndo, useCanRedo, useAnnotator } from "annota";
 
 function SimpleHistoryControls() {
   const annotator = useAnnotator();
@@ -107,16 +105,10 @@ function SimpleHistoryControls() {
 
   return (
     <div>
-      <button
-        onClick={() => annotator?.undo()}
-        disabled={!canUndo}
-      >
+      <button onClick={() => annotator?.undo()} disabled={!canUndo}>
         Undo
       </button>
-      <button
-        onClick={() => annotator?.redo()}
-        disabled={!canRedo}
-      >
+      <button onClick={() => annotator?.redo()} disabled={!canRedo}>
         Redo
       </button>
     </div>
@@ -133,9 +125,9 @@ Configure the history manager when creating the annotator:
 ```tsx
 const annotator = await createOpenSeadragonAnnotator(viewer, {
   historyOptions: {
-    maxHistorySize: 100,     // Max commands in history (default: 100)
-    enableMerging: true       // Merge consecutive similar commands (default: true)
-  }
+    maxHistorySize: 100, // Max commands in history (default: 100)
+    enableMerging: true, // Merge consecutive similar commands (default: true)
+  },
 });
 ```
 
@@ -144,15 +136,15 @@ const annotator = await createOpenSeadragonAnnotator(viewer, {
 You can provide your own history manager instance:
 
 ```tsx
-import { createHistoryManager } from 'annota';
+import { createHistoryManager } from "annota";
 
 const customHistory = createHistoryManager({
   maxHistorySize: 200,
-  enableMerging: false
+  enableMerging: false,
 });
 
 const annotator = await createOpenSeadragonAnnotator(viewer, {
-  historyManager: customHistory
+  historyManager: customHistory,
 });
 ```
 
@@ -164,10 +156,10 @@ Group multiple operations into a single undoable action:
 
 ```tsx
 // Start batch
-annotator.state.history.beginBatch('Add multiple annotations');
+annotator.state.history.beginBatch("Add multiple annotations");
 
 // All operations in batch
-annotations.forEach(annotation => {
+annotations.forEach((annotation) => {
   annotator.addAnnotation(annotation);
 });
 
@@ -205,13 +197,13 @@ The history system automatically merges consecutive updates to the same annotati
 
 ```tsx
 // Without merging, each update would create a separate undo step
-annotator.updateAnnotation('ann-1', { ...annotation, x: 100 });
-annotator.updateAnnotation('ann-1', { ...annotation, x: 150 });
-annotator.updateAnnotation('ann-1', { ...annotation, x: 200 });
+annotator.updateAnnotation("ann-1", { ...annotation, x: 100 });
+annotator.updateAnnotation("ann-1", { ...annotation, x: 150 });
+annotator.updateAnnotation("ann-1", { ...annotation, x: 200 });
 
 // With merging enabled (default), these become ONE undo step
 // Undoing will revert from x:200 to the original value before x:100
-annotator.undo();  // Goes back to original annotation state
+annotator.undo(); // Goes back to original annotation state
 ```
 
 To disable merging:
@@ -219,8 +211,8 @@ To disable merging:
 ```tsx
 const annotator = await createOpenSeadragonAnnotator(viewer, {
   historyOptions: {
-    enableMerging: false  // Each update is a separate undo step
-  }
+    enableMerging: false, // Each update is a separate undo step
+  },
 });
 ```
 
@@ -229,15 +221,15 @@ const annotator = await createOpenSeadragonAnnotator(viewer, {
 React to history state changes:
 
 ```tsx
-import type { HistoryStateEvent } from 'annota';
+import type { HistoryStateEvent } from "annota";
 
 const history = annotator.state.history;
 
 const handleHistoryChange = (event: HistoryStateEvent) => {
-  console.log('Can undo:', event.canUndo);
-  console.log('Can redo:', event.canRedo);
-  console.log('Undo stack size:', event.undoSize);
-  console.log('Redo stack size:', event.redoSize);
+  console.log("Can undo:", event.canUndo);
+  console.log("Can redo:", event.canRedo);
+  console.log("Undo stack size:", event.undoSize);
+  console.log("Redo stack size:", event.redoSize);
 
   // Update UI, enable/disable buttons, etc.
 };
@@ -255,11 +247,13 @@ history.unobserve(handleHistoryChange);
 The undo/redo system uses the Command Pattern with three command types:
 
 1. **CreateCommand**: Tracks annotation creation
+
    - Execute: Adds annotation to store
    - Undo: Removes annotation from store
    - Redo: Re-adds annotation to store
 
 2. **UpdateCommand**: Tracks annotation updates
+
    - Execute: Updates annotation in store
    - Undo: Reverts to old annotation state
    - Redo: Re-applies new annotation state
@@ -278,15 +272,18 @@ The history manager maintains two stacks:
 - **Redo Stack**: Commands that can be redone (previously undone operations)
 
 When a new command is executed:
+
 1. Added to undo stack
 2. Redo stack is cleared (can't redo after new changes)
 
 When undoing:
+
 1. Command popped from undo stack
 2. Command's undo() method called
 3. Command pushed to redo stack
 
 When redoing:
+
 1. Command popped from redo stack
 2. Command's redo() method called
 3. Command pushed to undo stack
@@ -323,12 +320,12 @@ Group related operations to create better undo steps:
 
 ```tsx
 // ✅ Good - one undo step for entire operation
-annotator.state.history.beginBatch('Delete all selected');
-selectedIds.forEach(id => annotator.deleteAnnotation(id));
+annotator.state.history.beginBatch("Delete all selected");
+selectedIds.forEach((id) => annotator.deleteAnnotation(id));
 annotator.state.history.endBatch();
 
 // ❌ Less ideal - each deletion is separate undo step
-selectedIds.forEach(id => annotator.deleteAnnotation(id));
+selectedIds.forEach((id) => annotator.deleteAnnotation(id));
 ```
 
 ### 3. Provide User Feedback
@@ -344,14 +341,14 @@ function Toolbar() {
       <button
         disabled={!history.canUndo}
         onClick={history.undo}
-        title={history.canUndo ? 'Undo last action' : 'Nothing to undo'}
+        title={history.canUndo ? "Undo last action" : "Nothing to undo"}
       >
         Undo {history.canUndo && `(${history.undoSize})`}
       </button>
       <button
         disabled={!history.canRedo}
         onClick={history.redo}
-        title={history.canRedo ? 'Redo last action' : 'Nothing to redo'}
+        title={history.canRedo ? "Redo last action" : "Nothing to redo"}
       >
         Redo {history.canRedo && `(${history.redoSize})`}
       </button>
@@ -402,8 +399,8 @@ annotator.state.store.add(annotation);
 ```tsx
 const annotator = await createOpenSeadragonAnnotator(viewer, {
   historyOptions: {
-    maxHistorySize: 50  // Reduced from default 100
-  }
+    maxHistorySize: 50, // Reduced from default 100
+  },
 });
 ```
 
@@ -416,12 +413,12 @@ const annotator = await createOpenSeadragonAnnotator(viewer, {
 ```tsx
 const annotator = await createOpenSeadragonAnnotator(viewer, {
   historyOptions: {
-    enableMerging: true  // This is the default
-  }
+    enableMerging: true, // This is the default
+  },
 });
 ```
 
-## API Reference
+## API
 
 ### Annotator Methods
 
@@ -513,4 +510,4 @@ function useCanRedo(): boolean;
 
 - [Keyboard Shortcuts](/docs/guides/keyboard) - Complete keyboard shortcut reference
 - [Events](/docs/guides/events) - Working with annotation events
-- [API Reference](/docs/api) - Complete API documentation
+- [API](/docs/api) - Complete API documentation

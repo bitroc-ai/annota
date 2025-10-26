@@ -202,7 +202,7 @@ function App() {
               href="/api"
               className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white border border-slate-600 rounded-lg hover:bg-slate-800 transition-colors duration-200"
             >
-              API Reference
+              API
             </Link>
           </div>
         </div>

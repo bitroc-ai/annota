@@ -1,4 +1,4 @@
-# API Reference
+# API
 
 Complete API documentation for Annota.
 
@@ -29,19 +29,19 @@ interface Annotation {
 type Shape = PointShape | RectangleShape | PolygonShape;
 
 interface PointShape {
-  type: 'point';
+  type: "point";
   geometry: { x: number; y: number };
   bounds: Bounds;
 }
 
 interface RectangleShape {
-  type: 'rectangle';
+  type: "rectangle";
   geometry: { x: number; y: number; width: number; height: number };
   bounds: Bounds;
 }
 
 interface PolygonShape {
-  type: 'polygon';
+  type: "polygon";
   geometry: { points: Array<{ x: number; y: number }> };
   bounds: Bounds;
 }
@@ -75,7 +75,7 @@ interface Layer {
 Annota supports importing annotations from ASAP XML format:
 
 ```typescript
-import { parseASAPXML } from 'annota';
+import { parseASAPXML } from "annota";
 
 const annotations = parseASAPXML(xmlString);
 ```
@@ -85,10 +85,10 @@ const annotations = parseASAPXML(xmlString);
 Load annotations from H5 files:
 
 ```typescript
-import { loadH5Masks } from 'annota';
+import { loadH5Masks } from "annota";
 
-const annotations = await loadH5Masks('/path/to/file.h5', {
-  datasetPath: '/annotations',
-  category: 'positive',
+const annotations = await loadH5Masks("/path/to/file.h5", {
+  datasetPath: "/annotations",
+  category: "positive",
 });
 ```

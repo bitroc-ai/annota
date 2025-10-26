@@ -8,7 +8,7 @@ export default {
     type: 'page',
   },
   api: {
-    title: 'API Reference',
+    title: 'API',
     type: 'page',
   },
   changelog: {

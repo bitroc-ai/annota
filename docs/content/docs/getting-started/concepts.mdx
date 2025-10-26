@@ -8,10 +8,10 @@ An annotation is a mark or label on an image. In Annota, every annotation is a J
 
 ```typescript
 interface Annotation {
-  id: string;                          // Unique identifier
-  shape: PointShape | RectangleShape | PolygonShape;  // Geometry
-  properties?: Record<string, any>;    // Custom metadata
-  style?: AnnotationStyle;             // Visual styling
+  id: string; // Unique identifier
+  shape: PointShape | RectangleShape | PolygonShape; // Geometry
+  properties?: Record<string, any>; // Custom metadata
+  style?: AnnotationStyle; // Visual styling
 }
 ```
 
@@ -32,6 +32,7 @@ A single point on the image:
 ```
 
 Use points for:
+
 - Cell markers
 - Nuclei detection
 - Point of interest markers
@@ -52,6 +53,7 @@ A rectangular region:
 ```
 
 Use rectangles for:
+
 - Bounding boxes
 - Region of interest (ROI) selection
 - Quick area selection
@@ -74,6 +76,7 @@ A closed polygon defined by vertices:
 ```
 
 Use polygons for:
+
 - Tracing tumor boundaries
 - Segmentation masks
 - Complex region outlines
@@ -121,7 +124,7 @@ You can also use a style function for dynamic styling:
 <Annotator
   viewer={viewer}
   style={(annotation) => ({
-    fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+    fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
     fillOpacity: 0.3,
   })}
 />
@@ -133,12 +136,12 @@ Layers organize annotations into logical groups. Each layer has:
 
 ```typescript
 interface Layer {
-  id: string;          // Unique identifier
-  name: string;        // Display name
-  visible: boolean;    // Visibility toggle
-  locked: boolean;     // Prevent editing
-  opacity: number;     // 0-1 opacity
-  zIndex: number;      // Rendering order
+  id: string; // Unique identifier
+  name: string; // Display name
+  visible: boolean; // Visibility toggle
+  locked: boolean; // Prevent editing
+  opacity: number; // 0-1 opacity
+  zIndex: number; // Rendering order
 }
 ```
 
@@ -154,14 +157,14 @@ Annota creates two default layers:
 Use the `useLayerManager` hook:
 
 ```tsx
-import { useLayerManager } from 'annota';
+import { useLayerManager } from "annota";
 
 function MyComponent() {
   const layerManager = useLayerManager();
 
   const createTumorLayer = () => {
-    layerManager.createLayer('tumor', {
-      name: 'Tumor Annotations',
+    layerManager.createLayer("tumor", {
+      name: "Tumor Annotations",
       visible: true,
       locked: false,
       opacity: 1,
@@ -198,7 +201,7 @@ function LayerControls() {
 
   return (
     <div>
-      {layers.map(layer => (
+      {layers.map((layer) => (
         <div key={layer.id}>
           <input
             type="checkbox"
@@ -234,7 +237,7 @@ Tools enable users to create and edit annotations. Annota provides built-in tool
 Create point annotations with a single click:
 
 ```tsx
-import { PointTool, useTool } from 'annota';
+import { PointTool, useTool } from "annota";
 
 const pointTool = new PointTool();
 
@@ -250,7 +253,7 @@ useTool({
 Draw rectangles by click-and-drag:
 
 ```tsx
-import { RectangleTool } from 'annota';
+import { RectangleTool } from "annota";
 
 const rectangleTool = new RectangleTool();
 ```
@@ -260,7 +263,7 @@ const rectangleTool = new RectangleTool();
 Create polygons by clicking vertices:
 
 ```tsx
-import { PolygonTool } from 'annota';
+import { PolygonTool } from "annota";
 
 const polygonTool = new PolygonTool();
 ```
@@ -270,7 +273,7 @@ const polygonTool = new PolygonTool();
 Edit polygon vertices by pushing/pulling:
 
 ```tsx
-import { PushTool } from 'annota';
+import { PushTool } from "annota";
 
 const pushTool = new PushTool({ radius: 30 });
 ```
@@ -280,7 +283,7 @@ const pushTool = new PushTool({ radius: 30 });
 Automatically detect contours from underlying masks:
 
 ```tsx
-import { ContourTool } from 'annota';
+import { ContourTool } from "annota";
 
 const contourTool = new ContourTool({ threshold: 128 });
 ```
@@ -292,17 +295,17 @@ Most tools accept configuration options:
 ```tsx
 const pointTool = new PointTool({
   style: {
-    fill: '#FF0000',
+    fill: "#FF0000",
     fillOpacity: 0.8,
   },
 });
 
 const pushTool = new PushTool({
-  radius: 50,  // Influence radius in pixels
+  radius: 50, // Influence radius in pixels
 });
 
 const contourTool = new ContourTool({
-  threshold: 128,  // Pixel value threshold
+  threshold: 128, // Pixel value threshold
 });
 ```
 
@@ -312,17 +315,17 @@ Annota uses an event system to notify you of annotation changes:
 
 ```typescript
 type AnnotatorEvent =
-  | 'createAnnotation'
-  | 'updateAnnotation'
-  | 'deleteAnnotation'
-  | 'selectionChanged';
+  | "createAnnotation"
+  | "updateAnnotation"
+  | "deleteAnnotation"
+  | "selectionChanged";
 ```
 
 ### Listening to Events
 
 ```tsx
-import { useAnnotator } from 'annota';
-import { useEffect } from 'react';
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
 
 function AnnotationLogger() {
   const annotator = useAnnotator();
@@ -331,31 +334,31 @@ function AnnotationLogger() {
     if (!annotator) return;
 
     const handleCreate = (annotation) => {
-      console.log('Created:', annotation);
+      console.log("Created:", annotation);
     };
 
     const handleUpdate = (annotation) => {
-      console.log('Updated:', annotation);
+      console.log("Updated:", annotation);
     };
 
     const handleDelete = (annotation) => {
-      console.log('Deleted:', annotation);
+      console.log("Deleted:", annotation);
     };
 
     const handleSelection = ({ selected }) => {
-      console.log('Selection:', selected);
+      console.log("Selection:", selected);
     };
 
-    annotator.on('createAnnotation', handleCreate);
-    annotator.on('updateAnnotation', handleUpdate);
-    annotator.on('deleteAnnotation', handleDelete);
-    annotator.on('selectionChanged', handleSelection);
+    annotator.on("createAnnotation", handleCreate);
+    annotator.on("updateAnnotation", handleUpdate);
+    annotator.on("deleteAnnotation", handleDelete);
+    annotator.on("selectionChanged", handleSelection);
 
     return () => {
-      annotator.off('createAnnotation', handleCreate);
-      annotator.off('updateAnnotation', handleUpdate);
-      annotator.off('deleteAnnotation', handleDelete);
-      annotator.off('selectionChanged', handleSelection);
+      annotator.off("createAnnotation", handleCreate);
+      annotator.off("updateAnnotation", handleUpdate);
+      annotator.off("deleteAnnotation", handleDelete);
+      annotator.off("selectionChanged", handleSelection);
     };
   }, [annotator]);
 
@@ -370,7 +373,7 @@ Selection tracks which annotations are currently selected by the user.
 ### Accessing Selection
 
 ```tsx
-import { useSelection } from 'annota';
+import { useSelection } from "annota";
 
 function SelectionInfo() {
   const selection = useSelection();
@@ -378,7 +381,7 @@ function SelectionInfo() {
   return (
     <div>
       Selected: {selection.length} annotation(s)
-      {selection.map(ann => (
+      {selection.map((ann) => (
         <div key={ann.id}>{ann.id}</div>
       ))}
     </div>
@@ -389,7 +392,7 @@ function SelectionInfo() {
 ### Programmatic Selection
 
 ```tsx
-import { useAnnotator } from 'annota';
+import { useAnnotator } from "annota";
 
 function MyComponent() {
   const annotator = useAnnotator();
@@ -408,8 +411,8 @@ function MyComponent() {
 
   return (
     <div>
-      <button onClick={() => selectAnnotation('ann-1')}>Select Ann 1</button>
-      <button onClick={() => selectMultiple(['ann-1', 'ann-2'])}>
+      <button onClick={() => selectAnnotation("ann-1")}>Select Ann 1</button>
+      <button onClick={() => selectMultiple(["ann-1", "ann-2"])}>
         Select Multiple
       </button>
       <button onClick={clearSelection}>Clear Selection</button>
@@ -423,10 +426,12 @@ function MyComponent() {
 Annota uses **image coordinates** - coordinates are relative to the full-resolution image, not the viewport.
 
 For example, if your image is 10,000 × 10,000 pixels:
+
 - Point at `(5000, 5000)` is at the center
 - Rectangle from `(0, 0)` to `(1000, 1000)` is the top-left corner
 
 This means:
+
 - ✅ Annotations are resolution-independent
 - ✅ Coordinates don't change when zooming/panning
 - ✅ Easy to store and reload annotations
@@ -442,12 +447,14 @@ Only annotations visible in the viewport are rendered. Annotations outside the v
 ### Level of Detail (LOD)
 
 When zoomed out, complex annotations are simplified:
+
 - Small polygons (< 3 pixels) are rendered as points
 - This maintains performance with thousands of annotations
 
 ### R-tree Spatial Indexing
 
 Fast spatial queries for:
+
 - Hit testing (clicking on annotations)
 - Bounding box queries
 - Nearest neighbor searches
@@ -455,6 +462,7 @@ Fast spatial queries for:
 ### Smart Caching
 
 Graphics are only re-rendered when:
+
 - Annotation state changes (hover, selection)
 - LOD level changes (zoom in/out)
 - Scale changes significantly (> 1%)
@@ -467,4 +475,4 @@ Now that you understand the core concepts:
 - [Layer System](/docs/guides/layers) - Deep dive into layers
 - [Events](/docs/guides/events) - Master the event system
 - [Styling](/docs/guides/styling) - Customize annotation appearance
-- [API Reference](/api) - Explore the complete API
+- [API](/api) - Explore the complete API

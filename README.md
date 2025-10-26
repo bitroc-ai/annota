@@ -123,7 +123,7 @@ Requires WebGL support for hardware-accelerated rendering.
 ## Documentation
 
 - **Documentation** - [https://annota.dev](https://annota.dev)
-- **API Reference** - [Complete API Docs](https://annota.dev/api)
+- **API** - [Complete API Docs](https://annota.dev/api)
 - **Examples** - [Interactive Examples](https://annota.dev/docs/examples)
 
 ## Contributing

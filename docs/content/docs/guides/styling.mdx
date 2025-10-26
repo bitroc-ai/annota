@@ -14,10 +14,10 @@ Annota supports three levels of styling:
 
 ```typescript
 interface AnnotationStyle {
-  fill?: string;          // Fill color (CSS color string)
-  fillOpacity?: number;   // Fill opacity (0-1)
-  stroke?: string;        // Stroke color (CSS color string)
-  strokeWidth?: number;   // Stroke width in image coordinates
+  fill?: string; // Fill color (CSS color string)
+  fillOpacity?: number; // Fill opacity (0-1)
+  stroke?: string; // Stroke color (CSS color string)
+  strokeWidth?: number; // Stroke width in image coordinates
   strokeOpacity?: number; // Stroke opacity (0-1)
 }
 ```
@@ -49,7 +49,7 @@ Set default style for tool-created annotations:
 ```tsx
 const pointTool = new PointTool({
   style: {
-    fill: '#00FF00',
+    fill: "#00FF00",
     fillOpacity: 0.8,
     strokeWidth: 2,
   },
@@ -64,9 +64,9 @@ Compute styles based on annotation properties:
 <Annotator
   viewer={viewer}
   style={(annotation) => ({
-    fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+    fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
     fillOpacity: annotation.properties?.confidence || 0.5,
-    stroke: '#FFFFFF',
+    stroke: "#FFFFFF",
     strokeWidth: 2,
   })}
 />
@@ -76,18 +76,18 @@ Compute styles based on annotation properties:
 
 ```tsx
 const categoryStyles = {
-  tumor: { fill: '#FF0000', fillOpacity: 0.3 },
-  healthy: { fill: '#00FF00', fillOpacity: 0.3 },
-  uncertain: { fill: '#FFFF00', fillOpacity: 0.3 },
+  tumor: { fill: "#FF0000", fillOpacity: 0.3 },
+  healthy: { fill: "#00FF00", fillOpacity: 0.3 },
+  uncertain: { fill: "#FFFF00", fillOpacity: 0.3 },
 };
 
 <Annotator
   viewer={viewer}
   style={(annotation) => {
-    const category = annotation.properties?.category || 'uncertain';
+    const category = annotation.properties?.category || "uncertain";
     return categoryStyles[category];
   }}
-/>
+/>;
 ```
 
 ### Confidence-Based Opacity
@@ -96,9 +96,9 @@ const categoryStyles = {
 <Annotator
   viewer={viewer}
   style={(annotation) => ({
-    fill: '#FF0000',
+    fill: "#FF0000",
     fillOpacity: annotation.properties?.confidence || 0.3,
-    stroke: '#FFFFFF',
+    stroke: "#FFFFFF",
   })}
 />
 ```
@@ -110,15 +110,15 @@ Highlight selected annotations:
 ```tsx
 function StyledAnnotator({ viewer }) {
   const selection = useSelection();
-  const selectedIds = new Set(selection.map(s => s.id));
+  const selectedIds = new Set(selection.map((s) => s.id));
 
   return (
     <Annotator
       viewer={viewer}
       style={(annotation) => ({
-        fill: '#FF0000',
+        fill: "#FF0000",
         fillOpacity: selectedIds.has(annotation.id) ? 0.6 : 0.3,
-        stroke: selectedIds.has(annotation.id) ? '#FFFF00' : '#FFFFFF',
+        stroke: selectedIds.has(annotation.id) ? "#FFFF00" : "#FFFFFF",
         strokeWidth: selectedIds.has(annotation.id) ? 3 : 2,
       })}
     />
@@ -132,17 +132,17 @@ Apply consistent styles to entire layers:
 
 ```tsx
 const layers = {
-  tumor: { fill: '#FF0000', fillOpacity: 0.3 },
-  healthy: { fill: '#00FF00', fillOpacity: 0.3 },
+  tumor: { fill: "#FF0000", fillOpacity: 0.3 },
+  healthy: { fill: "#00FF00", fillOpacity: 0.3 },
 };
 
 <Annotator
   viewer={viewer}
   style={(annotation) => {
-    const layerId = annotation.properties?.layer || 'default';
-    return layers[layerId] || { fill: '#CCCCCC', fillOpacity: 0.3 };
+    const layerId = annotation.properties?.layer || "default";
+    return layers[layerId] || { fill: "#CCCCCC", fillOpacity: 0.3 };
   }}
-/>
+/>;
 ```
 
 ## Color Palettes
@@ -150,18 +150,18 @@ const layers = {
 ### Categorical Colors
 
 ```tsx
-const colors = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6'];
+const colors = ["#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6"];
 
 <Annotator
   viewer={viewer}
   style={(annotation) => {
-    const index = parseInt(annotation.id.split('-')[1]) % colors.length;
+    const index = parseInt(annotation.id.split("-")[1]) % colors.length;
     return {
       fill: colors[index],
       fillOpacity: 0.3,
     };
   }}
-/>
+/>;
 ```
 
 ### Heatmap Colors
@@ -179,7 +179,7 @@ function getHeatmapColor(value: number): string {
     fill: getHeatmapColor(annotation.properties?.score || 0),
     fillOpacity: 0.5,
   })}
-/>
+/>;
 ```
 
 ## Interactive Styling
@@ -196,7 +196,7 @@ function HoverStyled({ viewer }) {
     <Annotator
       viewer={viewer}
       style={(annotation) => ({
-        fill: '#FF0000',
+        fill: "#FF0000",
         fillOpacity: annotation.id === hoveredId ? 0.8 : 0.3,
         strokeWidth: annotation.id === hoveredId ? 3 : 2,
       })}
@@ -213,15 +213,20 @@ function HoverStyled({ viewer }) {
 For expensive style calculations, use memoization:
 
 ```tsx
-const styleFunction = useCallback((annotation: Annotation) => {
-  // Expensive calculation
-  return {
-    fill: computeColor(annotation),
-    fillOpacity: 0.3,
-  };
-}, [/* dependencies */]);
+const styleFunction = useCallback(
+  (annotation: Annotation) => {
+    // Expensive calculation
+    return {
+      fill: computeColor(annotation),
+      fillOpacity: 0.3,
+    };
+  },
+  [
+    /* dependencies */
+  ]
+);
 
-<Annotator viewer={viewer} style={styleFunction} />
+<Annotator viewer={viewer} style={styleFunction} />;
 ```
 
 ### 2. Consistent Stroke Width
@@ -253,9 +258,9 @@ Use colors that are distinguishable for colorblind users:
 ```tsx
 // ✅ Good palette (colorblind-friendly)
 const colors = {
-  primary: '#0173B2',    // Blue
-  secondary: '#DE8F05',  // Orange
-  tertiary: '#029E73',   // Green
+  primary: "#0173B2", // Blue
+  secondary: "#DE8F05", // Orange
+  tertiary: "#029E73", // Green
 };
 ```
 
@@ -266,21 +271,21 @@ const colors = {
 ```tsx
 const medicalStyles = {
   benign: {
-    fill: '#2ECC71',
+    fill: "#2ECC71",
     fillOpacity: 0.25,
-    stroke: '#27AE60',
+    stroke: "#27AE60",
     strokeWidth: 2,
   },
   malignant: {
-    fill: '#E74C3C',
+    fill: "#E74C3C",
     fillOpacity: 0.4,
-    stroke: '#C0392B',
+    stroke: "#C0392B",
     strokeWidth: 3,
   },
   suspicious: {
-    fill: '#F39C12',
+    fill: "#F39C12",
     fillOpacity: 0.3,
-    stroke: '#E67E22',
+    stroke: "#E67E22",
     strokeWidth: 2,
   },
 };
@@ -290,7 +295,7 @@ const medicalStyles = {
   style={(annotation) =>
     medicalStyles[annotation.properties?.diagnosis] || medicalStyles.suspicious
   }
-/>
+/>;
 ```
 
 ### Quality-Based Styling
@@ -301,7 +306,7 @@ const medicalStyles = {
   style={(annotation) => {
     const quality = annotation.properties?.quality || 0;
     return {
-      fill: quality > 0.8 ? '#2ECC71' : quality > 0.5 ? '#F39C12' : '#E74C3C',
+      fill: quality > 0.8 ? "#2ECC71" : quality > 0.5 ? "#F39C12" : "#E74C3C",
       fillOpacity: 0.3,
       strokeWidth: 2,
     };
@@ -313,4 +318,4 @@ const medicalStyles = {
 
 - [Layer System](/docs/guides/layers) - Organize annotations with layers
 - [Events](/docs/guides/events) - Dynamic styling based on events
-- [API Reference](/api/types) - Complete style type definitions
+- [API](/api/types) - Complete style type definitions

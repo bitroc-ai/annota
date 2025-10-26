@@ -5,8 +5,8 @@ Respond to annotation lifecycle events.
 ## Auto-Save on Create
 
 ```tsx
-import { useAnnotator } from 'annota';
-import { useEffect } from 'react';
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
 
 function AutoSave() {
   const annotator = useAnnotator();
@@ -15,16 +15,16 @@ function AutoSave() {
     if (!annotator) return;
 
     const handleCreate = async (annotation) => {
-      await fetch('/api/annotations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(annotation),
       });
-      console.log('Saved:', annotation.id);
+      console.log("Saved:", annotation.id);
     };
 
-    annotator.on('createAnnotation', handleCreate);
-    return () => annotator.off('createAnnotation', handleCreate);
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
   }, [annotator]);
 
   return null;
@@ -42,30 +42,45 @@ function EventLogger() {
     if (!annotator) return;
 
     const handlers = {
-      create: (ann) => setEvents(prev => [...prev, { type: 'create', id: ann.id, time: new Date() }]),
-      update: (ann) => setEvents(prev => [...prev, { type: 'update', id: ann.id, time: new Date() }]),
-      delete: (ann) => setEvents(prev => [...prev, { type: 'delete', id: ann.id, time: new Date() }]),
+      create: (ann) =>
+        setEvents((prev) => [
+          ...prev,
+          { type: "create", id: ann.id, time: new Date() },
+        ]),
+      update: (ann) =>
+        setEvents((prev) => [
+          ...prev,
+          { type: "update", id: ann.id, time: new Date() },
+        ]),
+      delete: (ann) =>
+        setEvents((prev) => [
+          ...prev,
+          { type: "delete", id: ann.id, time: new Date() },
+        ]),
     };
 
-    annotator.on('createAnnotation', handlers.create);
-    annotator.on('updateAnnotation', handlers.update);
-    annotator.on('deleteAnnotation', handlers.delete);
+    annotator.on("createAnnotation", handlers.create);
+    annotator.on("updateAnnotation", handlers.update);
+    annotator.on("deleteAnnotation", handlers.delete);
 
     return () => {
-      annotator.off('createAnnotation', handlers.create);
-      annotator.off('updateAnnotation', handlers.update);
-      annotator.off('deleteAnnotation', handlers.delete);
+      annotator.off("createAnnotation", handlers.create);
+      annotator.off("updateAnnotation", handlers.update);
+      annotator.off("deleteAnnotation", handlers.delete);
     };
   }, [annotator]);
 
   return (
     <div>
       <h3>Event Log</h3>
-      {events.slice(-10).reverse().map((event, i) => (
-        <div key={i}>
-          {event.type}: {event.id} at {event.time.toLocaleTimeString()}
-        </div>
-      ))}
+      {events
+        .slice(-10)
+        .reverse()
+        .map((event, i) => (
+          <div key={i}>
+            {event.type}: {event.id} at {event.time.toLocaleTimeString()}
+          </div>
+        ))}
     </div>
   );
 }
@@ -84,8 +99,8 @@ function SelectionMonitor() {
       console.log(`Selection changed: ${selected.length} annotations`);
     };
 
-    annotator.on('selectionChanged', handleSelection);
-    return () => annotator.off('selectionChanged', handleSelection);
+    annotator.on("selectionChanged", handleSelection);
+    return () => annotator.off("selectionChanged", handleSelection);
   }, [annotator]);
 
   return null;
@@ -95,4 +110,4 @@ function SelectionMonitor() {
 ## Next Steps
 
 - [Events Guide](/docs/guides/events) - Complete event system documentation
-- [API Reference](/api/annotator) - Annotator instance API
+- [API](/api/annotator) - Annotator instance API
