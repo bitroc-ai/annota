@@ -217,7 +217,7 @@ export function PlaygroundApp() {
 
   // Category-based styling: red for negative, green for positive
   const categoryStyleFunction = useCallback(
-    (annotation: Annotation): AnnotationStyle => {
+    (annotation: Annotation): AnnotationStyle | undefined => {
       const category = annotation.properties?.category as string | undefined;
 
       if (category === "negative") {
@@ -230,14 +230,19 @@ export function PlaygroundApp() {
         };
       }
 
-      // Default: positive (green)
-      return {
-        fill: "#00FF00", // Green fill for positive
-        fillOpacity: 0.25,
-        stroke: "#FFFFFF", // White stroke
-        strokeOpacity: 1.0,
-        strokeWidth: 2,
-      };
+      if (category === "positive") {
+        return {
+          fill: "#00FF00", // Green fill for positive
+          fillOpacity: 0.25,
+          stroke: "#FFFFFF", // White stroke
+          strokeOpacity: 1.0,
+          strokeWidth: 2,
+        };
+      }
+
+      // For other annotations (masks, contours, etc.), return undefined
+      // so they can use their own annotation.style
+      return undefined;
     },
     []
   );

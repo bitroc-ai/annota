@@ -191,7 +191,8 @@ export class PixiStage {
     // Multiply layer opacity with individual annotation's fill/stroke alpha
     let finalStyle = computedStyle;
     if (this.layerManager) {
-      const layerOpacity = getEffectiveOpacity(annotation, this.layerManager);
+      const layer = this.layerManager.getLayerForAnnotation(annotation);
+      const layerOpacity = layer?.opacity ?? 1;
       finalStyle = {
         fill: {
           color: computedStyle.fill.color,
