@@ -1,0 +1,26 @@
+---
+title: v0.3.1
+description: Release notes for Annota v0.3.1
+date: 2025-10-26
+---
+
+# v0.3.1
+
+Released on 2025-10-26
+
+## Bug Fixes
+
+- fix: context menu improvements and style function precedence (26f0579)
+  - Fix dark theme support by removing inline styles from ContextMenu components
+  - Fix point annotation detection for context menu using same hit tolerance as left-click
+  - Add point annotation category switching (positive/negative) with state-aware UI
+  - Fix style function precedence to allow dynamic styling based on annotation properties
+  - Add whiteSpace: nowrap to prevent menu text wrapping
+
+## Installation
+
+```bash
+npm install annota@0.3.1
+# or
+pnpm add annota@0.3.1
+```
