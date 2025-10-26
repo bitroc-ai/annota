@@ -52,7 +52,7 @@ function Footer() {
                 className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity brightness-0 dark:brightness-100 dark:invert dark:opacity-40 dark:hover:opacity-60"
               />
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                © {new Date().getFullYear()} Annota.
+                © {new Date().getFullYear()} Annota Team.
               </p>
             </div>
             <div className="flex gap-6">
