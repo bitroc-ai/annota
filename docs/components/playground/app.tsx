@@ -7,6 +7,9 @@ import {
   AnnotaViewer,
   Annotator,
   useAnnotator,
+  useEditing,
+  useAnnotationDoubleClick,
+  getEditorConfig,
   loadH5Coordinates,
   loadMaskPolygons,
   AnnotationEditor,
@@ -20,7 +23,6 @@ import { DemoToolbar } from "@/components/playground/toolbar";
 import { ToolSettings } from "@/components/playground/tool-settings";
 import { DebugPanel } from "@/components/playground/debug-panel";
 import { ToolManager } from "@/components/playground/tool-manager";
-import { PopupEditor } from "@/components/playground/popup-editor";
 import { LayerPanel } from "@/components/playground/layer-panel";
 import { AnnotationContextMenu } from "@/components/playground/context-menu";
 import { Layers } from "lucide-react";
@@ -63,6 +65,7 @@ async function loadH5AnnotationsByCategory(
 
 function DemoContent({ currentImage }: { currentImage: string }) {
   const annotator = useAnnotator();
+  const { startEditing, stopEditing } = useEditing();
 
   // Initialize keyboard commands
   useEffect(() => {
@@ -75,6 +78,27 @@ function DemoContent({ currentImage }: { currentImage: string }) {
 
     return () => commands.destroy();
   }, [annotator]);
+
+  // Double-click to enter edit mode
+  useAnnotationDoubleClick(annotator?.viewer, useCallback((annotation: Annotation) => {
+    const editorConfig = getEditorConfig(annotation);
+    if (editorConfig?.supportsVertexEditing) {
+      startEditing(annotation.id);
+      toast.success("Vertex editing mode enabled");
+    }
+  }, [startEditing]));
+
+  // Escape key to exit edit mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        stopEditing();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [stopEditing]);
 
   // Create layers on mount
   // Layer structure (from bottom to top):
@@ -361,7 +385,6 @@ export function PlaygroundApp() {
               pushRadius={pushRadius}
               activeLayerId={activeLayerId}
             />
-            <PopupEditor viewer={viewer} />
             <AnnotationEditor viewer={viewer} />
             <AnnotationContextMenu />
             <DemoContent currentImage={currentImage} />

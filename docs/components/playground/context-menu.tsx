@@ -5,18 +5,21 @@ import {
   useAnnotator,
   useContextMenu,
   useContextMenuBinding,
+  useEditing,
+  getEditorConfig,
   ContextMenu,
   ContextMenuItem,
   ContextMenuDivider,
   type Annotation,
 } from "annota";
 import { toast } from "sonner";
-import { CircleDot, SquareDot, Trash2 } from "lucide-react";
+import { CircleDot, SquareDot, Trash2, Edit3 } from "lucide-react";
 
 export function AnnotationContextMenu() {
   const annotator = useAnnotator();
   const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } =
     useContextMenu();
+  const { startEditing, isEditing } = useEditing();
 
   // Automatically bind context menu to viewer canvas
   useContextMenuBinding(showViewerMenu, showAnnotationMenu);
@@ -103,6 +106,14 @@ export function AnnotationContextMenu() {
     hideMenu();
   }, [annotator, hideMenu]);
 
+  const handleEditVertices = useCallback(() => {
+    if (!menuState.annotation) return;
+
+    startEditing(menuState.annotation.id);
+    toast.success("Vertex editing mode enabled");
+    hideMenu();
+  }, [menuState.annotation, startEditing, hideMenu]);
+
   // Check annotation type
   const isMaskAnnotation =
     menuState.annotation &&
@@ -129,6 +140,15 @@ export function AnnotationContextMenu() {
   const isCurrentlyNegativePoint = !!(
     menuState.annotation?.properties?.category === "negative"
   );
+
+  // Check if annotation supports vertex editing
+  const supportsVertexEditing = menuState.annotation
+    ? getEditorConfig(menuState.annotation)?.supportsVertexEditing
+    : false;
+
+  const isCurrentlyEditing = menuState.annotation
+    ? isEditing(menuState.annotation.id)
+    : false;
 
   return (
     <ContextMenu position={menuState.position} onClose={hideMenu}>
@@ -201,6 +221,21 @@ export function AnnotationContextMenu() {
               <div className="annota-context-menu-header">
                 Annotation Actions
               </div>
+              {supportsVertexEditing && (
+                <>
+                  <ContextMenuItem
+                    label={
+                      isCurrentlyEditing
+                        ? "✓ Editing Vertices"
+                        : "Edit Vertices"
+                    }
+                    onClick={handleEditVertices}
+                    icon={<Edit3 className="w-4 h-4 text-blue-500" />}
+                    disabled={isCurrentlyEditing}
+                  />
+                  <ContextMenuDivider />
+                </>
+              )}
               <ContextMenuItem
                 label="Delete Annotation"
                 onClick={handleDelete}

@@ -5,6 +5,12 @@ export default {
       layout: 'default',
     },
   },
+  'v0.3.2': {
+    title: 'v0.3.2',
+    theme: {
+      layout: 'default',
+    },
+  },
   'v0.3.1': {
     title: 'v0.3.1',
     theme: {

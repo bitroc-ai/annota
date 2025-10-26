@@ -13,7 +13,7 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import OpenSeadragon from 'openseadragon';
-import { useSelection } from './hooks';
+import { useSelection, useEditing } from './hooks';
 import { useAnnotator } from './Provider';
 import './Editor.css';
 import {
@@ -268,6 +268,8 @@ export interface ShapeEditorConfig {
     scale: number;
     onGrab: (handle: string) => (e: React.PointerEvent<SVGElement>) => void;
   }) => React.ReactElement | null;
+  /** Whether this shape supports vertex editing mode */
+  supportsVertexEditing?: boolean;
 }
 
 // Built-in shape editors
@@ -278,6 +280,7 @@ const defaultEditors: Record<string, ShapeEditorConfig> = {
       return editPoint(shape, handle, delta);
     },
     component: PointEditor,
+    supportsVertexEditing: false,
   },
   rectangle: {
     editFn: (shape, handle, delta) => {
@@ -285,6 +288,7 @@ const defaultEditors: Record<string, ShapeEditorConfig> = {
       return editRectangle(shape, handle, delta);
     },
     component: RectangleEditor,
+    supportsVertexEditing: false,
   },
   polygon: {
     editFn: (shape, handle, delta) => {
@@ -292,11 +296,21 @@ const defaultEditors: Record<string, ShapeEditorConfig> = {
       return editPolygon(shape, handle, delta);
     },
     component: PolygonEditor,
+    supportsVertexEditing: true,
   },
 };
 
 // Custom editor registry (for apps to extend)
 const customEditors: Record<string, ShapeEditorConfig> = {};
+
+/**
+ * Get the editor configuration for an annotation
+ * Checks custom editors first, then falls back to built-in editors
+ */
+export function getEditorConfig(annotation: Annotation): ShapeEditorConfig | undefined {
+  const shapeType = annotation.shape.type;
+  return customEditors[shapeType] || defaultEditors[shapeType];
+}
 
 /**
  * Register a custom shape editor
@@ -337,6 +351,7 @@ export interface AnnotationEditorProps {
 export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
   const selectedAnnotations = useSelection();
   const annotator = useAnnotator();
+  const { editingId } = useEditing();
   const [scale, setScale] = useState(1);
   const [selectedVertexIndex, setSelectedVertexIndex] = useState<number | null>(null);
 
@@ -428,6 +443,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
     if (shapeType === 'polygon') {
       editorProps.selectedVertexIndex = selectedVertexIndex;
       editorProps.onVertexSelect = setSelectedVertexIndex;
+      editorProps.isEditing = editingId === annotation.id;
     }
 
     return (

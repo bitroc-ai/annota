@@ -6,15 +6,19 @@
  *
  * @example
  * ```tsx
- * const popup = usePopup({ autoShow: false });
+ * // Enter vertex editing mode on double-click
+ * const { startEditing } = useEditing();
  * useAnnotationDoubleClick(viewer, (annotation) => {
- *   popup.show(annotation.id);
+ *   const editorConfig = getEditorConfig(annotation);
+ *   if (editorConfig?.supportsVertexEditing) {
+ *     startEditing(annotation.id);
+ *   }
  * });
  * ```
  */
 
 import { useEffect, useRef } from 'react';
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import { useAnnotator, useAnnotationStore } from '../Provider';
 import type { Annotation } from '../../core/types';
 
@@ -39,7 +43,7 @@ export function useAnnotationDoubleClick(
       const offsetY = event.clientY - rect.top;
 
       const imageCoords = viewer.viewport.viewerElementToImageCoordinates(
-        new (window as any).OpenSeadragon.Point(offsetX, offsetY)
+        new OpenSeadragon.Point(offsetX, offsetY)
       );
 
       const annotation = store.getAt(imageCoords.x, imageCoords.y);

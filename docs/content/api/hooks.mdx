@@ -115,6 +115,49 @@ function Editor({ viewer }) {
 }
 ```
 
+## useEditing
+
+Manage vertex editing mode for polygon annotations.
+
+```typescript
+interface UseEditingResult {
+  editingAnnotation: Annotation | null;
+  editingId: string | undefined;
+  editMode: 'vertices' | undefined;
+  startEditing: (annotationId: string, mode?: 'vertices') => void;
+  stopEditing: () => void;
+  isEditing: (annotationId: string) => boolean;
+}
+
+function useEditing(): UseEditingResult
+```
+
+**Example:**
+
+```tsx
+import { useEditing, getEditorConfig } from 'annota';
+
+function Editor({ viewer }) {
+  const { startEditing, stopEditing, isEditing } = useEditing();
+
+  // Enter vertex editing mode
+  const handleEdit = (annotationId: string) => {
+    startEditing(annotationId);
+  };
+
+  // Exit editing mode
+  const handleDone = () => {
+    stopEditing();
+  };
+
+  return (
+    <button onClick={handleDone}>
+      Exit Editing
+    </button>
+  );
+}
+```
+
 ## useAnnotationDoubleClick
 
 Listen for double-click events on annotations.
@@ -129,9 +172,15 @@ function useAnnotationDoubleClick(
 **Example:**
 
 ```tsx
+import { useAnnotationDoubleClick, useEditing, getEditorConfig } from 'annota';
+
+// Enter vertex editing mode on double-click
+const { startEditing } = useEditing();
 useAnnotationDoubleClick(viewer, annotation => {
-  console.log('Double-clicked:', annotation.id);
-  popup.show(annotation.id);
+  const editorConfig = getEditorConfig(annotation);
+  if (editorConfig?.supportsVertexEditing) {
+    startEditing(annotation.id);
+  }
 });
 ```
 

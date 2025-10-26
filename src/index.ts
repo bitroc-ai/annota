@@ -47,15 +47,16 @@ export {
   useCanRedo,
   useContextMenu,
   useContextMenuBinding,
+  useEditing,
 } from './react/hooks';
-export type { UseLayerManagerResult, UseHistoryResult, UseContextMenuResult, ContextMenuState } from './react/hooks';
+export type { UseLayerManagerResult, UseHistoryResult, UseContextMenuResult, ContextMenuState, UseEditingResult } from './react/hooks';
 
 export { AnnotationPopup } from './react/Popup';
 
 export { ContextMenu, ContextMenuItem, ContextMenuDivider } from './react/ContextMenu';
 export type { ContextMenuProps, ContextMenuItemProps } from './react/ContextMenu';
 
-export { AnnotationEditor, registerShapeEditor, unregisterShapeEditor } from './react/Editor';
+export { AnnotationEditor, registerShapeEditor, unregisterShapeEditor, getEditorConfig } from './react/Editor';
 export type { AnnotationEditorProps, ShapeEditorConfig } from './react/Editor';
 
 export { PointEditor, RectangleEditor, PolygonEditor } from './react/editors';

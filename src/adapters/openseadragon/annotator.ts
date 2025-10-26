@@ -49,6 +49,7 @@ export interface OpenSeadragonAnnotatorState {
   history: HistoryManager;
   hover: { current: string | undefined };
   selection: { selected: string[] };
+  editing: { current: string | undefined; mode: 'vertices' | undefined };
 }
 
 /**
@@ -127,6 +128,7 @@ export async function createOpenSeadragonAnnotator(
   const history = options.historyManager || createHistoryManager(options.historyOptions);
   const hover: { current: string | undefined } = { current: undefined };
   const selection: { selected: string[] } = { selected: [] };
+  const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
 
   // Event emitter state
   const eventHandlers: Map<AnnotatorEvent, Set<AnnotatorEventHandler>> = new Map([
@@ -331,7 +333,7 @@ export async function createOpenSeadragonAnnotator(
 
   return {
     viewer,
-    state: { store, layerManager, history, hover, selection },
+    state: { store, layerManager, history, hover, selection, editing },
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {

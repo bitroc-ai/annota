@@ -13,6 +13,8 @@ export interface PolygonEditorProps {
   onGrab: (handle: string) => (e: React.PointerEvent<SVGElement>) => void;
   selectedVertexIndex?: number | null;
   onVertexSelect?: (index: number | null) => void;
+  /** Whether the polygon is in edit mode (shows vertex handles) */
+  isEditing?: boolean;
 }
 
 /**
@@ -156,7 +158,8 @@ export function PolygonEditor({
   scale,
   onGrab,
   selectedVertexIndex = null,
-  onVertexSelect
+  onVertexSelect,
+  isEditing = false
 }: PolygonEditorProps) {
   if (annotation.shape.type !== 'polygon') return null;
 
@@ -209,90 +212,95 @@ export function PolygonEditor({
         style={{ pointerEvents: 'none' }}
       />
 
-      {/* Edge midpoint handles for insertion */}
-      {edgeMidpoints.map((midpoint) => (
-        <g key={`edge-${midpoint.index}`}>
-          {/* Invisible larger circle for easier grabbing */}
-          <circle
-            cx={midpoint.x}
-            cy={midpoint.y}
-            r={edgeHandleRadius + 3}
-            fill="transparent"
-            className="annota-handle-hit"
-            style={{ cursor: 'copy' }}
-            onPointerDown={onGrab(`INSERT_EDGE_${midpoint.index}`)}
-          />
-          {/* Visible edge handle - semi-transparent */}
-          <circle
-            cx={midpoint.x}
-            cy={midpoint.y}
-            r={edgeHandleRadius}
-            fill="rgba(74, 144, 226, 0.5)"
-            stroke="#4A90E2"
-            strokeWidth={strokeWidth}
-            style={{ pointerEvents: 'none' }}
-          />
-        </g>
-      ))}
+      {/* Only show vertex and edge handles in edit mode */}
+      {isEditing && (
+        <>
+          {/* Edge midpoint handles for insertion */}
+          {edgeMidpoints.map((midpoint) => (
+            <g key={`edge-${midpoint.index}`}>
+              {/* Invisible larger circle for easier grabbing */}
+              <circle
+                cx={midpoint.x}
+                cy={midpoint.y}
+                r={edgeHandleRadius + 3}
+                fill="transparent"
+                className="annota-handle-hit"
+                style={{ cursor: 'copy' }}
+                onPointerDown={onGrab(`INSERT_EDGE_${midpoint.index}`)}
+              />
+              {/* Visible edge handle - semi-transparent */}
+              <circle
+                cx={midpoint.x}
+                cy={midpoint.y}
+                r={edgeHandleRadius}
+                fill="rgba(74, 144, 226, 0.5)"
+                stroke="#4A90E2"
+                strokeWidth={strokeWidth}
+                style={{ pointerEvents: 'none' }}
+              />
+            </g>
+          ))}
 
-      {/* Vertex handles */}
-      {points.map((point, i) => {
-        const isSelected = selectedVertexIndex === i;
-        const isDeleteDisabled = !canDeleteVertex;
+          {/* Vertex handles */}
+          {points.map((point, i) => {
+            const isSelected = selectedVertexIndex === i;
+            const isDeleteDisabled = !canDeleteVertex;
 
-        return (
-          <g key={`vertex-${i}`}>
-            {/* Invisible larger circle for easier grabbing */}
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r={handleRadius + 3}
-              fill="transparent"
-              className="annota-handle-hit"
-              style={{ cursor: 'grab' }}
-              onPointerDown={handleVertexClick(i)}
-            />
-            {/* Visible handle */}
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r={handleRadius}
-              fill={isSelected ? (isDeleteDisabled ? '#FFA500' : '#FF6B6B') : 'white'}
-              stroke={isSelected ? (isDeleteDisabled ? '#FFA500' : '#FF0000') : '#4A90E2'}
-              strokeWidth={strokeWidth}
-              style={{ pointerEvents: 'none' }}
-            />
-            {/* Show deletion indicator when selected */}
-            {isSelected && !isDeleteDisabled && (
-              <text
-                x={point.x}
-                y={point.y}
-                textAnchor="middle"
-                dy="0.35em"
-                fontSize={handleRadius * 1.5}
-                fill="white"
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
-              >
-                ×
-              </text>
-            )}
-            {/* Show warning indicator when deletion disabled */}
-            {isSelected && isDeleteDisabled && (
-              <text
-                x={point.x}
-                y={point.y}
-                textAnchor="middle"
-                dy="0.35em"
-                fontSize={handleRadius * 1.2}
-                fill="white"
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
-              >
-                !
-              </text>
-            )}
-          </g>
-        );
-      })}
+            return (
+              <g key={`vertex-${i}`}>
+                {/* Invisible larger circle for easier grabbing */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={handleRadius + 3}
+                  fill="transparent"
+                  className="annota-handle-hit"
+                  style={{ cursor: 'grab' }}
+                  onPointerDown={handleVertexClick(i)}
+                />
+                {/* Visible handle */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={handleRadius}
+                  fill={isSelected ? (isDeleteDisabled ? '#FFA500' : '#FF6B6B') : 'white'}
+                  stroke={isSelected ? (isDeleteDisabled ? '#FFA500' : '#FF0000') : '#4A90E2'}
+                  strokeWidth={strokeWidth}
+                  style={{ pointerEvents: 'none' }}
+                />
+                {/* Show deletion indicator when selected */}
+                {isSelected && !isDeleteDisabled && (
+                  <text
+                    x={point.x}
+                    y={point.y}
+                    textAnchor="middle"
+                    dy="0.35em"
+                    fontSize={handleRadius * 1.5}
+                    fill="white"
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    ×
+                  </text>
+                )}
+                {/* Show warning indicator when deletion disabled */}
+                {isSelected && isDeleteDisabled && (
+                  <text
+                    x={point.x}
+                    y={point.y}
+                    textAnchor="middle"
+                    dy="0.35em"
+                    fontSize={handleRadius * 1.2}
+                    fill="white"
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    !
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </>
+      )}
     </g>
   );
 }

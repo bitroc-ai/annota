@@ -1,0 +1,283 @@
+# Vertex Editing
+
+Annota provides a vertex editing mode for polygon annotations, allowing users to modify the shape by adding, moving, and deleting vertices.
+
+## Overview
+
+By default, polygon annotations display only their outline and body drag area. To edit vertices, you need to explicitly enter **vertex editing mode**. This keeps the UI clean and prevents accidental vertex modifications.
+
+## Key Concepts
+
+- **Vertex Editing Mode**: A special state where vertex handles and edge midpoints become visible and interactive
+- **Shape Editor Configuration**: Each shape type declares whether it supports vertex editing via `supportsVertexEditing` flag
+- **Entry Methods**: Double-click or context menu
+- **Exit Methods**: Escape key or clicking outside
+
+## Entry Methods
+
+### Double-Click
+
+Double-click a polygon to enter vertex editing mode:
+
+```tsx
+import { useAnnotationDoubleClick, useEditing, getEditorConfig } from 'annota';
+
+function MyApp() {
+  const annotator = useAnnotator();
+  const { startEditing } = useEditing();
+
+  // Enter vertex editing mode on double-click
+  useAnnotationDoubleClick(annotator?.viewer, (annotation) => {
+    const editorConfig = getEditorConfig(annotation);
+    if (editorConfig?.supportsVertexEditing) {
+      startEditing(annotation.id);
+      toast.success("Vertex editing mode enabled");
+    }
+  });
+
+  return <AnnotationEditor viewer={annotator?.viewer} />;
+}
+```
+
+### Context Menu
+
+Add an "Edit Vertices" option to your context menu:
+
+```tsx
+import { useContextMenu, useEditing, getEditorConfig } from 'annota';
+
+function AnnotationContextMenu() {
+  const { menuState, hideMenu } = useContextMenu();
+  const { startEditing, isEditing } = useEditing();
+
+  const handleEditVertices = () => {
+    if (!menuState.annotation) return;
+    startEditing(menuState.annotation.id);
+    hideMenu();
+  };
+
+  const supportsVertexEditing = menuState.annotation
+    ? getEditorConfig(menuState.annotation)?.supportsVertexEditing
+    : false;
+
+  const isCurrentlyEditing = menuState.annotation
+    ? isEditing(menuState.annotation.id)
+    : false;
+
+  return (
+    <ContextMenu position={menuState.position} onClose={hideMenu}>
+      {supportsVertexEditing && (
+        <ContextMenuItem
+          label={isCurrentlyEditing ? "✓ Editing Vertices" : "Edit Vertices"}
+          onClick={handleEditVertices}
+          disabled={isCurrentlyEditing}
+        />
+      )}
+    </ContextMenu>
+  );
+}
+```
+
+## Exit Methods
+
+### Escape Key
+
+Press the Escape key to exit vertex editing mode:
+
+```tsx
+import { useEditing } from 'annota';
+
+function MyApp() {
+  const { stopEditing } = useEditing();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        stopEditing();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [stopEditing]);
+
+  return <div>...</div>;
+}
+```
+
+### Programmatic Exit
+
+Exit editing mode programmatically:
+
+```tsx
+const { stopEditing } = useEditing();
+
+// Exit editing mode
+stopEditing();
+```
+
+## useEditing Hook
+
+The `useEditing` hook manages vertex editing state:
+
+```typescript
+interface UseEditingResult {
+  editingAnnotation: Annotation | null;  // Currently editing annotation
+  editingId: string | undefined;         // Currently editing annotation ID
+  editMode: 'vertices' | undefined;      // Current edit mode
+  startEditing: (annotationId: string, mode?: 'vertices') => void;
+  stopEditing: () => void;
+  isEditing: (annotationId: string) => boolean;
+}
+```
+
+**Example:**
+
+```tsx
+const {
+  editingAnnotation,
+  editingId,
+  startEditing,
+  stopEditing,
+  isEditing
+} = useEditing();
+
+// Check if a specific annotation is being edited
+if (isEditing('annotation-123')) {
+  console.log('Annotation 123 is in edit mode');
+}
+
+// Get the currently editing annotation
+console.log('Currently editing:', editingAnnotation);
+```
+
+## Vertex Operations
+
+When in vertex editing mode, users can:
+
+### Move Vertices
+
+Click and drag any vertex handle to reposition it.
+
+### Insert Vertices
+
+Click on an edge midpoint (shown as a small square) to insert a new vertex at that position.
+
+### Delete Vertices
+
+Select a vertex and press **Delete** or **Backspace** to remove it. Polygons must maintain at least 3 vertices.
+
+## Shape Editor Configuration
+
+Only shapes with `supportsVertexEditing: true` can enter vertex editing mode:
+
+```tsx
+import { getEditorConfig } from 'annota';
+
+// Check if an annotation supports vertex editing
+const editorConfig = getEditorConfig(annotation);
+if (editorConfig?.supportsVertexEditing) {
+  // This annotation supports vertex editing
+  startEditing(annotation.id);
+}
+```
+
+**Built-in Support:**
+
+- ✅ **Polygon**: Fully supports vertex editing
+- ❌ **Point**: No vertex editing
+- ❌ **Rectangle**: No vertex editing
+
+## Visual Feedback
+
+When a polygon is selected but **not** in edit mode:
+- Shows selection outline (blue stroke)
+- Shows body drag area (for moving the entire polygon)
+- **Vertex handles are hidden**
+
+When in **vertex editing mode**:
+- Shows selection outline
+- Shows body drag area
+- **Shows vertex handles** (circles at each vertex)
+- **Shows edge midpoint handles** (squares for inserting vertices)
+
+## Best Practices
+
+### 1. Clear Entry/Exit Indication
+
+Always provide visual or toast feedback when entering/exiting edit mode:
+
+```tsx
+startEditing(annotation.id);
+toast.success("Vertex editing mode enabled - Press Escape to exit");
+```
+
+### 2. Check Capability Before Editing
+
+Always check `supportsVertexEditing` before attempting to enter edit mode:
+
+```tsx
+const editorConfig = getEditorConfig(annotation);
+if (editorConfig?.supportsVertexEditing) {
+  startEditing(annotation.id);
+} else {
+  toast.error("This annotation type does not support vertex editing");
+}
+```
+
+### 3. Single Polygon Editing
+
+Only one polygon can be in edit mode at a time. Starting edit on a new polygon automatically exits edit mode on the previous one.
+
+### 4. Avoid Conflicts with Other Features
+
+Vertex editing mode should take priority over other interactive features like popups to prevent conflicts.
+
+## Example: Complete Integration
+
+```tsx
+import {
+  AnnotaProvider,
+  Annotator,
+  AnnotationEditor,
+  useAnnotator,
+  useEditing,
+  useAnnotationDoubleClick,
+  getEditorConfig,
+} from 'annota';
+import { toast } from 'sonner';
+
+function App() {
+  const annotator = useAnnotator();
+  const { startEditing, stopEditing } = useEditing();
+
+  // Double-click to edit
+  useAnnotationDoubleClick(annotator?.viewer, (annotation) => {
+    const editorConfig = getEditorConfig(annotation);
+    if (editorConfig?.supportsVertexEditing) {
+      startEditing(annotation.id);
+      toast.success("Editing vertices - Press Escape to exit");
+    }
+  });
+
+  // Escape to exit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        stopEditing();
+        toast.info("Exited vertex editing mode");
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [stopEditing]);
+
+  return (
+    <AnnotaProvider>
+      <Annotator viewer={annotator?.viewer}>
+        <AnnotationEditor viewer={annotator?.viewer} />
+      </Annotator>
+    </AnnotaProvider>
+  );
+}
+```

@@ -34,3 +34,6 @@ export { useCanRedo } from './useCanRedo';
 // Context menu hooks
 export { useContextMenu, type ContextMenuState, type UseContextMenuResult } from './useContextMenu';
 export { useContextMenuBinding } from './useContextMenuBinding';
+
+// Editing hooks
+export { useEditing, type UseEditingResult } from './useEditing';

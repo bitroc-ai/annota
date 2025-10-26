@@ -1,0 +1,71 @@
+---
+title: v0.3.2
+description: Release notes for Annota v0.3.2
+date: 2025-10-26
+---
+
+# v0.3.2
+
+Released on 2025-10-26
+
+## Features
+
+### Vertex Editing Mode
+
+Added vertex editing mode for polygon annotations, providing a cleaner UI and more controlled editing experience.
+
+**Key Features:**
+- **Conditional Vertex Display**: Vertex handles and edge midpoints are now only shown when explicitly in edit mode
+- **Multiple Entry Methods**: Double-click polygons or use context menu "Edit Vertices"
+- **Easy Exit**: Press Escape key to exit edit mode
+- **Shape-Specific Support**: Only polygons support vertex editing (configured via `supportsVertexEditing` flag)
+
+**New Exports:**
+- `useEditing` hook - Manage vertex editing state
+- `getEditorConfig` function - Query shape editor capabilities
+
+**Updated Components:**
+- `PolygonEditor` - Now accepts `isEditing` prop to conditionally render vertex handles
+- `AnnotationEditor` - Automatically passes editing state to polygon editors
+
+**Breaking Changes:**
+- None - this is a backward-compatible feature addition
+
+See the [Vertex Editing Guide](/docs/guides/vertex-editing) for complete documentation.
+
+### Documentation Updates
+
+- Added comprehensive [Vertex Editing guide](/docs/guides/vertex-editing)
+- Updated [API Hooks documentation](/api/hooks) with `useEditing` hook
+- Updated `useAnnotationDoubleClick` examples to show vertex editing pattern
+
+### Bug Fixes
+
+- Fixed `useAnnotationDoubleClick` hook - changed from `type import` to regular `import` for `OpenSeadragon.Point` constructor access
+
+### Playground Updates
+
+- Removed popup editor from playground (feature still available in library)
+- Integrated vertex editing mode with double-click and Escape key handlers
+- Added "Edit Vertices" option to context menu for polygons
+
+## Installation
+
+```bash
+npm install annota@0.3.2
+# or
+pnpm add annota@0.3.2
+```
+
+## Migration Guide
+
+No breaking changes - v0.3.2 is fully backward compatible with v0.3.1.
+
+To adopt the new vertex editing feature:
+
+1. Use the `useEditing` hook to manage edit state
+2. Connect double-click handler with `useAnnotationDoubleClick`
+3. Add Escape key handler to exit edit mode
+4. Optionally add "Edit Vertices" to your context menu
+
+See the [Vertex Editing Guide](/docs/guides/vertex-editing) for implementation examples.
