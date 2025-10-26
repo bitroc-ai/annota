@@ -6,12 +6,6 @@ import {
   Layers,
   Database,
   Atom,
-  Microscope,
-  Brain,
-  Hospital,
-  FlaskConical,
-  Hash,
-  Target,
   BookOpen,
   GraduationCap,
   FileText,
@@ -19,6 +13,7 @@ import {
   Gamepad2,
   Building,
 } from "lucide-react";
+import { ExampleViewer } from "@/components/examples";
 
 # Introduction
 
@@ -60,6 +55,16 @@ Annota is a **high-performance annotation framework** designed specifically for 
   />
   <Cards.Card icon={<Atom />} title="React First" href="/api/hooks" />
 </Cards>
+
+## Try It Now
+
+**Interactive Demo**: Click and drag to draw a rectangle annotation, or select and resize the existing one.
+
+<ExampleViewer type="rectangle" height={500} />
+
+<Callout>
+  This is a fully interactive annotation viewer. You can create, select, move, and resize annotations in real-time. The same viewer powers production pathology workflows.
+</Callout>
 
 ## Quick Start
 
@@ -116,7 +121,7 @@ useTool({ viewer, handler: pointTool, enabled: true });
 
 <Callout type="success">
   **Ready to go!** You now have a working annotation viewer. [See full examples
-  →](/docs/examples/basic-viewer)
+  →](/docs/use-cases/basic-viewer)
 </Callout>
 
 ## Key Features
@@ -262,37 +267,6 @@ graph TB
 
 [Learn more about the architecture →](/docs/architecture)
 
-## Use Cases
-
-<Cards num={3}>
-  <Cards.Card
-    icon={<Microscope />}
-    title="Digital Pathology"
-    href="/docs/guides/tools"
-  />
-  <Cards.Card
-    icon={<Brain />}
-    title="AI Training"
-    href="/docs/guides/loaders"
-  />
-  <Cards.Card
-    icon={<Hospital />}
-    title="Clinical Workflows"
-    href="/docs/examples/basic-viewer"
-  />
-  <Cards.Card
-    icon={<FlaskConical />}
-    title="Research"
-    href="/docs/guides/events"
-  />
-  <Cards.Card icon={<Hash />} title="Cell Counting" href="/docs/guides/tools" />
-  <Cards.Card
-    icon={<Target />}
-    title="Tumor Segmentation"
-    href="/docs/guides/tools"
-  />
-</Cards>
-
 ## Next Steps
 
 <Cards num={3}>
@@ -309,8 +283,8 @@ graph TB
   <Cards.Card icon={<FileText />} title="API" href="/api" />
   <Cards.Card
     icon={<Lightbulb />}
-    title="Examples"
-    href="/docs/examples/basic-viewer"
+    title="Use Cases"
+    href="/docs/use-cases/basic-viewer"
   />
   <Cards.Card icon={<Gamepad2 />} title="Playground" href="/playground" />
   <Cards.Card

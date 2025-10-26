@@ -1,0 +1,47 @@
+# useAnnotationStore
+
+Get direct access to the annotation store.
+
+## Signature
+
+```typescript
+function useAnnotationStore(): AnnotationStore | undefined
+```
+
+## Returns
+
+The annotation store instance, or `undefined` if not initialized.
+
+## Example
+
+```tsx
+import { useAnnotationStore } from 'annota';
+import { useEffect } from 'react';
+
+function StoreListener() {
+  const store = useAnnotationStore();
+
+  useEffect(() => {
+    if (!store) return;
+
+    const unsubscribe = store.subscribe(() => {
+      console.log('Store changed:', store.all());
+    });
+
+    return unsubscribe;
+  }, [store]);
+
+  return <div>Store listener active</div>;
+}
+```
+
+## Usage Notes
+
+- Provides lower-level access to the annotation store
+- Use [useAnnotator](/api/hooks/use-annotator) for most operations
+- Useful for advanced use cases like custom subscriptions
+
+## Related
+
+- [useAnnotator](/api/hooks/use-annotator) - Higher-level annotator access
+- [useAnnotations](/api/hooks/use-annotations) - Get all annotations (reactive)

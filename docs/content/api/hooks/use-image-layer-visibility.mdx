@@ -1,0 +1,34 @@
+# useImageLayerVisibility
+
+Control the visibility of the OpenSeadragon image layer.
+
+## Signature
+
+```typescript
+interface UseImageLayerVisibilityResult {
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+}
+
+function useImageLayerVisibility(): UseImageLayerVisibilityResult
+```
+
+## Example
+
+```tsx
+import { useImageLayerVisibility } from 'annota';
+
+function ImageToggle() {
+  const { visible, setVisible } = useImageLayerVisibility();
+
+  return (
+    <button onClick={() => setVisible(!visible)}>
+      {visible ? 'Hide' : 'Show'} Image
+    </button>
+  );
+}
+```
+
+## Use Case
+
+Useful for toggling the base image to focus on annotations only.

@@ -1,0 +1,48 @@
+# useHover
+
+Track which annotation is currently being hovered.
+
+## Signature
+
+```typescript
+function useHover(): Annotation | null
+```
+
+## Returns
+
+The currently hovered annotation, or `null` if no annotation is hovered.
+
+## Example
+
+```tsx
+import { useHover } from 'annota';
+
+function HoverInfo() {
+  const hoveredAnnotation = useHover();
+
+  if (!hoveredAnnotation) {
+    return <div>Hover over an annotation</div>;
+  }
+
+  return (
+    <div className="hover-tooltip">
+      <h4>{hoveredAnnotation.id}</h4>
+      <p>Type: {hoveredAnnotation.shape.type}</p>
+      {hoveredAnnotation.properties && (
+        <pre>{JSON.stringify(hoveredAnnotation.properties, null, 2)}</pre>
+      )}
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- Updates in real-time as the mouse moves over annotations
+- Returns `null` when not hovering over any annotation
+- Useful for tooltips, highlights, or preview information
+
+## Related
+
+- [useSelection](/api/hooks/use-selection) - Get selected annotations
+- [useAnnotation](/api/hooks/use-annotation) - Get specific annotation

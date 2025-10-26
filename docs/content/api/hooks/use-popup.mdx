@@ -1,0 +1,89 @@
+# usePopup
+
+Manage annotation popup state and properties.
+
+## Signature
+
+```typescript
+interface UsePopupResult {
+  annotation: Annotation | null;
+  show: (annotationId: string) => void;
+  hide: () => void;
+  toggle: (annotationId: string) => void;
+  updateProperties: (annotationId: string, properties: Record<string, unknown>) => void;
+  updateStyle: (annotationId: string, style: Partial<AnnotationStyle>) => void;
+  deleteAnnotation: (annotationId: string) => void;
+}
+
+function usePopup(options?: { autoShow?: boolean }): UsePopupResult
+```
+
+## Returns
+
+An object with popup state and control methods.
+
+## Example
+
+```tsx
+import { usePopup, useAnnotationDoubleClick, AnnotationPopup } from 'annota';
+
+function PopupEditor({ viewer }) {
+  const popup = usePopup();
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    popup.show(annotation.id);
+  });
+
+  return (
+    <AnnotationPopup
+      viewer={viewer}
+      annotation={popup.annotation}
+      onClose={popup.hide}
+    >
+      {popup.annotation && (
+        <div className="p-4">
+          <h3>Edit Annotation</h3>
+          <input
+            type="text"
+            placeholder="Label"
+            value={popup.annotation.properties?.label || ''}
+            onChange={(e) =>
+              popup.updateProperties(popup.annotation!.id, {
+                label: e.target.value,
+              })
+            }
+          />
+          <button onClick={() => popup.deleteAnnotation(popup.annotation!.id)}>
+            Delete
+          </button>
+        </div>
+      )}
+    </AnnotationPopup>
+  );
+}
+```
+
+## Methods
+
+### show(annotationId)
+Show popup for the specified annotation.
+
+### hide()
+Hide the popup.
+
+### toggle(annotationId)
+Toggle popup visibility for an annotation.
+
+### updateProperties(annotationId, properties)
+Update annotation properties and keep popup open.
+
+### updateStyle(annotationId, style)
+Update annotation style.
+
+### deleteAnnotation(annotationId)
+Delete the annotation and close popup.
+
+## Related
+
+- [AnnotationPopup Component](/api/components#annotationpopup) - Popup component
+- [Popup Guide](/docs/guides/popups) - Popup usage guide

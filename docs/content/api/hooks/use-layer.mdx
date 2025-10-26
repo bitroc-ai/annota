@@ -1,0 +1,36 @@
+# useLayer
+
+Get a specific layer by ID.
+
+## Signature
+
+```typescript
+function useLayer(id: string): Layer | undefined
+```
+
+## Parameters
+
+- `id` - The layer ID
+
+## Returns
+
+The layer, or `undefined` if not found.
+
+## Example
+
+```tsx
+import { useLayer } from 'annota';
+
+function LayerOpacityControl({ layerId }: { layerId: string }) {
+  const layer = useLayer(layerId);
+
+  if (!layer) return null;
+
+  return <div>Opacity: {layer.opacity}</div>;
+}
+```
+
+## Related
+
+- [useLayers](/api/hooks/use-layers) - Get all layers
+- [useLayerManager](/api/hooks/use-layer-manager) - Layer management

@@ -1,6 +1,6 @@
 import { generateStaticParamsFor, importPage } from "nextra/pages";
 import type { FC } from "react";
-import { useMDXComponents as getMDXComponents } from "../../mdx-components";
+import { useMDXComponents as getMDXComponents } from "../../../mdx-components";
 
 export async function generateStaticParams() {
   const params = await generateStaticParamsFor("mdxPath")();

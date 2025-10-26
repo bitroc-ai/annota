@@ -1,0 +1,48 @@
+# useAnnotations
+
+Get all annotations in the store.
+
+## Signature
+
+```typescript
+function useAnnotations(): Annotation[]
+```
+
+## Returns
+
+An array of all annotations currently in the annotation store.
+
+## Example
+
+```tsx
+import { useAnnotations } from 'annota';
+
+function AnnotationList() {
+  const annotations = useAnnotations();
+
+  return (
+    <div>
+      <h3>Annotations ({annotations.length})</h3>
+      <ul>
+        {annotations.map(ann => (
+          <li key={ann.id}>
+            {ann.shape.type} - ID: {ann.id}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- This hook subscribes to annotation store changes and will re-render when annotations are added, updated, or deleted
+- For large annotation sets, consider using filtering or pagination to avoid performance issues
+- To get a specific annotation, use [useAnnotation](/api/hooks/use-annotation) instead
+
+## Related
+
+- [useAnnotation](/api/hooks/use-annotation) - Get a specific annotation by ID
+- [useSelection](/api/hooks/use-selection) - Get currently selected annotations
+- [useAnnotationStore](/api/hooks/use-annotation-store) - Direct access to the annotation store

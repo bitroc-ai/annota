@@ -1,0 +1,38 @@
+# useLayers
+
+Get all layers in the layer manager.
+
+## Signature
+
+```typescript
+function useLayers(): Layer[]
+```
+
+## Returns
+
+An array of all layers.
+
+## Example
+
+```tsx
+import { useLayers } from 'annota';
+
+function LayerList() {
+  const layers = useLayers();
+
+  return (
+    <ul>
+      {layers.map(layer => (
+        <li key={layer.id}>
+          {layer.name} - {layer.visible ? 'Visible' : 'Hidden'}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Related
+
+- [useLayer](/api/hooks/use-layer) - Get single layer
+- [useLayerManager](/api/hooks/use-layer-manager) - Full layer management

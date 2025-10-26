@@ -8,7 +8,8 @@ Annota's API is organized into several categories:
 
 - **[React Hooks](/api/hooks)** - Hooks for accessing annotations, selection, and interactions
 - **[Components](/api/components)** - React components for building annotation UIs
-- **[Tools](/api/tools)** - Built-in annotation tools (Point, Rectangle, Polygon)
+- **[Annotator Instance](/api/annotator)** - Programmatic API for annotation management
+- **[TypeScript Types](/api/types)** - Complete type definitions
 
 ## Core Types
 
@@ -68,27 +69,120 @@ interface Layer {
 }
 ```
 
-## Export Formats
+## Built-in Tools
 
-### ASAP XML
+Annota includes several annotation tools out of the box:
 
-Annota supports importing annotations from ASAP XML format:
+### PointTool
+
+Click to add point annotations:
 
 ```typescript
-import { parseASAPXML } from "annota";
+import { PointTool } from "annota";
 
-const annotations = parseASAPXML(xmlString);
+const pointTool = new PointTool();
 ```
 
-### H5 Annotations
+### RectangleTool
 
-Load annotations from H5 files:
+Drag to draw rectangle annotations:
 
 ```typescript
-import { loadH5Masks } from "annota";
+import { RectangleTool } from "annota";
 
-const annotations = await loadH5Masks("/path/to/file.h5", {
-  datasetPath: "/annotations",
-  category: "positive",
+const rectangleTool = new RectangleTool();
+```
+
+### PolygonTool
+
+Click vertices to draw polygon annotations:
+
+```typescript
+import { PolygonTool } from "annota";
+
+const polygonTool = new PolygonTool();
+```
+
+### PushTool
+
+Push and pull polygon vertices to adjust shapes:
+
+```typescript
+import { PushTool } from "annota";
+
+const pushTool = new PushTool({
+  radius: 50,
+  strength: 0.5,
 });
 ```
+
+### ContourTool
+
+Automatically detect object contours using OpenCV:
+
+```typescript
+import { ContourTool, initOpenCV } from "annota";
+
+await initOpenCV();
+const contourTool = new ContourTool();
+```
+
+See the [Tools Guide](/docs/guides/tools) for detailed usage.
+
+## Data Loaders
+
+### H5 Files
+
+Load annotations from HDF5 files:
+
+```typescript
+import { loadH5Masks, loadH5Coordinates } from "annota";
+
+// Load mask polygons
+const annotations = await loadH5Masks("/path/to/file.h5", {
+  color: "#FF0000",
+  fillOpacity: 0.3,
+});
+
+// Load coordinate points
+const points = await loadH5Coordinates("/path/to/coords.h5", {
+  color: "#00FF00",
+});
+```
+
+### PGM Files
+
+Load and export PGM mask files:
+
+```typescript
+import { loadPgmFile, loadPgmPolygons, annotationsToPgm } from "annota";
+
+// Load PGM file
+const annotations = loadPgmFile(pgmData, {
+  threshold: 128,
+});
+
+// Extract polygons from PGM
+const polygons = loadPgmPolygons(pgmData, {
+  threshold: 128,
+});
+
+// Export to PGM format
+const pgmData = annotationsToPgm(annotations);
+```
+
+### JSON
+
+Import and export JSON annotations:
+
+```typescript
+import { loadJSONFile, annotationsToJSON } from "annota";
+
+// Load from JSON
+const annotations = loadJSONFile(jsonData);
+
+// Export to JSON
+const json = annotationsToJSON(annotations);
+```
+
+See the [Loaders Guide](/docs/guides/loaders) for more details.

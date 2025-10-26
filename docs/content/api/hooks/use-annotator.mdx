@@ -1,0 +1,72 @@
+# useAnnotator
+
+Get the Annota annotator instance for programmatic access.
+
+## Signature
+
+```typescript
+function useAnnotator(): AnnotatorInstance | undefined
+```
+
+## Returns
+
+The annotator instance, or `undefined` if not yet initialized.
+
+## Example
+
+```tsx
+import { useAnnotator } from 'annota';
+
+function AnnotationControls() {
+  const annotator = useAnnotator();
+
+  const handleAddPoint = () => {
+    annotator?.addAnnotation({
+      id: `point-${Date.now()}`,
+      shape: {
+        type: 'point',
+        point: { x: 500, y: 500 },
+        bounds: { minX: 500, minY: 500, maxX: 500, maxY: 500 },
+      },
+    });
+  };
+
+  const handleClearAll = () => {
+    annotator?.clearAnnotations();
+  };
+
+  return (
+    <div>
+      <button onClick={handleAddPoint}>Add Point</button>
+      <button onClick={handleClearAll}>Clear All</button>
+    </div>
+  );
+}
+```
+
+## Accessing Internal State
+
+```tsx
+import { useAnnotator } from 'annota';
+
+function Stats() {
+  const annotator = useAnnotator();
+
+  // Access the annotation store directly
+  const allAnnotations = annotator?.state.store.all() ?? [];
+
+  return <div>Total: {allAnnotations.length}</div>;
+}
+```
+
+## Usage Notes
+
+- Provides access to all annotator methods (add, update, delete, etc.)
+- Returns `undefined` during initialization - always check before using
+- See [Annotator Instance](/api/annotator) for complete API documentation
+
+## Related
+
+- [Annotator Instance API](/api/annotator) - Complete annotator methods
+- [useAnnotationStore](/api/hooks/use-annotation-store) - Direct store access
+- [useViewer](/api/hooks/use-viewer) - Get OpenSeadragon viewer

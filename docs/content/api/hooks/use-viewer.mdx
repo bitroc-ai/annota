@@ -1,0 +1,58 @@
+# useViewer
+
+Get the OpenSeadragon viewer instance.
+
+## Signature
+
+```typescript
+function useViewer(): OpenSeadragon.Viewer | undefined
+```
+
+## Returns
+
+The OpenSeadragon viewer instance, or `undefined` if not initialized.
+
+## Example
+
+```tsx
+import { useViewer } from 'annota';
+
+function ViewerControls() {
+  const viewer = useViewer();
+
+  const handleZoomIn = () => {
+    viewer?.viewport.zoomBy(1.2);
+    viewer?.viewport.applyConstraints();
+  };
+
+  const handleZoomOut = () => {
+    viewer?.viewport.zoomBy(0.8);
+    viewer?.viewport.applyConstraints();
+  };
+
+  const handleHome = () => {
+    viewer?.viewport.goHome();
+  };
+
+  if (!viewer) return <div>Loading viewer...</div>;
+
+  return (
+    <div>
+      <button onClick={handleZoomIn}>Zoom In</button>
+      <button onClick={handleZoomOut}>Zoom Out</button>
+      <button onClick={handleHome}>Home</button>
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- Returns `undefined` until the viewer is fully initialized
+- Provides direct access to OpenSeadragon's viewer API
+- See [OpenSeadragon documentation](https://openseadragon.github.io/docs/) for viewer methods
+
+## Related
+
+- [useAnnotator](/api/hooks/use-annotator) - Get annotator instance
+- [AnnotaViewer Component](/api/components#annotatviewer) - Viewer component

@@ -348,6 +348,160 @@ function ViewerWithTools() {
 }
 ```
 
+## ContextMenu
+
+Context menu component for displaying annotation actions.
+
+### Props
+
+```typescript
+interface ContextMenuProps {
+  position: { x: number; y: number };
+  onClose: () => void;
+  children: React.ReactNode;
+}
+```
+
+### Usage
+
+```tsx
+import { ContextMenu, ContextMenuItem, ContextMenuDivider, useContextMenu } from 'annota';
+
+function MyContextMenu() {
+  const contextMenu = useContextMenu();
+
+  if (!contextMenu.visible) return null;
+
+  return (
+    <ContextMenu
+      position={contextMenu.position}
+      onClose={contextMenu.hide}
+    >
+      <ContextMenuItem onClick={() => handleEdit(contextMenu.annotation)}>
+        Edit Annotation
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => handleDuplicate(contextMenu.annotation)}>
+        Duplicate
+      </ContextMenuItem>
+      <ContextMenuDivider />
+      <ContextMenuItem onClick={() => handleDelete(contextMenu.annotation)}>
+        Delete
+      </ContextMenuItem>
+    </ContextMenu>
+  );
+}
+```
+
+### ContextMenuItem
+
+Individual menu item component.
+
+```typescript
+interface ContextMenuItemProps {
+  onClick: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}
+```
+
+### ContextMenuDivider
+
+Visual divider between menu items.
+
+```tsx
+<ContextMenuDivider />
+```
+
+## Shape Editors
+
+Individual shape editor components for custom editing interfaces.
+
+### PointEditor
+
+Editor for point annotations.
+
+```typescript
+interface PointEditorProps {
+  annotation: Annotation;
+  viewer: OpenSeadragon.Viewer;
+  onUpdate: (updates: Partial<Annotation>) => void;
+}
+```
+
+**Usage:**
+
+```tsx
+import { PointEditor } from 'annota';
+
+<PointEditor
+  annotation={selectedAnnotation}
+  viewer={viewer}
+  onUpdate={(updates) => {
+    annotator?.updateAnnotation(selectedAnnotation.id, updates);
+  }}
+/>
+```
+
+### RectangleEditor
+
+Editor for rectangle annotations with drag handles.
+
+```typescript
+interface RectangleEditorProps {
+  annotation: Annotation;
+  viewer: OpenSeadragon.Viewer;
+  onUpdate: (updates: Partial<Annotation>) => void;
+}
+```
+
+**Usage:**
+
+```tsx
+import { RectangleEditor } from 'annota';
+
+<RectangleEditor
+  annotation={selectedAnnotation}
+  viewer={viewer}
+  onUpdate={(updates) => {
+    annotator?.updateAnnotation(selectedAnnotation.id, updates);
+  }}
+/>
+```
+
+### PolygonEditor
+
+Editor for polygon annotations with vertex manipulation.
+
+```typescript
+interface PolygonEditorProps {
+  annotation: Annotation;
+  viewer: OpenSeadragon.Viewer;
+  onUpdate: (updates: Partial<Annotation>) => void;
+  editMode?: 'vertices';
+}
+```
+
+**Usage:**
+
+```tsx
+import { PolygonEditor } from 'annota';
+
+<PolygonEditor
+  annotation={selectedAnnotation}
+  viewer={viewer}
+  onUpdate={(updates) => {
+    annotator?.updateAnnotation(selectedAnnotation.id, updates);
+  }}
+  editMode="vertices"
+/>
+```
+
+**Features:**
+- Drag vertices to move them
+- Click edges to add new vertices
+- Right-click vertices to delete them
+- Conditional vertex display in vertex editing mode
+
 ## Best Practices
 
 ### 1. Single Provider

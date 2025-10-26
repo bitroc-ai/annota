@@ -1,11 +1,15 @@
 export default {
   index: {
-    title: 'Home',
     display: 'hidden',
   },
   docs: {
     title: 'Documentation',
     type: 'page',
+  },
+  playground: {
+    title: 'Playground',
+    type: 'page',
+    href: '/playground',
   },
   api: {
     title: 'API',
@@ -14,10 +18,5 @@ export default {
   changelog: {
     title: 'Changelog',
     type: 'page',
-  },
-  playground: {
-    title: 'Playground',
-    type: 'page',
-    href: '/playground',
   },
 }

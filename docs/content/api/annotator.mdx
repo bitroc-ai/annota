@@ -34,8 +34,9 @@ interface OpenSeadragonAnnotator {
   updateAnnotation(id: string, updates: Partial<Annotation>): void;
   deleteAnnotation(id: string): void;
   removeAnnotation(id: string): void;  // Alias for deleteAnnotation
+  clearAnnotations(): void;
   getAnnotation(id: string): Annotation | undefined;
-  getAllAnnotations(): Annotation[];
+  getAnnotations(): Annotation[];
 
   // Spatial queries
   getAnnotationsInBounds(bounds: Bounds): Annotation[];
@@ -45,10 +46,27 @@ interface OpenSeadragonAnnotator {
   getSelected(): string[];
 
   // Layer management
-  setCurrentLayer(layerId: string): void;
-  getCurrentLayer(): string;
-  createLayer(id: string, config: LayerConfig): void;
+  createLayer(config: LayerConfig): void;
   getLayer(id: string): Layer | undefined;
+  getAllLayers(): Layer[];
+  updateLayer(id: string, updates: Partial<Layer>): void;
+  deleteLayer(id: string, deleteAnnotations?: boolean): void;
+  setLayerVisibility(id: string, visible: boolean): void;
+  setLayerLocked(id: string, locked: boolean): void;
+  setLayerOpacity(id: string, opacity: number): void;
+  setLayerZIndex(id: string, zIndex: number): void;
+
+  // Rendering
+  setStyle(style: StyleExpression): void;
+  setFilter(filter: ((annotation: Annotation) => boolean) | null): void;
+  setVisible(visible: boolean): void;
+
+  // History/Undo-Redo
+  undo(): void;
+  redo(): void;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  clearHistory(): void;
 
   // Events
   on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
@@ -196,19 +214,34 @@ if (annotation) {
 }
 ```
 
-### getAllAnnotations
+### getAnnotations
 
 Get all annotations.
 
 ```typescript
-getAllAnnotations(): Annotation[]
+getAnnotations(): Annotation[]
 ```
 
 **Example:**
 
 ```tsx
-const allAnnotations = annotator.getAllAnnotations();
+const allAnnotations = annotator.getAnnotations();
 console.log(`Total annotations: ${allAnnotations.length}`);
+```
+
+### clearAnnotations
+
+Remove all annotations from the store.
+
+```typescript
+clearAnnotations(): void
+```
+
+**Example:**
+
+```tsx
+// Clear all annotations
+annotator.clearAnnotations();
 ```
 
 ## Spatial Queries
@@ -286,61 +319,33 @@ console.log(`Selected: ${selectedIds.length} annotations`);
 
 ## Layer Management
 
-### setCurrentLayer
-
-Set the active layer for new annotations.
-
-```typescript
-setCurrentLayer(layerId: string): void
-```
-
-**Example:**
-
-```tsx
-annotator.setCurrentLayer('tumor');
-
-// New annotations will be created on the 'tumor' layer
-```
-
-### getCurrentLayer
-
-Get the current active layer ID.
-
-```typescript
-getCurrentLayer(): string
-```
-
-**Example:**
-
-```tsx
-const currentLayer = annotator.getCurrentLayer();
-console.log(`Active layer: ${currentLayer}`);
-```
-
 ### createLayer
 
 Create a new layer.
 
 ```typescript
-createLayer(id: string, config: LayerConfig): void
+createLayer(config: LayerConfig): void
 ```
 
 **Parameters:**
 
 ```typescript
 interface LayerConfig {
+  id: string;
   name: string;
   visible?: boolean;   // Default: true
   locked?: boolean;    // Default: false
   opacity?: number;    // Default: 1 (0-1 range)
   zIndex?: number;     // Default: 0
+  filter?: (annotation: Annotation) => boolean;
 }
 ```
 
 **Example:**
 
 ```tsx
-annotator.createLayer('tumor', {
+annotator.createLayer({
+  id: 'tumor',
   name: 'Tumor Annotations',
   visible: true,
   locked: false,
@@ -364,6 +369,272 @@ const layer = annotator.getLayer('tumor');
 if (layer) {
   console.log(`Layer: ${layer.name}, visible: ${layer.visible}`);
 }
+```
+
+### getAllLayers
+
+Get all layers.
+
+```typescript
+getAllLayers(): Layer[]
+```
+
+**Example:**
+
+```tsx
+const layers = annotator.getAllLayers();
+console.log(`Total layers: ${layers.length}`);
+```
+
+### updateLayer
+
+Update layer properties.
+
+```typescript
+updateLayer(id: string, updates: Partial<Layer>): void
+```
+
+**Example:**
+
+```tsx
+annotator.updateLayer('tumor', {
+  name: 'Cancer Regions',
+  opacity: 0.5,
+});
+```
+
+### deleteLayer
+
+Delete a layer and optionally its annotations.
+
+```typescript
+deleteLayer(id: string, deleteAnnotations?: boolean): void
+```
+
+**Parameters:**
+- `id`: Layer ID to delete
+- `deleteAnnotations`: If true, also delete all annotations on this layer (default: false)
+
+**Example:**
+
+```tsx
+// Delete layer but keep annotations
+annotator.deleteLayer('tumor');
+
+// Delete layer and all its annotations
+annotator.deleteLayer('tumor', true);
+```
+
+### setLayerVisibility
+
+Toggle layer visibility.
+
+```typescript
+setLayerVisibility(id: string, visible: boolean): void
+```
+
+**Example:**
+
+```tsx
+annotator.setLayerVisibility('tumor', false);
+```
+
+### setLayerLocked
+
+Lock or unlock a layer (prevents editing).
+
+```typescript
+setLayerLocked(id: string, locked: boolean): void
+```
+
+**Example:**
+
+```tsx
+annotator.setLayerLocked('tumor', true);
+```
+
+### setLayerOpacity
+
+Set layer opacity.
+
+```typescript
+setLayerOpacity(id: string, opacity: number): void
+```
+
+**Parameters:**
+- `opacity`: Value between 0 (transparent) and 1 (opaque)
+
+**Example:**
+
+```tsx
+annotator.setLayerOpacity('tumor', 0.5);
+```
+
+### setLayerZIndex
+
+Set layer z-index (rendering order).
+
+```typescript
+setLayerZIndex(id: string, zIndex: number): void
+```
+
+**Example:**
+
+```tsx
+// Higher z-index renders on top
+annotator.setLayerZIndex('tumor', 100);
+annotator.setLayerZIndex('background', 0);
+```
+
+## Rendering Control
+
+### setStyle
+
+Set the global style function for annotations.
+
+```typescript
+setStyle(style: StyleExpression): void
+
+type StyleExpression = AnnotationStyle | ((annotation: Annotation) => AnnotationStyle);
+```
+
+**Example:**
+
+```tsx
+// Static style
+annotator.setStyle({
+  fill: '#FF0000',
+  fillOpacity: 0.3,
+  stroke: '#FFFFFF',
+  strokeWidth: 2,
+});
+
+// Dynamic style function
+annotator.setStyle((annotation) => ({
+  fill: annotation.properties?.type === 'tumor' ? '#FF0000' : '#00FF00',
+  fillOpacity: 0.3,
+  stroke: '#FFFFFF',
+  strokeWidth: 2,
+}));
+```
+
+### setFilter
+
+Filter which annotations are visible.
+
+```typescript
+setFilter(filter: ((annotation: Annotation) => boolean) | null): void
+```
+
+**Example:**
+
+```tsx
+// Only show annotations with type 'tumor'
+annotator.setFilter((annotation) =>
+  annotation.properties?.type === 'tumor'
+);
+
+// Clear filter (show all)
+annotator.setFilter(null);
+```
+
+### setVisible
+
+Toggle visibility of all annotations.
+
+```typescript
+setVisible(visible: boolean): void
+```
+
+**Example:**
+
+```tsx
+// Hide all annotations
+annotator.setVisible(false);
+
+// Show all annotations
+annotator.setVisible(true);
+```
+
+## History & Undo/Redo
+
+### undo
+
+Undo the last operation.
+
+```typescript
+undo(): void
+```
+
+**Example:**
+
+```tsx
+annotator.undo();
+```
+
+### redo
+
+Redo the last undone operation.
+
+```typescript
+redo(): void
+```
+
+**Example:**
+
+```tsx
+annotator.redo();
+```
+
+### canUndo
+
+Check if undo is available.
+
+```typescript
+canUndo(): boolean
+```
+
+**Example:**
+
+```tsx
+const undoAvailable = annotator.canUndo();
+
+<button disabled={!undoAvailable} onClick={() => annotator.undo()}>
+  Undo
+</button>
+```
+
+### canRedo
+
+Check if redo is available.
+
+```typescript
+canRedo(): boolean
+```
+
+**Example:**
+
+```tsx
+const redoAvailable = annotator.canRedo();
+
+<button disabled={!redoAvailable} onClick={() => annotator.redo()}>
+  Redo
+</button>
+```
+
+### clearHistory
+
+Clear the entire undo/redo history.
+
+```typescript
+clearHistory(): void
+```
+
+**Example:**
+
+```tsx
+// Clear history after saving
+annotator.clearHistory();
 ```
 
 ## Event System

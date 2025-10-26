@@ -37,6 +37,22 @@ Visual styling for annotations. All properties are optional.
 
 ## Shape Types
 
+All shape types share a common `bounds` property for spatial indexing.
+
+### Shape Union Type
+
+```typescript
+type Shape =
+  | PointShape
+  | CircleShape
+  | EllipseShape
+  | RectangleShape
+  | LineShape
+  | PolygonShape
+  | FreehandShape
+  | MultiPolygonShape;
+```
+
 ### PointShape
 
 ```typescript
@@ -61,6 +77,58 @@ const pointShape: PointShape = {
   type: 'point',
   point: { x: 100, y: 200 },
   bounds: { minX: 100, minY: 200, maxX: 100, maxY: 200 },
+};
+```
+
+### CircleShape
+
+```typescript
+interface CircleShape {
+  type: 'circle';
+  center: Point;
+  radius: number;
+  bounds: Bounds;
+}
+```
+
+A circle defined by center point and radius.
+
+**Example:**
+
+```typescript
+const circleShape: CircleShape = {
+  type: 'circle',
+  center: { x: 100, y: 100 },
+  radius: 50,
+  bounds: { minX: 50, minY: 50, maxX: 150, maxY: 150 },
+};
+```
+
+### EllipseShape
+
+```typescript
+interface EllipseShape {
+  type: 'ellipse';
+  center: Point;
+  radiusX: number;
+  radiusY: number;
+  rotation?: number;  // Rotation in degrees
+  bounds: Bounds;
+}
+```
+
+An ellipse with optional rotation.
+
+**Example:**
+
+```typescript
+const ellipseShape: EllipseShape = {
+  type: 'ellipse',
+  center: { x: 100, y: 100 },
+  radiusX: 80,
+  radiusY: 50,
+  rotation: 45,
+  bounds: { minX: 20, minY: 50, maxX: 180, maxY: 150 },
 };
 ```
 
@@ -92,6 +160,31 @@ const rectangleShape: RectangleShape = {
 };
 ```
 
+### LineShape
+
+```typescript
+interface LineShape {
+  type: 'line';
+  points: [Point, Point];  // Start and end points
+  bounds: Bounds;
+}
+```
+
+A line segment between two points.
+
+**Example:**
+
+```typescript
+const lineShape: LineShape = {
+  type: 'line',
+  points: [
+    { x: 100, y: 100 },
+    { x: 200, y: 200 },
+  ],
+  bounds: { minX: 100, minY: 100, maxX: 200, maxY: 200 },
+};
+```
+
 ### PolygonShape
 
 ```typescript
@@ -116,6 +209,70 @@ const polygonShape: PolygonShape = {
     { x: 100, y: 200 },
   ],
   bounds: { minX: 100, minY: 100, maxX: 200, maxY: 200 },
+};
+```
+
+### FreehandShape
+
+```typescript
+interface FreehandShape {
+  type: 'freehand';
+  points: Point[];
+  bounds: Bounds;
+}
+```
+
+A freehand drawing (similar to polygon but represents a drawn path).
+
+**Example:**
+
+```typescript
+const freehandShape: FreehandShape = {
+  type: 'freehand',
+  points: [
+    { x: 100, y: 100 },
+    { x: 105, y: 102 },
+    { x: 110, y: 105 },
+    // ... many points
+  ],
+  bounds: { minX: 100, minY: 100, maxX: 200, maxY: 150 },
+};
+```
+
+### MultiPolygonShape
+
+```typescript
+interface MultiPolygonShape {
+  type: 'multipolygon';
+  polygons: Point[][];
+  bounds: Bounds;
+}
+```
+
+Multiple polygons grouped as a single annotation (e.g., for annotations with holes).
+
+**Example:**
+
+```typescript
+const multiPolygonShape: MultiPolygonShape = {
+  type: 'multipolygon',
+  polygons: [
+    // Outer polygon
+    [
+      { x: 0, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100, y: 100 },
+      { x: 0, y: 100 },
+    ],
+    // Inner polygon (hole)
+    [
+      { x: 25, y: 25 },
+      { x: 75, y: 25 },
+      { x: 75, y: 75 },
+      { x: 25, y: 75 },
+    ],
+  ],
+  bounds: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
 };
 ```
 
@@ -144,24 +301,35 @@ interface Layer {
   locked: boolean;
   opacity: number;   // 0-1
   zIndex: number;
+  filter?: (annotation: Annotation) => boolean;
 }
 ```
 
-Layer definition with visibility and styling controls.
+Layer definition with visibility, styling, and filtering controls.
 
 ### LayerConfig
 
 ```typescript
 interface LayerConfig {
+  id: string;
   name: string;
   visible?: boolean;   // Default: true
   locked?: boolean;    // Default: false
   opacity?: number;    // Default: 1
   zIndex?: number;     // Default: 0
+  filter?: (annotation: Annotation) => boolean;
 }
 ```
 
 Configuration for creating new layers.
+
+### MaskPolarity
+
+```typescript
+type MaskPolarity = 'positive' | 'negative';
+```
+
+Mask polarity for annotations loaded from mask files. Positive masks represent foreground, negative masks represent background.
 
 ## Event Types
 
@@ -199,6 +367,52 @@ interface ToolHandler {
 
 Base interface for annotation tools.
 
+### ToolHandlerOptions
+
+```typescript
+interface ToolHandlerOptions {
+  preventDefaultAction?: boolean;
+  checkAnnotationHits?: boolean;
+  annotationStyle?: AnnotationStyle;
+  annotationProperties?: Record<string, unknown>;
+}
+```
+
+Options for configuring tool behavior.
+
+### ToolType
+
+```typescript
+type ToolType = 'pan' | 'point' | 'push' | 'move' | 'contour';
+```
+
+Built-in tool types.
+
+### PushToolOptions
+
+```typescript
+interface PushToolOptions extends ToolHandlerOptions {
+  radius?: number;       // Influence radius (default: 50)
+  strength?: number;     // Push strength 0-1 (default: 0.5)
+  showCursor?: boolean;  // Show cursor indicator (default: true)
+}
+```
+
+Options for PushTool.
+
+### ContourDetectOptions
+
+```typescript
+interface ContourDetectOptions extends ToolHandlerOptions {
+  threshold?: number;        // Edge detection threshold
+  minArea?: number;          // Minimum contour area
+  maxArea?: number;          // Maximum contour area
+  simplify?: number;         // Polygon simplification tolerance
+}
+```
+
+Options for ContourTool.
+
 ### UseToolOptions
 
 ```typescript
@@ -217,16 +431,96 @@ Options for the `useTool` hook.
 
 ```typescript
 interface UseLayerManagerResult {
-  createLayer(id: string, config: LayerConfig): void;
-  deleteLayer(id: string): void;
+  layers: Layer[];
+  createLayer(config: LayerConfig): void;
+  updateLayer(id: string, updates: Partial<Layer>): void;
+  deleteLayer(id: string, deleteAnnotations?: boolean): void;
   getLayer(id: string): Layer | undefined;
-  setLayerVisibility(id: string, visible: boolean): void;
-  setLayerOpacity(id: string, opacity: number): void;
-  setLayerLocked(id: string, locked: boolean): void;
 }
 ```
 
 Return type for `useLayerManager` hook.
+
+### UseHistoryResult
+
+```typescript
+interface UseHistoryResult {
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
+}
+```
+
+Return type for `useHistory` hook.
+
+### UsePopupResult
+
+```typescript
+interface UsePopupResult {
+  annotation: Annotation | null;
+  show: (annotationId: string) => void;
+  hide: () => void;
+  toggle: (annotationId: string) => void;
+  updateProperties: (annotationId: string, properties: Record<string, unknown>) => void;
+  updateStyle: (annotationId: string, style: Partial<AnnotationStyle>) => void;
+  deleteAnnotation: (annotationId: string) => void;
+}
+```
+
+Return type for `usePopup` hook.
+
+### UseEditingResult
+
+```typescript
+interface UseEditingResult {
+  editingAnnotation: Annotation | null;
+  editingId: string | undefined;
+  editMode: 'vertices' | undefined;
+  startEditing: (annotationId: string, mode?: 'vertices') => void;
+  stopEditing: () => void;
+  isEditing: (annotationId: string) => boolean;
+}
+```
+
+Return type for `useEditing` hook.
+
+### UseContextMenuResult
+
+```typescript
+interface UseContextMenuResult {
+  visible: boolean;
+  position: { x: number; y: number };
+  annotation: Annotation | null;
+  show: (annotation: Annotation | null, x: number, y: number) => void;
+  hide: () => void;
+}
+```
+
+Return type for `useContextMenu` hook.
+
+### UseViewerResult
+
+```typescript
+interface UseViewerResult {
+  viewer: OpenSeadragon.Viewer | undefined;
+  ready: boolean;
+}
+```
+
+Return type for `useViewer` hook (extended version).
+
+### UseImageLayerVisibilityResult
+
+```typescript
+interface UseImageLayerVisibilityResult {
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+}
+```
+
+Return type for `useImageLayerVisibility` hook.
 
 ## Loader Types
 

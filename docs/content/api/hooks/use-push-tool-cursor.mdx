@@ -1,0 +1,52 @@
+# usePushToolCursor
+
+Track the push tool cursor position and radius.
+
+## Signature
+
+```typescript
+interface PushToolCursor {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+function usePushToolCursor(): PushToolCursor | null
+```
+
+## Returns
+
+Cursor position and radius, or `null` when push tool is not active.
+
+## Example
+
+```tsx
+import { usePushToolCursor } from 'annota';
+
+function PushToolCursorOverlay() {
+  const cursor = usePushToolCursor();
+
+  if (!cursor) return null;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: cursor.x - cursor.radius,
+        top: cursor.y - cursor.radius,
+        width: cursor.radius * 2,
+        height: cursor.radius * 2,
+        borderRadius: '50%',
+        border: '2px solid #4A90E2',
+        pointerEvents: 'none',
+        transform: 'translate(-50%, -50%)',
+      }}
+    />
+  );
+}
+```
+
+## Related
+
+- [PushTool](/docs/guides/tools#pushtool) - Push tool documentation
+- [useTool](/api/hooks/use-tool) - Tool management

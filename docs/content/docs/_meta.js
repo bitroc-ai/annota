@@ -5,5 +5,5 @@ export default {
   'getting-started': 'Getting Started',
   architecture: 'Architecture',
   guides: 'Guides',
-  examples: 'Examples',
+  'use-cases': 'Use Cases',
 }

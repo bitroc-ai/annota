@@ -1,0 +1,63 @@
+# useAnnotationDoubleClick
+
+Listen for double-click events on annotations.
+
+## Signature
+
+```typescript
+function useAnnotationDoubleClick(
+  viewer: OpenSeadragon.Viewer | undefined,
+  onDoubleClick: (annotation: Annotation) => void
+): void
+```
+
+## Parameters
+
+- `viewer` - The OpenSeadragon viewer instance
+- `onDoubleClick` - Callback function called when an annotation is double-clicked
+
+## Example
+
+```tsx
+import { useAnnotationDoubleClick, usePopup } from 'annota';
+
+function Editor({ viewer }) {
+  const popup = usePopup();
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    popup.show(annotation.id);
+  });
+
+  // Rest of component...
+}
+```
+
+## Example: Edit Mode on Double-Click
+
+```tsx
+import { useAnnotationDoubleClick, useEditing, getEditorConfig } from 'annota';
+
+function PolygonEditor({ viewer }) {
+  const { startEditing } = useEditing();
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    const editorConfig = getEditorConfig(annotation);
+    if (editorConfig?.supportsVertexEditing) {
+      startEditing(annotation.id, 'vertices');
+    }
+  });
+
+  // Rest of component...
+}
+```
+
+## Usage Notes
+
+- Automatically manages event listeners - cleans up when component unmounts
+- Only fires for annotation double-clicks, not empty space
+- Pass `undefined` for viewer during initialization - the hook will wait until viewer is ready
+
+## Related
+
+- [usePopup](/api/hooks/use-popup) - Manage popup display
+- [useEditing](/api/hooks/use-editing) - Manage editing mode

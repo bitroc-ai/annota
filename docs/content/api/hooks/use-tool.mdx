@@ -1,0 +1,66 @@
+# useTool
+
+Manage tool lifecycle and enable/disable annotation tools.
+
+## Signature
+
+```typescript
+interface UseToolOptions {
+  viewer: OpenSeadragon.Viewer | undefined;
+  handler: ToolHandler | null;
+  enabled: boolean;
+}
+
+function useTool(options: UseToolOptions): void
+```
+
+## Parameters
+
+- `viewer` - The OpenSeadragon viewer instance
+- `handler` - The tool handler instance (or null for pan mode)
+- `enabled` - Whether the tool is enabled
+
+## Example
+
+```tsx
+import { useTool, PointTool, RectangleTool, PolygonTool } from 'annota';
+import { useState } from 'react';
+
+function ToolManager({ viewer }) {
+  const [currentTool, setCurrentTool] = useState<string>('point');
+
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  useTool({
+    viewer,
+    handler: currentTool === 'pan' ? null : tools[currentTool],
+    enabled: currentTool !== 'pan',
+  });
+
+  return (
+    <div className="toolbar">
+      <button onClick={() => setCurrentTool('pan')}>Pan</button>
+      <button onClick={() => setCurrentTool('point')}>Point</button>
+      <button onClick={() => setCurrentTool('rectangle')}>Rectangle</button>
+      <button onClick={() => setCurrentTool('polygon')}>Polygon</button>
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- Automatically manages tool lifecycle (enable/disable/destroy)
+- Pass `null` for handler to enable pan mode
+- Tools are properly cleaned up when component unmounts
+
+## Related
+
+- [Tools Guide](/docs/guides/tools) - Complete tool documentation
+- [PointTool](/api/tools#pointtool) - Point tool
+- [RectangleTool](/api/tools#rectangletool) - Rectangle tool
+- [PolygonTool](/api/tools#polygontool) - Polygon tool

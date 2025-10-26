@@ -134,7 +134,7 @@ For publishing releases, see [PUBLISHING.md](PUBLISHING.md).
 
 ## License
 
-MIT © BitRoc Lab
+MIT
 
 ## Acknowledgments
 

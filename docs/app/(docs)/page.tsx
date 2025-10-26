@@ -7,6 +7,12 @@ import {
   BookOpen,
   ChevronRight,
   MonitorPlay,
+  Microscope,
+  Brain,
+  Hospital,
+  FlaskConical,
+  Hash,
+  Target,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -113,39 +119,162 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Start */}
+      {/* Use Cases */}
       <section className="py-16 bg-slate-50 dark:bg-slate-950">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-semibold text-slate-900 dark:text-white mb-3">
+              Powering Real-World Applications
+            </h2>
+            <p className="text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              From digital pathology to microscopy and beyond, see how Annota enables annotation workflows
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <FeatureCard
+              icon={<Microscope className="w-8 h-8" />}
+              title="Diagnostic Pathology"
+              description="Enable pathologists to annotate regions of interest on WSI for diagnostic review and consultation"
+            />
+            <FeatureCard
+              icon={<Brain className="w-8 h-8" />}
+              title="AI Model Training"
+              description="Create high-quality labeled datasets for training deep learning models in computational pathology"
+            />
+            <FeatureCard
+              icon={<FlaskConical className="w-8 h-8" />}
+              title="Research & Analysis"
+              description="Quantify and analyze tissue features, cell populations, and morphological patterns"
+            />
+            <FeatureCard
+              icon={<Hash className="w-8 h-8" />}
+              title="Cell Detection & Counting"
+              description="Precisely mark nuclei, tumor cells, and immune cells for quantitative analysis"
+            />
+            <FeatureCard
+              icon={<Target className="w-8 h-8" />}
+              title="Tumor Delineation"
+              description="Outline tumor regions, invasion fronts, and microenvironments with polygon tools"
+            />
+            <FeatureCard
+              icon={<Hospital className="w-8 h-8" />}
+              title="Multi-User Collaboration"
+              description="Support team-based annotation workflows with layer management and concurrent editing"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Start */}
+      <section className="py-16 bg-white dark:bg-slate-900">
         <div className="container mx-auto px-6">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl font-semibold text-slate-900 dark:text-white mb-6 text-center">
               Quick Start
             </h2>
-            <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-6 overflow-x-auto">
-              <pre className="text-sm text-slate-100">
-                <code>{`npm install annota openseadragon react react-dom
 
-import { AnnotaProvider, Annotator, AnnotationEditor } from 'annota';
+            {/* Window Frame */}
+            <div className="rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xl">
+              {/* Window Header */}
+              <div className="bg-slate-100 dark:bg-slate-800 px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <div className="flex-1 text-center">
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    app.tsx
+                  </span>
+                </div>
+              </div>
 
-function App() {
-  const [viewer, setViewer] = useState();
-
-  return (
-    <AnnotaProvider>
-      <Annotator
-        viewer={viewer}
-        onViewerReady={setViewer}
-        tileSources="/image.dzi"
-      />
-      <AnnotationEditor viewer={viewer} />
-    </AnnotaProvider>
-  );
-}`}</code>
-              </pre>
+              {/* Code Content */}
+              <div className="bg-slate-900 dark:bg-slate-950 p-6 overflow-x-auto">
+                <pre className="text-sm leading-relaxed border-0 m-0 p-0 border-none!">
+                  <code className="text-slate-100">
+                    <span className="text-slate-500">{"// npm install annota openseadragon react react-dom"}</span>
+                    {"\n\n"}
+                    <span className="text-purple-400">import</span>{" "}
+                    <span className="text-slate-300">{"{"}</span>{" "}
+                    <span className="text-blue-300">AnnotaProvider</span>
+                    <span className="text-slate-300">,</span>{" "}
+                    <span className="text-blue-300">Annotator</span>
+                    <span className="text-slate-300">,</span>{" "}
+                    <span className="text-blue-300">AnnotationEditor</span>{" "}
+                    <span className="text-slate-300">{"}"}</span>{" "}
+                    <span className="text-purple-400">from</span>{" "}
+                    <span className="text-green-300">'annota'</span>
+                    <span className="text-slate-300">;</span>
+                    {"\n\n"}
+                    <span className="text-purple-400">function</span>{" "}
+                    <span className="text-yellow-300">App</span>
+                    <span className="text-slate-300">() {"{"}</span>
+                    {"\n  "}
+                    <span className="text-purple-400">const</span>{" "}
+                    <span className="text-slate-300">[</span>
+                    <span className="text-blue-300">viewer</span>
+                    <span className="text-slate-300">,</span>{" "}
+                    <span className="text-blue-300">setViewer</span>
+                    <span className="text-slate-300">]</span>{" "}
+                    <span className="text-slate-300">=</span>{" "}
+                    <span className="text-yellow-300">useState</span>
+                    <span className="text-slate-300">();</span>
+                    {"\n\n  "}
+                    <span className="text-purple-400">return</span>{" "}
+                    <span className="text-slate-300">(</span>
+                    {"\n    "}
+                    <span className="text-slate-300">{"<"}</span>
+                    <span className="text-blue-300">AnnotaProvider</span>
+                    <span className="text-slate-300">{">"}</span>
+                    {"\n      "}
+                    <span className="text-slate-300">{"<"}</span>
+                    <span className="text-blue-300">Annotator</span>
+                    {"\n        "}
+                    <span className="text-pink-300">viewer</span>
+                    <span className="text-slate-300">=</span>
+                    <span className="text-slate-300">{"{"}</span>
+                    <span className="text-blue-300">viewer</span>
+                    <span className="text-slate-300">{"}"}</span>
+                    {"\n        "}
+                    <span className="text-pink-300">onViewerReady</span>
+                    <span className="text-slate-300">=</span>
+                    <span className="text-slate-300">{"{"}</span>
+                    <span className="text-blue-300">setViewer</span>
+                    <span className="text-slate-300">{"}"}</span>
+                    {"\n        "}
+                    <span className="text-pink-300">tileSources</span>
+                    <span className="text-slate-300">=</span>
+                    <span className="text-green-300">"/image.dzi"</span>
+                    {"\n      "}
+                    <span className="text-slate-300">{"/>"}</span>
+                    {"\n      "}
+                    <span className="text-slate-300">{"<"}</span>
+                    <span className="text-blue-300">AnnotationEditor</span>{" "}
+                    <span className="text-pink-300">viewer</span>
+                    <span className="text-slate-300">=</span>
+                    <span className="text-slate-300">{"{"}</span>
+                    <span className="text-blue-300">viewer</span>
+                    <span className="text-slate-300">{"}"}</span>{" "}
+                    <span className="text-slate-300">{"/>"}</span>
+                    {"\n    "}
+                    <span className="text-slate-300">{"</"}</span>
+                    <span className="text-blue-300">AnnotaProvider</span>
+                    <span className="text-slate-300">{">"}</span>
+                    {"\n  "}
+                    <span className="text-slate-300">);</span>
+                    {"\n"}
+                    <span className="text-slate-300">{"}"}</span>
+                  </code>
+                </pre>
+              </div>
             </div>
+
             <div className="text-center mt-6">
               <Link
                 href="/docs/getting-started"
-                className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
               >
                 Read the full guide
                 <svg

@@ -1,0 +1,96 @@
+# useHistory
+
+Full history management with undo/redo capabilities.
+
+## Signature
+
+```typescript
+interface UseHistoryResult {
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
+}
+
+function useHistory(): UseHistoryResult
+```
+
+## Returns
+
+An object with history state and control methods.
+
+## Example
+
+```tsx
+import { useHistory } from 'annota';
+
+function HistoryControls() {
+  const { canUndo, canRedo, undo, redo, clear } = useHistory();
+
+  return (
+    <div className="history-controls">
+      <button onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)">
+        ↶ Undo
+      </button>
+      <button onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)">
+        ↷ Redo
+      </button>
+      <button onClick={clear}>Clear History</button>
+    </div>
+  );
+}
+```
+
+## Keyboard Shortcuts
+
+```tsx
+import { useHistory } from 'annota';
+import { useEffect } from 'react';
+
+function App() {
+  const { undo, redo, canUndo, canRedo } = useHistory();
+
+  useEffect(() => {
+    const handleKeyboard = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z' && canRedo) {
+        e.preventDefault();
+        redo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canUndo) {
+        e.preventDefault();
+        undo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [undo, redo, canUndo, canRedo]);
+
+  // ...
+}
+```
+
+## Methods
+
+### undo()
+Undo the last operation.
+
+### redo()
+Redo the last undone operation.
+
+### clear()
+Clear the entire undo/redo history.
+
+## Properties
+
+### canUndo
+Boolean indicating if undo is available.
+
+### canRedo
+Boolean indicating if redo is available.
+
+## Related
+
+- [useCanUndo](/api/hooks/use-can-undo) - Check undo availability only
+- [useCanRedo](/api/hooks/use-can-redo) - Check redo availability only
+- [Undo/Redo Guide](/docs/guides/undo-redo) - History management guide
