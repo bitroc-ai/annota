@@ -74,8 +74,8 @@ export async function initOpenCV(): Promise<boolean> {
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.async = true;
-    // Use jsdelivr CDN (often faster and more reliable)
-    script.src = 'https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.8.0-release.5/opencv.min.js';
+    // Use official OpenCV CDN
+    script.src = 'https://docs.opencv.org/4.x/opencv.js';
 
     script.onload = () => {
       console.log('[OpenCV] Script loaded, waiting for WebAssembly initialization...');

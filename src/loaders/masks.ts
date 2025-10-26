@@ -102,7 +102,13 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
 
     // Initialize OpenCV if needed
     console.log('[MaskLoader] Initializing OpenCV...');
-    await initOpenCV();
+    try {
+      await initOpenCV();
+    } catch (error) {
+      console.error('[MaskLoader] Failed to initialize OpenCV:', error);
+      console.error('[MaskLoader] Mask loading requires OpenCV.js. Please check your network connection.');
+      return [];
+    }
 
     // Use OpenCV to extract contours
     if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
