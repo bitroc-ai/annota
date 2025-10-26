@@ -46,8 +46,9 @@ export {
   useCanUndo,
   useCanRedo,
   useContextMenu,
+  useContextMenuBinding,
 } from './react/hooks';
-export type { UseLayerManagerResult, UseHistoryResult } from './react/hooks';
+export type { UseLayerManagerResult, UseHistoryResult, UseContextMenuResult, ContextMenuState } from './react/hooks';
 
 export { AnnotationPopup } from './react/Popup';
 

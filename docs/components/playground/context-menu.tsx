@@ -1,49 +1,25 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import {
   useAnnotator,
   useContextMenu,
+  useContextMenuBinding,
   ContextMenu,
   ContextMenuItem,
   ContextMenuDivider,
   type Annotation,
 } from "annota";
 import { toast } from "sonner";
+import { SquareDot, Trash2 } from "lucide-react";
 
 export function AnnotationContextMenu() {
   const annotator = useAnnotator();
   const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } =
     useContextMenu();
 
-  // Handle right-click on viewer canvas
-  useEffect(() => {
-    if (!annotator?.viewer) return;
-
-    const canvas = annotator.viewer.canvas;
-
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-
-      // Use the hovered annotation if available
-      const hoveredId = annotator.state.hover.current;
-      const hoveredAnnotation = hoveredId
-        ? annotator.state.store.get(hoveredId)
-        : undefined;
-
-      if (hoveredAnnotation) {
-        showAnnotationMenu(hoveredAnnotation, e.clientX, e.clientY);
-      } else {
-        showViewerMenu(e.clientX, e.clientY);
-      }
-    };
-
-    canvas?.addEventListener("contextmenu", handleContextMenu);
-
-    return () => {
-      canvas?.removeEventListener("contextmenu", handleContextMenu);
-    };
-  }, [annotator, showViewerMenu, showAnnotationMenu]);
+  // Automatically bind context menu to viewer canvas
+  useContextMenuBinding(showViewerMenu, showAnnotationMenu);
 
   const handleSetPositiveMask = useCallback(() => {
     if (!menuState.annotation || !annotator) return;
@@ -95,47 +71,57 @@ export function AnnotationContextMenu() {
     hideMenu();
   }, [annotator, hideMenu]);
 
+  // Check if annotation is a mask (polygon or multipolygon)
+  const isMaskAnnotation = menuState.annotation &&
+    (menuState.annotation.shape.type === "polygon" ||
+     menuState.annotation.shape.type === "multipolygon");
 
   return (
     <ContextMenu position={menuState.position} onClose={hideMenu}>
       {menuState.type === "annotation" && menuState.annotation && (
         <>
-          <div className="annota-context-menu-header">
-            Annotation Actions
-          </div>
-          <ContextMenuItem
-            label="Set as Positive Mask"
-            onClick={handleSetPositiveMask}
-            icon={
-              <span className="w-3 h-3 rounded-full bg-green-500" />
-            }
-          />
-          <ContextMenuItem
-            label="Set as Negative Mask"
-            onClick={handleSetNegativeMask}
-            icon={
-              <span className="w-3 h-3 rounded-full bg-red-500" />
-            }
-          />
-          <ContextMenuDivider />
-          <ContextMenuItem
-            label="Delete Annotation"
-            onClick={handleDelete}
-            danger
-            icon={<span>🗑️</span>}
-          />
+          {isMaskAnnotation ? (
+            <>
+              <div className="annota-context-menu-header">Mask Actions</div>
+              <ContextMenuItem
+                label="Set as Positive Mask"
+                onClick={handleSetPositiveMask}
+                icon={<SquareDot className="w-4 h-4 text-green-500" />}
+              />
+              <ContextMenuItem
+                label="Set as Negative Mask"
+                onClick={handleSetNegativeMask}
+                icon={<SquareDot className="w-4 h-4 text-red-500" />}
+              />
+              <ContextMenuDivider />
+              <ContextMenuItem
+                label="Delete Annotation"
+                onClick={handleDelete}
+                danger
+                icon={<Trash2 className="w-4 h-4" />}
+              />
+            </>
+          ) : (
+            <>
+              <div className="annota-context-menu-header">Annotation Actions</div>
+              <ContextMenuItem
+                label="Delete Annotation"
+                onClick={handleDelete}
+                danger
+                icon={<Trash2 className="w-4 h-4" />}
+              />
+            </>
+          )}
         </>
       )}
       {menuState.type === "viewer" && (
         <>
-          <div className="annota-context-menu-header">
-            Viewer Actions
-          </div>
+          <div className="annota-context-menu-header">Viewer Actions</div>
           <ContextMenuItem
             label="Clear All Annotations"
             onClick={handleClearAll}
             danger
-            icon={<span>🗑️</span>}
+            icon={<Trash2 className="w-4 h-4" />}
           />
         </>
       )}

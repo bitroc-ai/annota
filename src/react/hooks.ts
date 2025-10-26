@@ -1026,3 +1026,65 @@ export function useContextMenu(): UseContextMenuResult {
     hideMenu,
   };
 }
+
+/**
+ * Hook to automatically bind context menu events to the viewer canvas
+ *
+ * This hook listens for right-click events on the viewer canvas and shows
+ * the appropriate context menu (viewer or annotation) based on what was clicked.
+ *
+ * @param showViewerMenu Function to show viewer context menu
+ * @param showAnnotationMenu Function to show annotation context menu
+ *
+ * @example
+ * ```tsx
+ * function MyComponent() {
+ *   const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+ *
+ *   // Automatically bind context menu to canvas
+ *   useContextMenuBinding(showViewerMenu, showAnnotationMenu);
+ *
+ *   return (
+ *     <ContextMenu position={menuState.position} onClose={hideMenu}>
+ *       {menuState.type === 'viewer' && <div>Viewer menu</div>}
+ *       {menuState.type === 'annotation' && <div>Annotation menu</div>}
+ *     </ContextMenu>
+ *   );
+ * }
+ * ```
+ */
+export function useContextMenuBinding(
+  showViewerMenu: (x: number, y: number) => void,
+  showAnnotationMenu: (annotation: Annotation, x: number, y: number) => void
+): void {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator?.viewer) return;
+
+    const canvas = annotator.viewer.canvas;
+    if (!canvas) return;
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+
+      // Use the hovered annotation if available
+      const hoveredId = annotator.state.hover.current;
+      const hoveredAnnotation = hoveredId
+        ? annotator.state.store.get(hoveredId)
+        : undefined;
+
+      if (hoveredAnnotation) {
+        showAnnotationMenu(hoveredAnnotation, e.clientX, e.clientY);
+      } else {
+        showViewerMenu(e.clientX, e.clientY);
+      }
+    };
+
+    canvas.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      canvas.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [annotator, showViewerMenu, showAnnotationMenu]);
+}
