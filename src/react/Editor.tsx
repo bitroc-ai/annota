@@ -23,6 +23,7 @@ import {
   editRectangle,
   PolygonEditor,
   editPolygon,
+  deletePolygonVertex,
 } from './editors';
 import type { Annotation, Shape } from '../core/types';
 
@@ -337,6 +338,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
   const selectedAnnotations = useSelection();
   const annotator = useAnnotator();
   const [scale, setScale] = useState(1);
+  const [selectedVertexIndex, setSelectedVertexIndex] = useState<number | null>(null);
 
   // Calculate viewport scale on viewport changes
   useEffect(() => {
@@ -361,6 +363,40 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
 
   // Only support single selection for now
   const annotation = selectedAnnotations[0];
+
+  // Clear selected vertex when annotation changes
+  useEffect(() => {
+    setSelectedVertexIndex(null);
+  }, [annotation?.id]);
+
+  // Handle vertex deletion with Delete/Backspace keys
+  useEffect(() => {
+    if (!annotation || !annotator) return;
+
+    const handleKeyDown = (evt: KeyboardEvent) => {
+      if (annotation.shape.type !== 'polygon') return;
+      if (selectedVertexIndex === null) return;
+      if (evt.key !== 'Delete' && evt.key !== 'Backspace') return;
+
+      // Prevent event from bubbling to global shortcuts that would delete the whole annotation
+      evt.preventDefault();
+      evt.stopPropagation();
+
+      const newShape = deletePolygonVertex(annotation.shape as any, selectedVertexIndex);
+
+      if (newShape) {
+        annotator.updateAnnotation(annotation.id, { ...annotation, shape: newShape });
+        setSelectedVertexIndex(null);
+      } else {
+        console.warn('[AnnotationEditor] Cannot delete vertex: polygon must have at least 3 vertices');
+      }
+    };
+
+    // Use capture phase to intercept event before it reaches global handlers
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [annotation, selectedVertexIndex, annotator]);
+
   if (!annotation || !annotator) return null;
 
   const handleChange = (shape: Shape) => {
@@ -381,6 +417,19 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
 
     const { editFn, component: EditorComponent } = editorConfig;
 
+    // Pass additional props for polygon editor
+    const editorProps: any = {
+      annotation: annotation,
+      scale,
+      onGrab: () => {},
+    };
+
+    // Add polygon-specific props
+    if (shapeType === 'polygon') {
+      editorProps.selectedVertexIndex = selectedVertexIndex;
+      editorProps.onVertexSelect = setSelectedVertexIndex;
+    }
+
     return (
       <EditorWrapper
         viewer={viewer}
@@ -389,7 +438,11 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
         editor={editFn}
       >
         {(onGrab, displayAnnotation) => (
-          <EditorComponent annotation={displayAnnotation} scale={scale} onGrab={onGrab} />
+          <EditorComponent
+            {...editorProps}
+            annotation={displayAnnotation}
+            onGrab={onGrab}
+          />
         )}
       </EditorWrapper>
     );

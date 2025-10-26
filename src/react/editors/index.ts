@@ -9,5 +9,5 @@ export type { PointEditorProps } from './Point';
 export { RectangleEditor, editRectangle } from './Rectangle';
 export type { RectangleEditorProps } from './Rectangle';
 
-export { PolygonEditor, editPolygon } from './Polygon';
+export { PolygonEditor, editPolygon, deletePolygonVertex } from './Polygon';
 export type { PolygonEditorProps } from './Polygon';
