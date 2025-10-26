@@ -29,3 +29,20 @@ export { createAnnotationStore } from './store';
 
 // Spatial
 export { createSpatialIndex, SpatialIndex } from './spatial';
+
+// History
+export type {
+  Command,
+  HistoryManager,
+  HistoryManagerOptions,
+  HistoryObserver,
+  HistoryStateEvent,
+} from './history';
+
+export {
+  BatchCommand,
+  CreateCommand,
+  DeleteCommand,
+  UpdateCommand,
+  createHistoryManager,
+} from './history';

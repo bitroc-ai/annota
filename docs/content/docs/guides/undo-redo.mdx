@@ -1,0 +1,516 @@
+# Undo/Redo
+
+Annota provides a complete undo/redo system for annotation operations using the Command Pattern. This allows users to reverse and replay their annotation changes with full history tracking.
+
+## Overview
+
+The undo/redo system automatically tracks all annotation changes (create, update, delete) and provides:
+
+- **Keyboard shortcuts**: Ctrl/Cmd+Z for undo, Ctrl/Cmd+Shift+Z for redo
+- **Command merging**: Consecutive similar commands are merged automatically
+- **Batch operations**: Group multiple changes into a single undoable action
+- **History limits**: Configurable maximum history size to manage memory
+- **React hooks**: Easy integration with React components
+
+## Quick Start
+
+### Automatic History Tracking
+
+History is enabled by default when you create an annotator:
+
+```tsx
+import { createOpenSeadragonAnnotator } from 'annota';
+
+const annotator = await createOpenSeadragonAnnotator(viewer);
+
+// All annotation operations are now tracked
+annotator.addAnnotation(annotation);  // Can be undone
+annotator.updateAnnotation(id, newAnnotation);  // Can be undone
+annotator.deleteAnnotation(id);  // Can be undone
+
+// Undo and redo
+annotator.undo();  // Undo last operation
+annotator.redo();  // Redo undone operation
+```
+
+### Keyboard Shortcuts
+
+Keyboard shortcuts are automatically enabled through `initKeyboardCommands`:
+
+```tsx
+import { initKeyboardCommands } from 'annota';
+
+// Enable keyboard commands (including undo/redo)
+const keyboard = initKeyboardCommands(annotator, {
+  enableUndoRedo: true  // Default: true
+});
+
+// Now users can:
+// - Press Ctrl/Cmd+Z to undo
+// - Press Ctrl/Cmd+Shift+Z to redo
+// - Press Delete/Backspace to delete selected annotations
+```
+
+## React Integration
+
+### Using the useHistory Hook
+
+The `useHistory` hook provides complete history state and controls:
+
+```tsx
+import { useHistory } from 'annota';
+
+function HistoryControls() {
+  const history = useHistory();
+
+  return (
+    <div className="history-controls">
+      <button
+        onClick={history.undo}
+        disabled={!history.canUndo}
+        title="Undo (Ctrl/Cmd+Z)"
+      >
+        ↶ Undo
+      </button>
+
+      <button
+        onClick={history.redo}
+        disabled={!history.canRedo}
+        title="Redo (Ctrl/Cmd+Shift+Z)"
+      >
+        ↷ Redo
+      </button>
+
+      <span className="history-info">
+        {history.undoSize} undos, {history.redoSize} redos
+      </span>
+
+      <button onClick={history.clear}>
+        Clear History
+      </button>
+    </div>
+  );
+}
+```
+
+### Simple Undo/Redo Hooks
+
+For simple use cases, use `useCanUndo` and `useCanRedo`:
+
+```tsx
+import { useCanUndo, useCanRedo, useAnnotator } from 'annota';
+
+function SimpleHistoryControls() {
+  const annotator = useAnnotator();
+  const canUndo = useCanUndo();
+  const canRedo = useCanRedo();
+
+  return (
+    <div>
+      <button
+        onClick={() => annotator?.undo()}
+        disabled={!canUndo}
+      >
+        Undo
+      </button>
+      <button
+        onClick={() => annotator?.redo()}
+        disabled={!canRedo}
+      >
+        Redo
+      </button>
+    </div>
+  );
+}
+```
+
+## Configuration
+
+### History Manager Options
+
+Configure the history manager when creating the annotator:
+
+```tsx
+const annotator = await createOpenSeadragonAnnotator(viewer, {
+  historyOptions: {
+    maxHistorySize: 100,     // Max commands in history (default: 100)
+    enableMerging: true       // Merge consecutive similar commands (default: true)
+  }
+});
+```
+
+### Custom History Manager
+
+You can provide your own history manager instance:
+
+```tsx
+import { createHistoryManager } from 'annota';
+
+const customHistory = createHistoryManager({
+  maxHistorySize: 200,
+  enableMerging: false
+});
+
+const annotator = await createOpenSeadragonAnnotator(viewer, {
+  historyManager: customHistory
+});
+```
+
+## Advanced Usage
+
+### Batch Operations
+
+Group multiple operations into a single undoable action:
+
+```tsx
+// Start batch
+annotator.state.history.beginBatch('Add multiple annotations');
+
+// All operations in batch
+annotations.forEach(annotation => {
+  annotator.addAnnotation(annotation);
+});
+
+// End batch - now undo will reverse all operations at once
+annotator.state.history.endBatch();
+
+// Undo will now undo ALL annotations added in the batch
+annotator.undo();
+```
+
+### Temporarily Disable History
+
+Disable history for operations that shouldn't be tracked:
+
+```tsx
+const history = annotator.state.history;
+
+// Disable history
+history.disable();
+
+// These operations won't be tracked
+annotator.addAnnotation(annotation1);
+annotator.updateAnnotation(id, annotation2);
+
+// Re-enable history
+history.enable();
+
+// These operations will be tracked
+annotator.addAnnotation(annotation3);
+```
+
+### Command Merging
+
+The history system automatically merges consecutive updates to the same annotation:
+
+```tsx
+// Without merging, each update would create a separate undo step
+annotator.updateAnnotation('ann-1', { ...annotation, x: 100 });
+annotator.updateAnnotation('ann-1', { ...annotation, x: 150 });
+annotator.updateAnnotation('ann-1', { ...annotation, x: 200 });
+
+// With merging enabled (default), these become ONE undo step
+// Undoing will revert from x:200 to the original value before x:100
+annotator.undo();  // Goes back to original annotation state
+```
+
+To disable merging:
+
+```tsx
+const annotator = await createOpenSeadragonAnnotator(viewer, {
+  historyOptions: {
+    enableMerging: false  // Each update is a separate undo step
+  }
+});
+```
+
+### Observing History Changes
+
+React to history state changes:
+
+```tsx
+import type { HistoryStateEvent } from 'annota';
+
+const history = annotator.state.history;
+
+const handleHistoryChange = (event: HistoryStateEvent) => {
+  console.log('Can undo:', event.canUndo);
+  console.log('Can redo:', event.canRedo);
+  console.log('Undo stack size:', event.undoSize);
+  console.log('Redo stack size:', event.redoSize);
+
+  // Update UI, enable/disable buttons, etc.
+};
+
+history.observe(handleHistoryChange);
+
+// Later: stop observing
+history.unobserve(handleHistoryChange);
+```
+
+## Implementation Details
+
+### Command Pattern
+
+The undo/redo system uses the Command Pattern with three command types:
+
+1. **CreateCommand**: Tracks annotation creation
+   - Execute: Adds annotation to store
+   - Undo: Removes annotation from store
+   - Redo: Re-adds annotation to store
+
+2. **UpdateCommand**: Tracks annotation updates
+   - Execute: Updates annotation in store
+   - Undo: Reverts to old annotation state
+   - Redo: Re-applies new annotation state
+   - Supports merging consecutive updates to same annotation
+
+3. **DeleteCommand**: Tracks annotation deletion
+   - Execute: Removes annotation from store
+   - Undo: Re-adds annotation to store
+   - Redo: Removes annotation again
+
+### History Stacks
+
+The history manager maintains two stacks:
+
+- **Undo Stack**: Commands that can be undone (most recent operations)
+- **Redo Stack**: Commands that can be redone (previously undone operations)
+
+When a new command is executed:
+1. Added to undo stack
+2. Redo stack is cleared (can't redo after new changes)
+
+When undoing:
+1. Command popped from undo stack
+2. Command's undo() method called
+3. Command pushed to redo stack
+
+When redoing:
+1. Command popped from redo stack
+2. Command's redo() method called
+3. Command pushed to undo stack
+
+### Memory Management
+
+The history manager enforces a maximum history size (default: 100 commands):
+
+- When limit is reached, oldest commands are removed from undo stack
+- This prevents unbounded memory growth
+- Configure via `maxHistorySize` option
+
+## Best Practices
+
+### 1. Use Annotator Methods
+
+Always use annotator methods (not direct store access) to ensure history tracking:
+
+```tsx
+// ✅ Good - tracked in history
+annotator.addAnnotation(annotation);
+annotator.updateAnnotation(id, newAnnotation);
+annotator.deleteAnnotation(id);
+
+// ❌ Bad - NOT tracked in history
+annotator.state.store.add(annotation);
+annotator.state.store.update(id, newAnnotation);
+annotator.state.store.delete(id);
+```
+
+### 2. Batch Related Operations
+
+Group related operations to create better undo steps:
+
+```tsx
+// ✅ Good - one undo step for entire operation
+annotator.state.history.beginBatch('Delete all selected');
+selectedIds.forEach(id => annotator.deleteAnnotation(id));
+annotator.state.history.endBatch();
+
+// ❌ Less ideal - each deletion is separate undo step
+selectedIds.forEach(id => annotator.deleteAnnotation(id));
+```
+
+### 3. Provide User Feedback
+
+Always show undo/redo availability in your UI:
+
+```tsx
+function Toolbar() {
+  const history = useHistory();
+
+  return (
+    <div>
+      <button
+        disabled={!history.canUndo}
+        onClick={history.undo}
+        title={history.canUndo ? 'Undo last action' : 'Nothing to undo'}
+      >
+        Undo {history.canUndo && `(${history.undoSize})`}
+      </button>
+      <button
+        disabled={!history.canRedo}
+        onClick={history.redo}
+        title={history.canRedo ? 'Redo last action' : 'Nothing to redo'}
+      >
+        Redo {history.canRedo && `(${history.redoSize})`}
+      </button>
+    </div>
+  );
+}
+```
+
+### 4. Clear History When Appropriate
+
+Clear history when loading new data or resetting:
+
+```tsx
+const loadNewImage = async (imageUrl: string) => {
+  // Clear old annotations
+  annotator.clearAnnotations();
+
+  // Clear history so users can't undo back to old image's annotations
+  annotator.clearHistory();
+
+  // Load new image
+  viewer.open(imageUrl);
+};
+```
+
+## Troubleshooting
+
+### Changes Not Being Tracked
+
+**Problem**: Annotation changes don't appear in undo/redo history
+
+**Solution**: Ensure you're using annotator methods, not direct store access:
+
+```tsx
+// ✅ Correct - will be tracked
+annotator.addAnnotation(annotation);
+
+// ❌ Wrong - bypasses history
+annotator.state.store.add(annotation);
+```
+
+### Memory Issues with Large History
+
+**Problem**: Application uses too much memory with long sessions
+
+**Solution**: Reduce `maxHistorySize`:
+
+```tsx
+const annotator = await createOpenSeadragonAnnotator(viewer, {
+  historyOptions: {
+    maxHistorySize: 50  // Reduced from default 100
+  }
+});
+```
+
+### Too Many Undo Steps
+
+**Problem**: Each small drag creates a separate undo step
+
+**Solution**: Ensure `enableMerging` is true (default):
+
+```tsx
+const annotator = await createOpenSeadragonAnnotator(viewer, {
+  historyOptions: {
+    enableMerging: true  // This is the default
+  }
+});
+```
+
+## API Reference
+
+### Annotator Methods
+
+```typescript
+interface OpenSeadragonAnnotator {
+  // Undo last operation
+  undo(): void;
+
+  // Redo last undone operation
+  redo(): void;
+
+  // Check if undo is available
+  canUndo(): boolean;
+
+  // Check if redo is available
+  canRedo(): boolean;
+
+  // Clear all history
+  clearHistory(): void;
+
+  // Access history manager directly
+  state: {
+    history: HistoryManager;
+  };
+}
+```
+
+### History Manager
+
+```typescript
+interface HistoryManager {
+  // Execute and record a command
+  execute(command: Command): void;
+
+  // Undo last command
+  undo(): void;
+
+  // Redo last undone command
+  redo(): void;
+
+  // Check availability
+  canUndo(): boolean;
+  canRedo(): boolean;
+
+  // Get stack sizes
+  getUndoSize(): number;
+  getRedoSize(): number;
+
+  // Batch operations
+  beginBatch(description?: string): void;
+  endBatch(): void;
+
+  // Enable/disable history
+  enable(): void;
+  disable(): void;
+  isEnabled(): boolean;
+
+  // Clear all history
+  clear(): void;
+
+  // Observe history changes
+  observe(callback: HistoryObserver): void;
+  unobserve(callback: HistoryObserver): void;
+}
+```
+
+### React Hooks
+
+```typescript
+// Complete history state and controls
+function useHistory(): UseHistoryResult;
+
+interface UseHistoryResult {
+  canUndo: boolean;
+  canRedo: boolean;
+  undoSize: number;
+  redoSize: number;
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
+}
+
+// Simple boolean hooks
+function useCanUndo(): boolean;
+function useCanRedo(): boolean;
+```
+
+## Next Steps
+
+- [Keyboard Shortcuts](/docs/guides/keyboard) - Complete keyboard shortcut reference
+- [Events](/docs/guides/events) - Working with annotation events
+- [API Reference](/docs/api) - Complete API documentation

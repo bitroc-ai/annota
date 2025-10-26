@@ -15,6 +15,14 @@ import {
   type LayerConfig,
   type Layer,
 } from '../../core/layer';
+import {
+  createHistoryManager,
+  type HistoryManager,
+  type HistoryManagerOptions,
+  CreateCommand,
+  UpdateCommand,
+  DeleteCommand,
+} from '../../core/history';
 import type { Filter, StyleExpression } from '../../core/types';
 import { createPixiStage } from '../../rendering/pixi/stage';
 import { pointerEventToImage } from './coordinates';
@@ -25,6 +33,8 @@ import { pointerEventToImage } from './coordinates';
 export interface OpenSeadragonAnnotatorOptions {
   store?: AnnotationStore;
   layerManager?: LayerManager;
+  historyManager?: HistoryManager;
+  historyOptions?: HistoryManagerOptions;
   style?: StyleExpression;
   filter?: Filter;
   visible?: boolean;
@@ -36,6 +46,7 @@ export interface OpenSeadragonAnnotatorOptions {
 export interface OpenSeadragonAnnotatorState {
   store: AnnotationStore;
   layerManager: LayerManager;
+  history: HistoryManager;
   hover: { current: string | undefined };
   selection: { selected: string[] };
 }
@@ -88,6 +99,13 @@ export interface OpenSeadragonAnnotator {
   setFilter(filter?: Filter): void;
   setVisible(visible: boolean): void;
 
+  // History management
+  undo(): void;
+  redo(): void;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  clearHistory(): void;
+
   // Event emitter methods
   on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
   off(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
@@ -106,6 +124,7 @@ export async function createOpenSeadragonAnnotator(
 ): Promise<OpenSeadragonAnnotator> {
   const store = options.store || createAnnotationStore();
   const layerManager = options.layerManager || createLayerManager();
+  const history = options.historyManager || createHistoryManager(options.historyOptions);
   const hover: { current: string | undefined } = { current: undefined };
   const selection: { selected: string[] } = { selected: [] };
 
@@ -189,6 +208,16 @@ export async function createOpenSeadragonAnnotator(
     event.deleted.forEach(annotation => {
       stage.removeAnnotation(annotation);
       emitEvent('deleteAnnotation', annotation);
+
+      // Clean up selection if deleted annotation was selected
+      if (selection.selected.includes(annotation.id)) {
+        const previousSelection = [...selection.selected];
+        selection.selected = selection.selected.filter(id => id !== annotation.id);
+        stage.setSelected(selection.selected);
+        if (JSON.stringify(previousSelection) !== JSON.stringify(selection.selected)) {
+          emitEvent('selectionChanged', { selected: selection.selected });
+        }
+      }
     });
     stage.redraw();
   };
@@ -302,32 +331,66 @@ export async function createOpenSeadragonAnnotator(
 
   return {
     viewer,
-    state: { store, layerManager, hover, selection },
+    state: { store, layerManager, history, hover, selection },
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {
-      store.add(annotation);
+      const oldAnnotation = store.get(annotation.id);
+      if (oldAnnotation) {
+        // Update existing annotation with history
+        history.execute(new UpdateCommand(store, oldAnnotation, annotation));
+      } else {
+        // Create new annotation with history
+        history.execute(new CreateCommand(store, annotation));
+      }
     },
 
     addAnnotations(annotations) {
-      store.addAll(annotations);
+      // Batch add annotations
+      history.beginBatch('Add annotations');
+      annotations.forEach(annotation => {
+        const oldAnnotation = store.get(annotation.id);
+        if (oldAnnotation) {
+          history.execute(new UpdateCommand(store, oldAnnotation, annotation));
+        } else {
+          history.execute(new CreateCommand(store, annotation));
+        }
+      });
+      history.endBatch();
     },
 
     updateAnnotation(id, annotation) {
-      store.update(id, annotation);
+      const oldAnnotation = store.get(id);
+      if (oldAnnotation) {
+        history.execute(new UpdateCommand(store, oldAnnotation, annotation));
+      }
     },
 
     deleteAnnotation(id) {
-      store.delete(id);
+      const annotation = store.get(id);
+      if (annotation) {
+        history.execute(new DeleteCommand(store, annotation));
+      }
     },
 
     removeAnnotation(id) {
       // Alias for deleteAnnotation
-      store.delete(id);
+      const annotation = store.get(id);
+      if (annotation) {
+        history.execute(new DeleteCommand(store, annotation));
+      }
     },
 
     clearAnnotations() {
-      store.clear();
+      // Clear all annotations with batch history
+      const annotations = store.all();
+      if (annotations.length > 0) {
+        history.beginBatch('Clear annotations');
+        annotations.forEach(annotation => {
+          history.execute(new DeleteCommand(store, annotation));
+        });
+        history.endBatch();
+      }
     },
 
     getAnnotations() {
@@ -400,6 +463,27 @@ export async function createOpenSeadragonAnnotator(
 
     setVisible(visible) {
       stage.setVisible(visible);
+    },
+
+    // History management
+    undo() {
+      history.undo();
+    },
+
+    redo() {
+      history.redo();
+    },
+
+    canUndo() {
+      return history.canUndo();
+    },
+
+    canRedo() {
+      return history.canRedo();
+    },
+
+    clearHistory() {
+      history.clear();
     },
 
     // Event emitter methods

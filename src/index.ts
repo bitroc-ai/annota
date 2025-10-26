@@ -37,8 +37,11 @@ export {
   useLayer,
   useLayerManager,
   useImageLayerVisibility,
+  useHistory,
+  useCanUndo,
+  useCanRedo,
 } from './react/hooks';
-export type { UseLayerManagerResult } from './react/hooks';
+export type { UseLayerManagerResult, UseHistoryResult } from './react/hooks';
 
 export { AnnotationPopup } from './react/Popup';
 

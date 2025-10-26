@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createLayerManager, isAnnotationVisible, getEffectiveOpacity } from './layer';
-import type { Annotation } from './types';
-import type { LayerManager } from './layer';
+import { createLayerManager, isAnnotationVisible, getEffectiveOpacity } from '../../src/core/layer';
+import type { Annotation } from '../../src/core/types';
+import type { LayerManager } from '../../src/core/layer';
 
 describe('Layer Manager', () => {
   let layerManager: LayerManager;

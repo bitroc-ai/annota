@@ -14,6 +14,8 @@ export interface KeyboardCommandsOptions {
   container?: Element | Document;
   /** Whether to enable Delete/Backspace to delete selected annotations */
   enableDelete?: boolean;
+  /** Whether to enable Ctrl/Cmd+Z for undo and Ctrl/Cmd+Shift+Z for redo */
+  enableUndoRedo?: boolean;
 }
 
 export const initKeyboardCommands = (
@@ -23,10 +25,30 @@ export const initKeyboardCommands = (
   const {
     container = document,
     enableDelete = true,
+    enableUndoRedo = true,
   } = options;
 
   const handleKeyDown = (evt: Event) => {
     const event = evt as KeyboardEvent;
+    const cmdKey = isMac ? event.metaKey : event.ctrlKey;
+
+    // Undo: Ctrl/Cmd+Z (without Shift)
+    if (enableUndoRedo && cmdKey && event.key === 'z' && !event.shiftKey) {
+      if (annotator.canUndo()) {
+        event.preventDefault();
+        annotator.undo();
+      }
+      return;
+    }
+
+    // Redo: Ctrl/Cmd+Shift+Z
+    if (enableUndoRedo && cmdKey && event.key === 'z' && event.shiftKey) {
+      if (annotator.canRedo()) {
+        event.preventDefault();
+        annotator.redo();
+      }
+      return;
+    }
 
     // Delete/Backspace: delete selected annotations
     if (enableDelete && (event.key === 'Delete' || event.key === 'Backspace')) {
@@ -36,9 +58,9 @@ export const initKeyboardCommands = (
         // Prevent backspace from navigating back in browser
         event.preventDefault();
 
-        // Delete all selected annotations
+        // Delete all selected annotations using history
         selectedIds.forEach(id => {
-          annotator.state.store.delete(id);
+          annotator.deleteAnnotation(id);
         });
 
         // Clear selection

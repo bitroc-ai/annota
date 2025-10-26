@@ -69,6 +69,7 @@ function DemoContent({ currentImage }: { currentImage: string }) {
 
     const commands = initKeyboardCommands(annotator, {
       enableDelete: true,
+      enableUndoRedo: true,
     });
 
     return () => commands.destroy();

@@ -17,6 +17,24 @@ export {
   useHover,
   useSelection,
   useAnnotationDoubleClick,
+  useHistory,
+  useCanUndo,
+  useCanRedo,
+  useViewer,
+  useTool,
+  useLayers,
+  useLayer,
+  useLayerManager,
+  useImageLayerVisibility,
+  usePopup,
+  usePushToolCursor,
+} from './hooks';
+export type {
+  UseHistoryResult,
+  UseViewerResult,
+  UseToolOptions,
+  UseLayerManagerResult,
+  UsePopupResult,
 } from './hooks';
 
 export { AnnotationEditor } from './Editor';

@@ -9,6 +9,7 @@ import { useAnnotator, useAnnotationStore } from './Provider';
 import type { Annotation } from '../core/types';
 import type { Layer, LayerConfig } from '../core/layer';
 import type { ToolHandler } from '../tools/types';
+import type { HistoryStateEvent } from '../core/history';
 
 /**
  * Hook to get all annotations
@@ -822,4 +823,129 @@ export function useImageLayerVisibility(viewer: OpenSeadragon.Viewer | undefined
       }
     }
   }, [viewer, imageLayer?.visible]);
+}
+
+// ============================================
+// History Management Hooks
+// ============================================
+
+/**
+ * Hook to get history state (canUndo, canRedo, etc.)
+ *
+ * @example
+ * ```tsx
+ * function HistoryControls() {
+ *   const history = useHistory();
+ *
+ *   return (
+ *     <div>
+ *       <button onClick={history.undo} disabled={!history.canUndo}>
+ *         Undo
+ *       </button>
+ *       <button onClick={history.redo} disabled={!history.canRedo}>
+ *         Redo
+ *       </button>
+ *       <span>{history.undoSize} undos, {history.redoSize} redos</span>
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export interface UseHistoryResult {
+  /** Whether undo is available */
+  canUndo: boolean;
+  /** Whether redo is available */
+  canRedo: boolean;
+  /** Number of items in undo stack */
+  undoSize: number;
+  /** Number of items in redo stack */
+  redoSize: number;
+  /** Perform undo */
+  undo: () => void;
+  /** Perform redo */
+  redo: () => void;
+  /** Clear all history */
+  clear: () => void;
+}
+
+export function useHistory(): UseHistoryResult {
+  const annotator = useAnnotator();
+  const [historyState, setHistoryState] = useState<HistoryStateEvent>({
+    canUndo: false,
+    canRedo: false,
+    undoSize: 0,
+    redoSize: 0,
+  });
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const historyManager = annotator.state.history;
+    if (!historyManager) return;
+
+    const handleHistoryChange = (event: HistoryStateEvent) => {
+      setHistoryState(event);
+    };
+
+    // Initial state
+    setHistoryState({
+      canUndo: historyManager.canUndo(),
+      canRedo: historyManager.canRedo(),
+      undoSize: historyManager.getUndoSize(),
+      redoSize: historyManager.getRedoSize(),
+    });
+
+    historyManager.observe(handleHistoryChange);
+    return () => historyManager.unobserve(handleHistoryChange);
+  }, [annotator]);
+
+  const undo = useCallback(() => {
+    if (!annotator) return;
+    annotator.undo();
+  }, [annotator]);
+
+  const redo = useCallback(() => {
+    if (!annotator) return;
+    annotator.redo();
+  }, [annotator]);
+
+  const clear = useCallback(() => {
+    if (!annotator) return;
+    annotator.clearHistory();
+  }, [annotator]);
+
+  return {
+    ...historyState,
+    undo,
+    redo,
+    clear,
+  };
+}
+
+/**
+ * Hook that returns whether undo is available
+ *
+ * @example
+ * ```tsx
+ * const canUndo = useCanUndo();
+ * <button disabled={!canUndo} onClick={() => annotator.undo()}>Undo</button>
+ * ```
+ */
+export function useCanUndo(): boolean {
+  const history = useHistory();
+  return history.canUndo;
+}
+
+/**
+ * Hook that returns whether redo is available
+ *
+ * @example
+ * ```tsx
+ * const canRedo = useCanRedo();
+ * <button disabled={!canRedo} onClick={() => annotator.redo()}>Redo</button>
+ * ```
+ */
+export function useCanRedo(): boolean {
+  const history = useHistory();
+  return history.canRedo;
 }

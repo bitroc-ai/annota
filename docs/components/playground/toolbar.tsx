@@ -9,9 +9,11 @@ import {
   Maximize2,
   Square,
   Pentagon,
+  Undo,
+  Redo,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer } from "annota";
+import { useAnnotator, useViewer, useHistory } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,7 @@ export function DemoToolbar({
 }: DemoToolbarProps) {
   const annotator = useAnnotator();
   const viewerControls = useViewer(viewer);
+  const history = useHistory();
 
   const handleClearAll = () => {
     if (!annotator) return;
@@ -48,9 +51,7 @@ export function DemoToolbar({
       return;
     }
     if (confirm(`Clear all ${annotations.length} annotation(s)?`)) {
-      annotations.forEach((annotation) =>
-        annotator.state.store.delete(annotation.id)
-      );
+      annotator.clearAnnotations();
       toast.success("All annotations cleared");
     }
   };
@@ -154,6 +155,27 @@ export function DemoToolbar({
           title="Fit to screen"
         >
           <Maximize2 className="w-4 h-4" />
+        </Button>
+        <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={history.undo}
+          disabled={!history.canUndo}
+          className="w-9 h-9"
+          title={`Undo ${history.canUndo ? `(${history.undoSize})` : ''}`}
+        >
+          <Undo className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={history.redo}
+          disabled={!history.canRedo}
+          className="w-9 h-9"
+          title={`Redo ${history.canRedo ? `(${history.redoSize})` : ''}`}
+        >
+          <Redo className="w-4 h-4" />
         </Button>
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
         {layerPanel}
