@@ -176,7 +176,7 @@ describe('ContourTool', () => {
     await tool.onCanvasClick(clickEvent as any);
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('OpenCV not ready')
+      expect.stringContaining('OpenCV is still loading')
     );
     expect(mockAnnotator.state.store.add).not.toHaveBeenCalled();
 
