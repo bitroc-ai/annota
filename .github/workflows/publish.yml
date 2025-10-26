@@ -1,0 +1,166 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.2.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if src/ has changes
+        id: check_changes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "First release, proceeding with publish"
+            echo "has_src_changes=true" >> $GITHUB_OUTPUT
+          else
+            # Check if src/ has changes between tags
+            CHANGES=$(git diff --name-only ${PREV_TAG}..HEAD -- src/ package.json)
+
+            if [ -z "$CHANGES" ]; then
+              echo "No changes detected in src/ or package.json"
+              echo "has_src_changes=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected in: ${CHANGES}"
+              echo "has_src_changes=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Stop if no src changes
+        if: steps.check_changes.outputs.has_src_changes == 'false'
+        run: |
+          echo "::warning::No changes in src/ or package.json. Skipping publish."
+          echo "This tag appears to be for documentation or other non-package changes."
+          exit 1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run type check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test run
+
+      - name: Build package
+        run: pnpm build
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            # First release - get all commits that touched src/ or package.json
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+          else
+            # Get commits between tags that touched src/ or package.json
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+          fi
+
+          # Create changelog file
+          CHANGELOG_FILE="docs/content/changelog/v${{ steps.version.outputs.VERSION }}.mdx"
+          mkdir -p docs/content/changelog
+
+          cat > "$CHANGELOG_FILE" << EOF
+          ---
+          title: v${{ steps.version.outputs.VERSION }}
+          description: Release notes for Annota v${{ steps.version.outputs.VERSION }}
+          date: $(date -u +"%Y-%m-%d")
+          ---
+
+          # v${{ steps.version.outputs.VERSION }}
+
+          Released on $(date -u +"%Y-%m-%d")
+
+          ## Changes
+
+          ${CHANGELOG}
+
+          ## Installation
+
+          \`\`\`bash
+          npm install annota@${{ steps.version.outputs.VERSION }}
+          # or
+          pnpm add annota@${{ steps.version.outputs.VERSION }}
+          \`\`\`
+          EOF
+
+          # Save changelog content for GitHub release
+          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
+          echo "${CHANGELOG}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Commit changelog to docs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/content/changelog/
+          git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin HEAD:main || echo "No changes to push"
+
+      - name: Publish to npm
+        run: pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Changes
+
+            ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+
+            ## Installation
+
+            ```bash
+            npm install annota@${{ steps.version.outputs.VERSION }}
+            # or
+            pnpm add annota@${{ steps.version.outputs.VERSION }}
+            ```
+
+            See the [full changelog](https://github.com/bitroc-ai/annota/blob/main/docs/content/changelog/v${{ steps.version.outputs.VERSION }}.mdx) for more details.
+          draft: false
+          prerelease: false
