@@ -22,7 +22,7 @@ import { DebugPanel } from "@/components/playground/debug-panel";
 import { ToolManager } from "@/components/playground/tool-manager";
 import { PopupEditor } from "@/components/playground/popup-editor";
 import { LayerPanel } from "@/components/playground/layer-panel";
-import { ContextMenuDemo } from "@/components/playground/context-menu";
+import { AnnotationContextMenu } from "@/components/playground/context-menu";
 import { Layers } from "lucide-react";
 import type { ToolType } from "@/components/playground/toolbar";
 
@@ -314,7 +314,7 @@ export function PlaygroundApp() {
             />
             <PopupEditor viewer={viewer} />
             <AnnotationEditor viewer={viewer} />
-            <ContextMenuDemo />
+            <AnnotationContextMenu />
             <DemoContent currentImage={currentImage} />
           </Annotator>
           <div className="absolute top-4 left-4 bottom-4 z-10">

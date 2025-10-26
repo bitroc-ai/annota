@@ -119,3 +119,41 @@ a.inline-flex {
   }
 }
 
+/* Context Menu Styles */
+.annota-context-menu {
+  @apply fixed min-w-[150px] rounded-md border bg-white p-1 shadow-md;
+  @apply dark:bg-slate-900 dark:border-slate-700;
+  pointer-events: auto;
+  z-index: var(--menu-z-index, 10000);
+}
+
+.annota-context-menu-overlay {
+  @apply fixed inset-0;
+  pointer-events: auto;
+  z-index: calc(var(--menu-z-index, 10000) - 1);
+}
+
+.annota-context-menu-item {
+  @apply flex items-center gap-2 px-4 py-2 text-sm cursor-pointer select-none rounded-sm;
+  @apply transition-colors duration-150;
+  @apply hover:bg-slate-100 dark:hover:bg-slate-800;
+}
+
+.annota-context-menu-item[data-disabled="true"] {
+  @apply opacity-50 cursor-not-allowed;
+  @apply hover:bg-transparent dark:hover:bg-transparent;
+}
+
+.annota-context-menu-item[data-danger="true"] {
+  @apply text-red-600 dark:text-red-400;
+  @apply hover:bg-red-50 dark:hover:bg-red-950/30;
+}
+
+.annota-context-menu-divider {
+  @apply h-px bg-slate-200 dark:bg-slate-700 my-1;
+}
+
+.annota-context-menu-header {
+  @apply px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400;
+}
+
