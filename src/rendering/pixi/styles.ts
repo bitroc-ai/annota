@@ -76,9 +76,11 @@ export function computeStyle(
   }
 
   // Merge with annotation's own style
+  // Note: styleExpression takes precedence over annotation.style
+  // This allows style functions to override annotation styles based on properties
   const mergedStyle: AnnotationStyle = {
-    ...style,
     ...annotation.style,
+    ...style,
   };
 
   // Parse fill

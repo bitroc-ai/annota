@@ -1058,9 +1058,10 @@ export function useContextMenuBinding(
   showAnnotationMenu: (annotation: Annotation, x: number, y: number) => void
 ): void {
   const annotator = useAnnotator();
+  const store = useAnnotationStore();
 
   useEffect(() => {
-    if (!annotator?.viewer) return;
+    if (!annotator?.viewer || !store) return;
 
     const canvas = annotator.viewer.canvas;
     if (!canvas) return;
@@ -1068,14 +1069,24 @@ export function useContextMenuBinding(
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
 
-      // Use the hovered annotation if available
-      const hoveredId = annotator.state.hover.current;
-      const hoveredAnnotation = hoveredId
-        ? annotator.state.store.get(hoveredId)
-        : undefined;
+      // Get the click position in image coordinates
+      const rect = canvas.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
 
-      if (hoveredAnnotation) {
-        showAnnotationMenu(hoveredAnnotation, e.clientX, e.clientY);
+      const imageCoords = annotator.viewer.viewport.viewerElementToImageCoordinates(
+        new OpenSeadragon.Point(offsetX, offsetY)
+      );
+
+      // Use the same hit tolerance as left-click selection (5 pixels in image space / zoom)
+      // This ensures consistent behavior between left-click and right-click
+      const hitTolerance = 5 / annotator.viewer.viewport.getZoom();
+
+      // Do a hit test at the click position with tolerance for small annotations (like points)
+      const annotation = store.getAt(imageCoords.x, imageCoords.y, undefined, hitTolerance);
+
+      if (annotation) {
+        showAnnotationMenu(annotation, e.clientX, e.clientY);
       } else {
         showViewerMenu(e.clientX, e.clientY);
       }
@@ -1086,5 +1097,5 @@ export function useContextMenuBinding(
     return () => {
       canvas.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [annotator, showViewerMenu, showAnnotationMenu]);
+  }, [annotator, store, showViewerMenu, showAnnotationMenu]);
 }

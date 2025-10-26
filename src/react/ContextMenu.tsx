@@ -154,14 +154,8 @@ export function ContextMenu({
           left: `${position.x}px`,
           top: `${position.y}px`,
           zIndex,
-          backgroundColor: 'var(--annota-context-menu-bg, #ffffff)',
-          color: 'var(--annota-context-menu-text, #000000)',
-          border: '1px solid var(--annota-context-menu-border, #e0e0e0)',
-          borderRadius: '4px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-          padding: '4px 0',
-          minWidth: '150px',
           pointerEvents: 'auto',
+          whiteSpace: 'nowrap',
         }}
         onClick={(e: MouseEvent) => {
           // Stop propagation to prevent closing when clicking inside menu
@@ -222,27 +216,8 @@ export function ContextMenuItem({
     <div
       className={`annota-context-menu-item ${className}`}
       onClick={handleClick}
-      style={{
-        padding: '8px 16px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
-        color: danger ? 'var(--annota-context-menu-danger, #dc3545)' : 'inherit',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        userSelect: 'none',
-        transition: 'background-color 0.15s',
-      }}
-      onMouseEnter={(e: MouseEvent<HTMLDivElement>) => {
-        if (!disabled) {
-          e.currentTarget.style.backgroundColor = danger
-            ? 'var(--annota-context-menu-danger-hover, rgba(220, 53, 69, 0.1))'
-            : 'var(--annota-context-menu-hover, rgba(0, 0, 0, 0.05))';
-        }
-      }}
-      onMouseLeave={(e: MouseEvent<HTMLDivElement>) => {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
+      data-disabled={disabled}
+      data-danger={danger}
     >
       {icon && <span className="menu-item-icon">{icon}</span>}
       <span className="menu-item-label">{label}</span>
@@ -254,14 +229,5 @@ export function ContextMenuItem({
  * Context Menu Divider Component
  */
 export function ContextMenuDivider() {
-  return (
-    <div
-      className="annota-context-menu-divider"
-      style={{
-        height: '1px',
-        backgroundColor: 'var(--annota-context-menu-divider, rgba(0, 0, 0, 0.1))',
-        margin: '4px 0',
-      }}
-    />
-  );
+  return <div className="annota-context-menu-divider" />;
 }

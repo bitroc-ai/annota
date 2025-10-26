@@ -11,7 +11,7 @@ import {
   type Annotation,
 } from "annota";
 import { toast } from "sonner";
-import { SquareDot, Trash2 } from "lucide-react";
+import { CircleDot, SquareDot, Trash2 } from "lucide-react";
 
 export function AnnotationContextMenu() {
   const annotator = useAnnotator();
@@ -55,6 +55,38 @@ export function AnnotationContextMenu() {
     hideMenu();
   }, [menuState.annotation, annotator, hideMenu]);
 
+  const handleSetPositivePoint = useCallback(() => {
+    if (!menuState.annotation || !annotator) return;
+
+    const updated: Annotation = {
+      ...menuState.annotation,
+      properties: {
+        ...menuState.annotation.properties,
+        category: "positive",
+      },
+    };
+
+    annotator.updateAnnotation(menuState.annotation.id, updated);
+    toast.success("Set as positive point (include)");
+    hideMenu();
+  }, [menuState.annotation, annotator, hideMenu]);
+
+  const handleSetNegativePoint = useCallback(() => {
+    if (!menuState.annotation || !annotator) return;
+
+    const updated: Annotation = {
+      ...menuState.annotation,
+      properties: {
+        ...menuState.annotation.properties,
+        category: "negative",
+      },
+    };
+
+    annotator.updateAnnotation(menuState.annotation.id, updated);
+    toast.success("Set as negative point (exclude)");
+    hideMenu();
+  }, [menuState.annotation, annotator, hideMenu]);
+
   const handleDelete = useCallback(() => {
     if (!menuState.annotation || !annotator) return;
 
@@ -71,10 +103,32 @@ export function AnnotationContextMenu() {
     hideMenu();
   }, [annotator, hideMenu]);
 
-  // Check if annotation is a mask (polygon or multipolygon)
-  const isMaskAnnotation = menuState.annotation &&
+  // Check annotation type
+  const isMaskAnnotation =
+    menuState.annotation &&
     (menuState.annotation.shape.type === "polygon" ||
-     menuState.annotation.shape.type === "multipolygon");
+      menuState.annotation.shape.type === "multipolygon");
+
+  const isPointAnnotation =
+    menuState.annotation && menuState.annotation.shape.type === "point";
+
+  // Check current state for masks
+  const isCurrentlyPositiveMask = !!(
+    menuState.annotation?.maskPolarity === "positive" ||
+    (isMaskAnnotation && !menuState.annotation?.maskPolarity)
+  );
+
+  const isCurrentlyNegativeMask = !!(
+    menuState.annotation?.maskPolarity === "negative"
+  );
+
+  // Check current state for points
+  const isCurrentlyPositivePoint = !!(
+    menuState.annotation?.properties?.category === "positive"
+  );
+  const isCurrentlyNegativePoint = !!(
+    menuState.annotation?.properties?.category === "negative"
+  );
 
   return (
     <ContextMenu position={menuState.position} onClose={hideMenu}>
@@ -84,14 +138,55 @@ export function AnnotationContextMenu() {
             <>
               <div className="annota-context-menu-header">Mask Actions</div>
               <ContextMenuItem
-                label="Set as Positive Mask"
+                label={
+                  isCurrentlyPositiveMask
+                    ? "✓ Positive Mask"
+                    : "Set as Positive Mask"
+                }
                 onClick={handleSetPositiveMask}
                 icon={<SquareDot className="w-4 h-4 text-green-500" />}
+                disabled={isCurrentlyPositiveMask}
               />
               <ContextMenuItem
-                label="Set as Negative Mask"
+                label={
+                  isCurrentlyNegativeMask
+                    ? "✓ Negative Mask"
+                    : "Set as Negative Mask"
+                }
                 onClick={handleSetNegativeMask}
                 icon={<SquareDot className="w-4 h-4 text-red-500" />}
+                disabled={isCurrentlyNegativeMask}
+              />
+              <ContextMenuDivider />
+              <ContextMenuItem
+                label="Delete Annotation"
+                onClick={handleDelete}
+                danger
+                icon={<Trash2 className="w-4 h-4" />}
+              />
+            </>
+          ) : isPointAnnotation ? (
+            <>
+              <div className="annota-context-menu-header">Point Actions</div>
+              <ContextMenuItem
+                label={
+                  isCurrentlyPositivePoint
+                    ? "✓ Positive Point"
+                    : "Set as Positive Point"
+                }
+                onClick={handleSetPositivePoint}
+                icon={<CircleDot className="w-4 h-4 text-green-500" />}
+                disabled={isCurrentlyPositivePoint}
+              />
+              <ContextMenuItem
+                label={
+                  isCurrentlyNegativePoint
+                    ? "✓ Negative Point"
+                    : "Set as Negative Point"
+                }
+                onClick={handleSetNegativePoint}
+                icon={<CircleDot className="w-4 h-4 text-red-500" />}
+                disabled={isCurrentlyNegativePoint}
               />
               <ContextMenuDivider />
               <ContextMenuItem
@@ -103,7 +198,9 @@ export function AnnotationContextMenu() {
             </>
           ) : (
             <>
-              <div className="annota-context-menu-header">Annotation Actions</div>
+              <div className="annota-context-menu-header">
+                Annotation Actions
+              </div>
               <ContextMenuItem
                 label="Delete Annotation"
                 onClick={handleDelete}
