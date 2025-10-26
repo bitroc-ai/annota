@@ -28,6 +28,7 @@ export {
   useImageLayerVisibility,
   usePopup,
   usePushToolCursor,
+  useContextMenu,
 } from './hooks';
 export type {
   UseHistoryResult,
@@ -35,7 +36,12 @@ export type {
   UseToolOptions,
   UseLayerManagerResult,
   UsePopupResult,
+  UseContextMenuResult,
+  ContextMenuState,
 } from './hooks';
 
 export { AnnotationEditor } from './Editor';
 export type { AnnotationEditorProps } from './Editor';
+
+export { ContextMenu, ContextMenuItem, ContextMenuDivider } from './ContextMenu';
+export type { ContextMenuProps, ContextMenuItemProps, ContextMenuPosition } from './ContextMenu';

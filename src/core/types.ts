@@ -115,11 +115,23 @@ export type StyleExpression = AnnotationStyle | ((annotation: Annotation) => Ann
 // Annotation Types
 // ============================================
 
+/**
+ * Mask polarity for segmentation annotations
+ * - 'positive': Areas to include in the mask
+ * - 'negative': Areas to exclude from the mask
+ */
+export type MaskPolarity = 'positive' | 'negative';
+
 export interface Annotation {
   id: string;
   shape: Shape;
   properties?: Record<string, any>;
   style?: AnnotationStyle;
+  /**
+   * Mask polarity for segmentation tasks
+   * Used to distinguish between positive (include) and negative (exclude) masks
+   */
+  maskPolarity?: MaskPolarity;
 }
 
 // ============================================

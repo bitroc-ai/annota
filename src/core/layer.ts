@@ -268,6 +268,39 @@ export function createLayerManager(): LayerManager {
 // ============================================
 
 /**
+ * Create a filter for positive mask annotations
+ */
+export function createPositiveMaskFilter(): Filter {
+  return (annotation: Annotation) => {
+    // If maskPolarity is explicitly set to 'positive', include it
+    // If maskPolarity is not set but annotation is a polygon/multipolygon, default to positive
+    if (annotation.maskPolarity === 'positive') return true;
+    if (!annotation.maskPolarity) {
+      // Default behavior: polygon shapes without explicit polarity are positive masks
+      const shapeType = annotation.shape.type;
+      return shapeType === 'polygon' || shapeType === 'multipolygon';
+    }
+    return false;
+  };
+}
+
+/**
+ * Create a filter for negative mask annotations
+ */
+export function createNegativeMaskFilter(): Filter {
+  return (annotation: Annotation) => {
+    return annotation.maskPolarity === 'negative';
+  };
+}
+
+/**
+ * Create a filter by mask polarity
+ */
+export function createMaskPolarityFilter(polarity: 'positive' | 'negative'): Filter {
+  return polarity === 'positive' ? createPositiveMaskFilter() : createNegativeMaskFilter();
+}
+
+/**
  * Check if an annotation should be rendered based on its layer visibility
  */
 export function isAnnotationVisible(annotation: Annotation, layerManager: LayerManager): boolean {

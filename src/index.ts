@@ -8,8 +8,13 @@
 // Core Types
 // ============================================
 
-export type { Annotation, Point, AnnotationStyle } from './core/types';
+export type { Annotation, Point, AnnotationStyle, MaskPolarity } from './core/types';
 export type { Layer, LayerConfig } from './core/layer';
+export {
+  createPositiveMaskFilter,
+  createNegativeMaskFilter,
+  createMaskPolarityFilter,
+} from './core/layer';
 
 // ============================================
 // React Components & Hooks
@@ -40,10 +45,14 @@ export {
   useHistory,
   useCanUndo,
   useCanRedo,
+  useContextMenu,
 } from './react/hooks';
 export type { UseLayerManagerResult, UseHistoryResult } from './react/hooks';
 
 export { AnnotationPopup } from './react/Popup';
+
+export { ContextMenu, ContextMenuItem, ContextMenuDivider } from './react/ContextMenu';
+export type { ContextMenuProps, ContextMenuItemProps } from './react/ContextMenu';
 
 export { AnnotationEditor, registerShapeEditor, unregisterShapeEditor } from './react/Editor';
 export type { AnnotationEditorProps, ShapeEditorConfig } from './react/Editor';
