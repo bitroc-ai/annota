@@ -24,7 +24,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-5 font-light">
-            High-Performance Annotation Framework
+            High-Performance Image Annotation Framework
           </p>
 
           <p className="text-base md:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed">

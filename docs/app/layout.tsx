@@ -5,7 +5,7 @@ import { getPageMap } from "nextra/page-map";
 
 export const metadata = {
   title: {
-    default: "Annota - Annotation Framework",
+    default: "Annota - High-performance Image Annotation",
     template: "%s | Annota",
   },
   description:
