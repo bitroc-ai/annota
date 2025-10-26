@@ -13,7 +13,7 @@ import {
   type Annotation,
 } from "annota";
 import { toast } from "sonner";
-import { CircleDot, SquareDot, Trash2, Edit3 } from "lucide-react";
+import { CircleDot, SquareDot, Trash2, Edit3, SquareCheck, CircleCheck } from "lucide-react";
 
 export function AnnotationContextMenu() {
   const annotator = useAnnotator();
@@ -160,21 +160,33 @@ export function AnnotationContextMenu() {
               <ContextMenuItem
                 label={
                   isCurrentlyPositiveMask
-                    ? "✓ Positive Mask"
+                    ? "Positive Mask"
                     : "Set as Positive Mask"
                 }
                 onClick={handleSetPositiveMask}
-                icon={<SquareDot className="w-4 h-4 text-green-500" />}
+                icon={
+                  isCurrentlyPositiveMask ? (
+                    <SquareCheck className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <SquareDot className="w-4 h-4 text-green-500" />
+                  )
+                }
                 disabled={isCurrentlyPositiveMask}
               />
               <ContextMenuItem
                 label={
                   isCurrentlyNegativeMask
-                    ? "✓ Negative Mask"
+                    ? "Negative Mask"
                     : "Set as Negative Mask"
                 }
                 onClick={handleSetNegativeMask}
-                icon={<SquareDot className="w-4 h-4 text-red-500" />}
+                icon={
+                  isCurrentlyNegativeMask ? (
+                    <SquareCheck className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <SquareDot className="w-4 h-4 text-red-500" />
+                  )
+                }
                 disabled={isCurrentlyNegativeMask}
               />
               <ContextMenuDivider />
@@ -191,21 +203,33 @@ export function AnnotationContextMenu() {
               <ContextMenuItem
                 label={
                   isCurrentlyPositivePoint
-                    ? "✓ Positive Point"
+                    ? "Positive Point"
                     : "Set as Positive Point"
                 }
                 onClick={handleSetPositivePoint}
-                icon={<CircleDot className="w-4 h-4 text-green-500" />}
+                icon={
+                  isCurrentlyPositivePoint ? (
+                    <CircleCheck className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <CircleDot className="w-4 h-4 text-green-500" />
+                  )
+                }
                 disabled={isCurrentlyPositivePoint}
               />
               <ContextMenuItem
                 label={
                   isCurrentlyNegativePoint
-                    ? "✓ Negative Point"
+                    ? "Negative Point"
                     : "Set as Negative Point"
                 }
                 onClick={handleSetNegativePoint}
-                icon={<CircleDot className="w-4 h-4 text-red-500" />}
+                icon={
+                  isCurrentlyNegativePoint ? (
+                    <CircleCheck className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <CircleDot className="w-4 h-4 text-red-500" />
+                  )
+                }
                 disabled={isCurrentlyNegativePoint}
               />
               <ContextMenuDivider />
@@ -226,7 +250,7 @@ export function AnnotationContextMenu() {
                   <ContextMenuItem
                     label={
                       isCurrentlyEditing
-                        ? "✓ Editing Vertices"
+                        ? "Editing Vertices"
                         : "Edit Vertices"
                     }
                     onClick={handleEditVertices}
