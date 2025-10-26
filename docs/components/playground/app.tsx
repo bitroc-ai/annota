@@ -100,40 +100,6 @@ function DemoContent({ currentImage }: { currentImage: string }) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [stopEditing]);
 
-  // Click outside to exit edit mode
-  useEffect(() => {
-    if (!annotator?.viewer) return;
-
-    const handleCanvasClick = (event: any) => {
-      // Get annotation at click position
-      const canvas = annotator.viewer.element.querySelector('.openseadragon-canvas');
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const offsetX = event.originalEvent.clientX - rect.left;
-      const offsetY = event.originalEvent.clientY - rect.top;
-
-      const imageCoords = annotator.viewer.viewport.viewerElementToImageCoordinates(
-        new (annotator.viewer.viewport.getCenter().constructor as any)(offsetX, offsetY)
-      );
-
-      const annotation = annotator.state.store.getAt(imageCoords.x, imageCoords.y);
-
-      // If clicked outside any annotation, exit editing mode
-      if (!annotation) {
-        stopEditing();
-      }
-    };
-
-    annotator.viewer.addHandler('canvas-click', handleCanvasClick);
-
-    return () => {
-      if (annotator?.viewer) {
-        annotator.viewer.removeHandler('canvas-click', handleCanvasClick);
-      }
-    };
-  }, [annotator, stopEditing]);
-
   // Create layers on mount
   // Layer structure (from bottom to top):
   // - Image (zIndex: -1, built-in)

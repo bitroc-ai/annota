@@ -7,7 +7,9 @@
  * @example
  * ```tsx
  * function MyEditor() {
- *   const { editingAnnotation, startEditing, stopEditing, isEditing } = useEditing();
+ *   const { editingAnnotation, startEditing, stopEditing, isEditing } = useEditing({
+ *     exitOnClickOutside: true
+ *   });
  *
  *   return (
  *     <button onClick={() => isEditing(annotation.id) ? stopEditing() : startEditing(annotation.id)}>
@@ -19,8 +21,14 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
+import OpenSeadragon from 'openseadragon';
 import { useAnnotator, useAnnotationStore } from '../Provider';
 import type { Annotation } from '../../core/types';
+
+export interface UseEditingOptions {
+  /** Automatically exit editing mode when clicking outside annotation (default: true) */
+  exitOnClickOutside?: boolean;
+}
 
 export interface UseEditingResult {
   /** Currently editing annotation (null if none) */
@@ -42,7 +50,8 @@ export interface UseEditingResult {
   isEditing: (annotationId: string) => boolean;
 }
 
-export function useEditing(): UseEditingResult {
+export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
+  const { exitOnClickOutside = true } = options;
   const annotator = useAnnotator();
   const store = useAnnotationStore();
   const [editingId, setEditingId] = useState<string | undefined>();
@@ -130,6 +139,56 @@ export function useEditing(): UseEditingResult {
     },
     [editingId]
   );
+
+  // Click outside to exit edit mode (optional)
+  useEffect(() => {
+    if (!exitOnClickOutside || !annotator?.viewer || !editingId) return;
+
+    const handleCanvasClick = (event: any) => {
+      // Get annotation at click position
+      const canvas = annotator.viewer.element.querySelector('.openseadragon-canvas');
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const offsetX = event.originalEvent.clientX - rect.left;
+      const offsetY = event.originalEvent.clientY - rect.top;
+
+      const imageCoords = annotator.viewer.viewport.viewerElementToImageCoordinates(
+        new OpenSeadragon.Point(offsetX, offsetY)
+      );
+
+      const annotation = annotator.state.store.getAt(imageCoords.x, imageCoords.y);
+
+      if (!annotation) {
+        // Clicked on empty space - exit editing mode
+        stopEditing();
+      } else if (annotation.id !== editingId) {
+        // Clicked on a different annotation
+        // Check if it supports vertex editing (has points array)
+        const supportsVertexEditing =
+          annotation.shape.type === 'polygon' ||
+          annotation.shape.type === 'freehand' ||
+          annotation.shape.type === 'multipolygon';
+
+        if (supportsVertexEditing) {
+          // Switch to editing the new annotation
+          startEditing(annotation.id, 'vertices');
+        } else {
+          // Annotation doesn't support vertex editing - exit editing mode
+          stopEditing();
+        }
+      }
+      // If clicked on the same annotation being edited, do nothing (stay in edit mode)
+    };
+
+    annotator.viewer.addHandler('canvas-click', handleCanvasClick);
+
+    return () => {
+      if (annotator?.viewer) {
+        annotator.viewer.removeHandler('canvas-click', handleCanvasClick);
+      }
+    };
+  }, [exitOnClickOutside, annotator, editingId, stopEditing]);
 
   return {
     editingAnnotation: annotation,

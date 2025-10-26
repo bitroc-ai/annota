@@ -17,8 +17,9 @@ Added vertex editing mode for polygon annotations, providing a cleaner UI and mo
 **Key Features:**
 - **Conditional Vertex Display**: Vertex handles and edge midpoints are now only shown when explicitly in edit mode
 - **Multiple Entry Methods**: Double-click polygons or use context menu "Edit Vertices"
+- **Smart Click Behavior**: Click empty space to exit, click other shapes to switch editing, or click non-editable shapes to exit
 - **Easy Exit**: Press Escape key to exit edit mode
-- **Shape-Specific Support**: Only polygons support vertex editing (configured via `supportsVertexEditing` flag)
+- **Shape-Specific Support**: Only polygons, freehand, and multipolygon support vertex editing
 
 **New Exports:**
 - `useEditing` hook - Manage vertex editing state

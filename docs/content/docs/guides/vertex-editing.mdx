@@ -80,6 +80,24 @@ function AnnotationContextMenu() {
 
 ## Exit Methods
 
+### Click Behavior (Automatic)
+
+By default, the `useEditing` hook provides smart click behavior:
+
+- **Click empty space** → Exits vertex editing mode
+- **Click the same annotation** → Stays in editing mode
+- **Click a different annotation** → Switches to editing the new annotation
+
+This behavior is enabled by default in the `useEditing` hook.
+
+To disable this automatic behavior:
+
+```tsx
+const { startEditing, stopEditing } = useEditing({
+  exitOnClickOutside: false
+});
+```
+
 ### Escape Key
 
 Press the Escape key to exit vertex editing mode:
