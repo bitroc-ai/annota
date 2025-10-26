@@ -108,6 +108,7 @@ class LayerManagerImpl implements LayerManager {
   }
 
   private emit(event: LayerChangeEvent): void {
+    console.log('[LayerManager] Emitting event:', event.type, 'to', this.observers.length, 'observers');
     this.observers.forEach(callback => {
       try {
         callback(event);
@@ -184,6 +185,7 @@ class LayerManagerImpl implements LayerManager {
   }
 
   setLayerVisibility(id: string, visible: boolean): void {
+    console.log('[LayerManager] Setting layer visibility:', id, visible);
     this.updateLayer(id, { visible });
   }
 

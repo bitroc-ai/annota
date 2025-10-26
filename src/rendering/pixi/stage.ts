@@ -71,6 +71,11 @@ export class PixiStage {
     this.container = new PIXI.Container();
     this.container.visible = this.visible;
     this.app.stage.addChild(this.container);
+
+    // Listen for layer changes to update annotation visibility/opacity
+    if (this.layerManager) {
+      this.layerManager.observe(this.handleLayerChange.bind(this));
+    }
   }
 
   /**
@@ -174,11 +179,13 @@ export class PixiStage {
 
     // Check layer visibility - hide graphics if layer is not visible
     if (this.layerManager && !isAnnotationVisible(annotation, this.layerManager)) {
+      console.log('[PixiStage] Hiding annotation', id, 'layer:', annotation.properties?.layer);
       graphics.visible = false;
       return;
     }
 
     // Make sure graphics is visible
+    console.log('[PixiStage] Showing annotation', id, 'layer:', annotation.properties?.layer);
     graphics.visible = true;
 
     // Compute style
@@ -394,7 +401,9 @@ export class PixiStage {
         bounds.minY <= viewportWithMargin.maxY;
 
       if (isVisible) {
-        entry.graphics.visible = true;
+        // Check layer visibility before showing
+        const layerVisible = !this.layerManager || isAnnotationVisible(entry.annotation, this.layerManager);
+        entry.graphics.visible = layerVisible;
         visible++;
 
         // Check if we need to re-render the graphics
@@ -456,9 +465,25 @@ export class PixiStage {
   }
 
   /**
+   * Handle layer visibility/opacity changes
+   */
+  private handleLayerChange(): void {
+    console.log('[PixiStage] Layer change detected, re-rendering', this.annotationMap.size, 'annotations');
+    // Re-render all annotations to update visibility and opacity
+    this.annotationMap.forEach((_entry, id) => {
+      this.renderAnnotation(id);
+    });
+  }
+
+  /**
    * Destroy the stage
    */
   destroy(): void {
+    // Unobserve layer changes
+    if (this.layerManager) {
+      this.layerManager.unobserve(this.handleLayerChange.bind(this));
+    }
+
     this.annotationMap.forEach(entry => entry.graphics.destroy());
     this.annotationMap.clear();
     this.app.destroy(true, { children: true, texture: true });
