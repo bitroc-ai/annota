@@ -68,51 +68,63 @@ export async function initOpenCV(): Promise<boolean> {
     return loadPromise;
   }
 
-  // Load OpenCV.js script from official CDN
-  console.log('[OpenCV] Loading from official CDN...');
+  // Load OpenCV.js script from CDN
+  console.log('[OpenCV] Loading from CDN (this may take 10-30 seconds)...');
   isLoading = true;
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.async = true;
-    script.src = 'https://docs.opencv.org/4.x/opencv.js';
+    // Use jsdelivr CDN (often faster and more reliable)
+    script.src = 'https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.8.0-release.5/opencv.min.js';
 
     script.onload = () => {
-      console.log('[OpenCV] Script loaded, waiting for initialization...');
+      console.log('[OpenCV] Script loaded, waiting for WebAssembly initialization...');
 
       // Check if cv is already available (sometimes it initializes immediately)
       if (window.cv && window.cv.Mat) {
         isLoading = false;
         loadPromise = null;
-        console.log('[OpenCV] Initialized successfully (immediate)');
+        console.log('[OpenCV] ✓ Initialized successfully');
         resolve(true);
         return;
       }
 
+      let checks = 0;
+      const maxChecks = 600; // 60 seconds
+
       // Wait for cv to be fully initialized
       const checkReady = setInterval(() => {
+        checks++;
+
         if (window.cv && window.cv.Mat) {
           clearInterval(checkReady);
           isLoading = false;
           loadPromise = null;
-          console.log('[OpenCV] Initialized successfully');
+          console.log('[OpenCV] ✓ Initialized successfully');
           resolve(true);
+          return;
+        }
+
+        // Progress feedback every 10 seconds
+        if (checks % 100 === 0) {
+          console.log(`[OpenCV] Still initializing... (${checks / 10}s)`);
+        }
+
+        if (checks >= maxChecks) {
+          clearInterval(checkReady);
+          isLoading = false;
+          loadPromise = null;
+          console.error('[OpenCV] ✗ Initialization timeout after 60s');
+          reject(new Error('OpenCV initialization timeout'));
         }
       }, 100);
-
-      // Increase timeout to 30 seconds for large file (11MB)
-      setTimeout(() => {
-        clearInterval(checkReady);
-        isLoading = false;
-        loadPromise = null;
-        console.error('[OpenCV] Initialization timeout - cv.Mat not available after 30s');
-        reject(new Error('OpenCV initialization timeout'));
-      }, 30000);
     };
 
-    script.onerror = () => {
+    script.onerror = (error) => {
       isLoading = false;
       loadPromise = null;
-      reject(new Error('Failed to load OpenCV.js'));
+      console.error('[OpenCV] Failed to load script:', error);
+      reject(new Error('Failed to load OpenCV.js from CDN'));
     };
 
     document.head.appendChild(script);
