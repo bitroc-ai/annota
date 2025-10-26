@@ -121,7 +121,7 @@ a.inline-flex {
 
 /* Context Menu Styles */
 .annota-context-menu {
-  @apply fixed min-w-[150px] rounded-md border bg-white p-1 shadow-md;
+  @apply fixed min-w-[150px] rounded-xl border bg-white p-1 shadow-md;
   @apply dark:bg-slate-900 dark:border-slate-700;
   pointer-events: auto;
   z-index: var(--menu-z-index, 10000);

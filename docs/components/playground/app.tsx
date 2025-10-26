@@ -44,14 +44,14 @@ async function loadH5AnnotationsByCategory(
       strokeWidth: 1,
     });
 
-    // Add category and layer to each annotation, and make IDs unique
+    // Add category to each annotation (points), and make IDs unique
+    // The layer filter will automatically assign them to positive-points or negative-points
     return annotations.map((ann) => ({
       ...ann,
       id: `${category}-${ann.id}`, // Prefix ID with category to avoid conflicts
       properties: {
         ...ann.properties,
-        layer: `annotations-${category}`,
-        category,
+        category, // This will be used by layer filter
         source: "h5",
       },
     }));
@@ -77,39 +77,78 @@ function DemoContent({ currentImage }: { currentImage: string }) {
   }, [annotator]);
 
   // Create layers on mount
+  // Layer structure (from bottom to top):
+  // - Image (zIndex: -1, built-in)
+  // - Positive Points (zIndex: 1)
+  // - Negative Points (zIndex: 2)
+  // - Positive Masks (zIndex: 3)
+  // - Negative Masks (zIndex: 4)
+  // - Default (zIndex: 0, built-in)
   useEffect(() => {
     if (!annotator) return;
 
-    // Create layer for masks
-    if (!annotator.getLayer("masks")) {
-      annotator.createLayer("masks", {
-        name: "Masks",
-        visible: true,
-        locked: false,
-        opacity: 0.5,
-        zIndex: 5,
-      });
-    }
-
-    // Create layer for positive annotations
-    if (!annotator.getLayer("annotations-positive")) {
-      annotator.createLayer("annotations-positive", {
-        name: "Positive Annotations",
+    // Create layer for positive point annotations
+    if (!annotator.getLayer("positive-points")) {
+      annotator.createLayer("positive-points", {
+        name: "Positive Points",
         visible: true,
         locked: false,
         opacity: 1,
-        zIndex: 10,
+        zIndex: 1,
+        filter: (ann) => {
+          // Point annotations with category="positive"
+          return ann.shape.type === "point" && ann.properties?.category === "positive";
+        },
       });
     }
 
-    // Create layer for negative annotations
-    if (!annotator.getLayer("annotations-negative")) {
-      annotator.createLayer("annotations-negative", {
-        name: "Negative Annotations",
+    // Create layer for negative point annotations
+    if (!annotator.getLayer("negative-points")) {
+      annotator.createLayer("negative-points", {
+        name: "Negative Points",
         visible: true,
         locked: false,
         opacity: 1,
-        zIndex: 11,
+        zIndex: 2,
+        filter: (ann) => {
+          // Point annotations with category="negative"
+          return ann.shape.type === "point" && ann.properties?.category === "negative";
+        },
+      });
+    }
+
+    // Create layer for positive mask annotations
+    if (!annotator.getLayer("positive-masks")) {
+      annotator.createLayer("positive-masks", {
+        name: "Positive Masks",
+        visible: true,
+        locked: false,
+        opacity: 0.6,
+        zIndex: 3,
+        filter: (ann) => {
+          // Polygon/mask annotations with maskPolarity="positive" or default polygons
+          const isPolygon = ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
+          if (!isPolygon) return false;
+
+          // Explicit positive or no polarity set (default to positive)
+          return ann.maskPolarity === "positive" || !ann.maskPolarity;
+        },
+      });
+    }
+
+    // Create layer for negative mask annotations
+    if (!annotator.getLayer("negative-masks")) {
+      annotator.createLayer("negative-masks", {
+        name: "Negative Masks",
+        visible: true,
+        locked: false,
+        opacity: 0.6,
+        zIndex: 4,
+        filter: (ann) => {
+          // Polygon/mask annotations with maskPolarity="negative"
+          const isPolygon = ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
+          return isPolygon && ann.maskPolarity === "negative";
+        },
       });
     }
   }, [annotator]);
@@ -133,31 +172,41 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         const [positiveAnnotations, negativeAnnotations, maskAnnotations] = await Promise.all([
           loadH5AnnotationsByCategory(imageNumber, "positive"),
           loadH5AnnotationsByCategory(imageNumber, "negative"),
-          loadMaskPolygons(`/playground/masks/test/${imageNumber}.png`, {
-            color: "#FFFF00", // Yellow for masks
-            fillOpacity: 0.3,
-            strokeWidth: 2,
-          }).catch((err) => {
+          loadMaskPolygons(`/playground/masks/test/${imageNumber}.png`).catch((err) => {
             console.warn('[Playground] Failed to load mask:', err);
             return [] as Annotation[];
           }), // Fallback to empty if no mask file
         ]);
 
+        // Assign maskPolarity to loaded masks (default to positive)
+        // Remove style property so categoryStyleFunction applies the correct styling
+        const masksWithPolarity = maskAnnotations.map((ann) => {
+          const { style, ...annotationWithoutStyle } = ann;
+          return {
+            ...annotationWithoutStyle,
+            maskPolarity: "positive" as const,
+            properties: {
+              ...ann.properties,
+              source: "png-mask",
+            },
+          };
+        });
+
         const totalH5 = positiveAnnotations.length + negativeAnnotations.length;
-        const totalMasks = maskAnnotations.length;
+        const totalMasks = masksWithPolarity.length;
 
         if (totalH5 > 0 || totalMasks > 0) {
           // Add all annotations at once
           const allAnnotations = [
             ...positiveAnnotations,
             ...negativeAnnotations,
-            ...maskAnnotations,
+            ...masksWithPolarity,
           ];
 
           console.log('[Playground] Adding annotations:', {
             total: allAnnotations.length,
             masks: totalMasks,
-            firstMask: maskAnnotations.length > 0 ? maskAnnotations[0] : null,
+            firstMask: masksWithPolarity.length > 0 ? masksWithPolarity[0] : null,
           });
 
           annotator.addAnnotations(allAnnotations);

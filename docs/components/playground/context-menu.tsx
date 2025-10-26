@@ -7,8 +7,6 @@ import {
   ContextMenu,
   ContextMenuItem,
   ContextMenuDivider,
-  createPositiveMaskFilter,
-  createNegativeMaskFilter,
   type Annotation,
 } from "annota";
 import { toast } from "sonner";
@@ -97,41 +95,6 @@ export function AnnotationContextMenu() {
     hideMenu();
   }, [annotator, hideMenu]);
 
-  const handleCreatePositiveLayer = useCallback(() => {
-    if (!annotator) return;
-
-    try {
-      annotator.createLayer("positive-masks", {
-        name: "Positive Masks",
-        visible: true,
-        opacity: 0.6,
-        zIndex: 10,
-        filter: createPositiveMaskFilter(),
-      });
-      toast.success("Created positive masks layer");
-    } catch (error) {
-      toast.error("Layer already exists");
-    }
-    hideMenu();
-  }, [annotator, hideMenu]);
-
-  const handleCreateNegativeLayer = useCallback(() => {
-    if (!annotator) return;
-
-    try {
-      annotator.createLayer("negative-masks", {
-        name: "Negative Masks",
-        visible: true,
-        opacity: 0.6,
-        zIndex: 11,
-        filter: createNegativeMaskFilter(),
-      });
-      toast.success("Created negative masks layer");
-    } catch (error) {
-      toast.error("Layer already exists");
-    }
-    hideMenu();
-  }, [annotator, hideMenu]);
 
   return (
     <ContextMenu position={menuState.position} onClose={hideMenu}>
@@ -166,19 +129,8 @@ export function AnnotationContextMenu() {
       {menuState.type === "viewer" && (
         <>
           <div className="annota-context-menu-header">
-            Layer Actions
+            Viewer Actions
           </div>
-          <ContextMenuItem
-            label="Create Positive Masks Layer"
-            onClick={handleCreatePositiveLayer}
-            icon={<span className="w-3 h-3 rounded-full bg-green-500" />}
-          />
-          <ContextMenuItem
-            label="Create Negative Masks Layer"
-            onClick={handleCreateNegativeLayer}
-            icon={<span className="w-3 h-3 rounded-full bg-red-500" />}
-          />
-          <ContextMenuDivider />
           <ContextMenuItem
             label="Clear All Annotations"
             onClick={handleClearAll}
