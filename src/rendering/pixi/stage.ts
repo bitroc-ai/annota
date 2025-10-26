@@ -7,7 +7,7 @@ import * as PIXI from 'pixi.js';
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, Filter, StyleExpression } from '../../core/types';
 import type { LayerManager } from '../../core/layer';
-import { isAnnotationVisible, getEffectiveOpacity } from '../../core/layer';
+import { isAnnotationVisible } from '../../core/layer';
 import { computeStyle } from './styles';
 import { renderShape } from './shapes';
 

@@ -6,10 +6,162 @@ Annota provides built-in loaders for importing annotations from various file for
 
 | Loader | Format | Use Case |
 |--------|--------|----------|
+| `loadMaskPolygons` | PNG/PGM masks | Instance segmentation masks from pathology models |
 | `loadH5Masks` | HDF5 masks | Segmentation masks from analysis pipelines |
 | `loadH5Coordinates` | HDF5 coordinates | Point annotations from detection algorithms |
 | `loadJSON` | JSON | Standard annotation interchange |
 | `loadPGM` | PGM masks | Legacy mask format |
+
+## PNG/PGM Mask Loader
+
+Load instance segmentation masks from PNG or PGM files and convert them to polygon annotations. This loader is specifically designed for pathology image analysis workflows where AI models output instance segmentation masks.
+
+### Basic Usage
+
+```tsx
+import { loadMaskPolygons, useAnnotator } from 'annota';
+
+function LoadMasks() {
+  const annotator = useAnnotator();
+
+  const handleLoad = async () => {
+    const annotations = await loadMaskPolygons('/masks/instances.png', {
+      color: '#FFFF00',
+      fillOpacity: 0.3,
+      strokeWidth: 2,
+    });
+
+    annotator?.addAnnotations(annotations);
+  };
+
+  return <button onClick={handleLoad}>Load Mask</button>;
+}
+```
+
+### Expected File Format
+
+#### 16-bit Grayscale PNG (Recommended)
+
+For instance segmentation masks from pathology models:
+
+- **Format**: 16-bit grayscale PNG
+- **Color type**: Grayscale (no palette, no RGB)
+- **Pixel values**:
+  - `0` = background (ignored)
+  - `1-65535` = unique instance IDs
+- **Encoding**: Big-endian (standard PNG format)
+
+**Example**: If your AI model detects 160 nuclei, the mask will have pixel values from 0 (background) to 160 (instance IDs).
+
+```python
+# Creating a 16-bit instance mask in Python
+import numpy as np
+from PIL import Image
+
+# Create instance mask (640x640 with 160 instances)
+mask = np.zeros((640, 640), dtype=np.uint16)
+# ... assign instance IDs to pixels ...
+mask[y1:y2, x1:x2] = 1  # Instance 1
+mask[y3:y4, x3:x4] = 2  # Instance 2
+
+# Save as 16-bit PNG
+Image.fromarray(mask).save('instances.png')
+```
+
+#### PGM Format
+
+Legacy grayscale format, similar structure to PNG:
+
+- **Format**: PGM (Portable GrayMap)
+- **Max value**: Typically 255 or 65535
+- **Pixel values**: Same as PNG (0 = background, 1+ = instance IDs)
+
+### How It Works
+
+The loader uses OpenCV.js for contour detection:
+
+1. **Decodes** the 16-bit PNG using UPNG.js (handles big-endian byte order)
+2. **Extracts** unique instance IDs from pixel values
+3. **Creates binary masks** for each instance separately
+4. **Detects contours** using `cv.findContours()` with `RETR_EXTERNAL` mode
+5. **Simplifies polygons** using `cv.approxPolyDP()` (0.5% tolerance)
+6. **Keeps all contours** for fragmented instances (not just the largest)
+
+### Options
+
+```typescript
+interface MaskLoaderOptions {
+  color?: string;          // Polygon color (default: '#FFFF00')
+  fillOpacity?: number;    // Fill opacity (default: 0.3)
+  strokeWidth?: number;    // Stroke width (default: 2)
+  layer?: string;          // Layer name (default: 'masks')
+}
+```
+
+### Complete Example
+
+```tsx
+import { loadMaskPolygons, useAnnotator } from 'annota';
+import { useState } from 'react';
+
+function MaskImporter() {
+  const [loading, setLoading] = useState(false);
+  const [count, setCount] = useState(0);
+  const annotator = useAnnotator();
+
+  const loadMask = async (imageId: string) => {
+    setLoading(true);
+    try {
+      const annotations = await loadMaskPolygons(
+        `/masks/${imageId}.png`,
+        {
+          color: '#FFFF00',
+          fillOpacity: 0.3,
+          strokeWidth: 2,
+        }
+      );
+
+      annotator?.addAnnotations(annotations);
+      setCount(annotations.length);
+    } catch (error) {
+      console.error('Failed to load mask:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={() => loadMask('slide_001')} disabled={loading}>
+        {loading ? 'Loading...' : 'Load Nuclei Mask'}
+      </button>
+      {count > 0 && <p>Loaded {count} instances</p>}
+    </div>
+  );
+}
+```
+
+### Performance Considerations
+
+- **Polygon simplification**: Reduces vertex count by ~90% while maintaining shape accuracy
+- **Fragmented instances**: Each disconnected region becomes a separate annotation with ID `mask-{instanceId}-{contourIndex}`
+- **Minimum area**: Contours smaller than 100 pixels are filtered out as noise
+- **OpenCV.js loading**: First use may take 10-30 seconds to download OpenCV WebAssembly (~8MB)
+
+### Troubleshooting
+
+**No polygons extracted:**
+- Verify PNG is 16-bit grayscale (not RGB or 8-bit)
+- Check pixel values are non-zero (0 = background)
+- Ensure OpenCV.js loaded successfully (check browser console)
+
+**Incorrect shapes:**
+- Verify mask uses pixel values as instance IDs (not RGB encoding)
+- Check byte order is big-endian (standard PNG format)
+
+**Memory issues:**
+- For very large masks (>4000x4000), consider tiling or downsampling
+- Each polygon uses memory proportional to vertex count
 
 ## H5 Mask Loader
 
