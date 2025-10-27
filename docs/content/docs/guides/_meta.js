@@ -9,5 +9,4 @@ export default {
   'vertex-editing': 'Vertex Editing',
   'undo-redo': 'Undo/Redo',
   integration: 'Integration Guide',
-  advanced: 'Advanced Features',
 };

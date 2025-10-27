@@ -1,0 +1,117 @@
+# Roadmap
+
+## Feature Status
+
+Annota is actively under development. Below is the current status of features organized by category.
+
+### Core Shapes
+
+- [x] Point annotations
+- [x] Circle annotations
+- [x] Rectangle annotations
+- [x] Polygon annotations
+- [x] Freehand/polyline annotations
+- [x] Multi-polygon support
+- [x] PixiJS rendering for all shapes
+- [ ] Ellipse shape support (type exists, needs tools/editors)
+- [ ] Line shape support (type exists, needs tools/editors)
+
+### Drawing Tools
+
+- [x] Point tool (click to create)
+- [x] Rectangle tool (drag to create)
+- [x] Circle tool (drag to create)
+- [x] Polygon tool (click to add points, double-click to finish)
+- [x] Freehand tool (mouse drag to draw)
+- [x] Push tool (interactive vertex manipulation)
+- [x] Contour tool (OpenCV-based edge detection)
+- [ ] Ellipse tool
+- [ ] Line tool
+
+### Selection & Editing
+
+- [x] Click to select annotation
+- [x] Hover highlighting
+- [x] Multi-select (Shift+click)
+- [x] Delete selected (Delete key)
+- [x] Undo/Redo system with command pattern
+- [x] Context menu system
+- [x] Move annotations (drag with shape editors)
+- [x] Resize rectangles (drag corner/edge handles)
+- [x] Move points (drag)
+- [x] Polygon vertex editing with conditional display
+- [ ] Rotate ellipse annotations
+- [ ] Copy/Paste annotations
+
+### Data Management
+
+- [x] Export annotations (JSON, H5, PGM/PNG masks)
+- [x] Import annotations (JSON, H5, PGM masks)
+- [x] Annotation layers (show/hide groups)
+- [ ] Filter annotations by properties
+- [ ] Search annotations
+- [ ] Annotation history/versioning
+
+### Properties & Classification
+
+- [x] Custom properties support
+- [x] Classification system (via properties)
+- [x] Color coding by classification (style expressions)
+- [x] Custom metadata fields
+- [x] Mask polarity (positive/negative)
+- [x] Auto-assign masks based on point annotations
+- [ ] Annotation properties panel UI
+- [ ] Measurements (area, perimeter, etc.)
+- [ ] Statistics panel
+
+### AI & Extensions
+
+- [ ] Extension/Plugin system architecture
+- [ ] AI API interface definition
+- [x] OpenCV.js integration for edge detection
+- [ ] Threshold adjustment UI
+- [x] Auto-detect region from click point
+- [ ] Edge refinement based on threshold
+- [ ] SAM (Segment Anything Model) integration
+- [ ] Auto-annotation for selected region
+- [ ] Batch processing
+
+### Advanced Features
+
+- [ ] Measurement tools (distance, area, angle)
+- [ ] Annotation locking
+- [ ] Annotation groups/hierarchies
+- [ ] Collaborative annotations
+- [ ] Annotation validation workflow
+- [ ] Quality control tools
+
+## Extension System
+
+The extension/plugin system is planned to enable AI models, custom tools, and integrations. For design discussions and proposals, see:
+
+- 📋 [Extension System Design Discussion](https://github.com/bitroc-ai/annota/issues) (issue to be created)
+
+## Development Principles
+
+1. **Type Safety**: Full TypeScript coverage
+2. **Framework Agnostic**: Core logic independent of React/OSD
+3. **Performance**: WebGL rendering, spatial indexing
+4. **Extensibility**: Plugin system for AI/tools
+5. **User Experience**: Intuitive QuPath-like interface
+6. **Data Interoperability**: Standard formats (JSON, GeoJSON, H5)
+
+## Contributing
+
+Want to contribute? Check out:
+
+- [GitHub Repository](https://github.com/bitroc/annota)
+- [Issues & Feature Requests](https://github.com/bitroc/annota/issues)
+- [Pull Requests Welcome](https://github.com/bitroc/annota/pulls)
+
+### Priority Areas
+
+1. **Ellipse & Line Tools** - Complete shape tool coverage
+2. **Copy/Paste** - Essential editing functionality
+3. **Properties Panel UI** - Visual interface for classification & metadata
+4. **Measurement Tools** - Distance, area, angle calculations
+5. **Extension System** - Framework for AI tools
