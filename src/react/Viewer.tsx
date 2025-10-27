@@ -56,7 +56,13 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
       viewer.open(options.tileSources);
     }, [options.tileSources]);
 
-    return <div ref={elementRef} className={className} style={style} />;
+    return (
+      <div
+        ref={elementRef}
+        className={className}
+        style={{ ...style, isolation: 'isolate' }}
+      />
+    );
   }
 );
 

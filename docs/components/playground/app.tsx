@@ -389,7 +389,7 @@ export function PlaygroundApp() {
             <AnnotationContextMenu />
             <DemoContent currentImage={currentImage} />
           </Annotator>
-          <div className="absolute top-4 left-4 bottom-4" style={{ zIndex: 10000 }}>
+          <div className="absolute top-4 left-4 bottom-4 z-10">
             <DemoToolbar
               tool={tool}
               onToolChange={setTool}
@@ -414,7 +414,7 @@ export function PlaygroundApp() {
               }
             />
           </div>
-          <div className="absolute top-4 left-20" style={{ zIndex: 10000 }}>
+          <div className="absolute top-4 left-20 z-10">
             <ToolSettings
               tool={tool}
               threshold={threshold}
