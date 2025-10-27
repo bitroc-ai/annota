@@ -11,9 +11,10 @@ import {
   Pentagon,
   Undo,
   Redo,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory } from "annota";
+import { useAnnotator, useViewer, useHistory, containsPoint } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,84 @@ export function DemoToolbar({
     if (confirm(`Clear all ${annotations.length} annotation(s)?`)) {
       annotator.clearAnnotations();
       toast.success("All annotations cleared");
+    }
+  };
+
+  const handleAutoAssignMasks = () => {
+    if (!annotator) return;
+
+    // Get all annotations
+    const allAnnotations = annotator.state.store.all();
+
+    // Separate points and masks
+    const pointAnnotations = allAnnotations.filter(
+      (ann) => ann.shape.type === "point"
+    );
+    const maskAnnotations = allAnnotations.filter(
+      (ann) => ann.shape.type === "polygon" || ann.shape.type === "multipolygon"
+    );
+
+    if (maskAnnotations.length === 0) {
+      toast.info("No mask annotations to assign");
+      return;
+    }
+
+    if (pointAnnotations.length === 0) {
+      toast.info("No point annotations found");
+      return;
+    }
+
+    let assignedCount = 0;
+
+    // For each mask, check which points it contains
+    maskAnnotations.forEach((mask) => {
+      let hasPositive = false;
+      let hasNegative = false;
+
+      // Check each point to see if it's inside this mask
+      pointAnnotations.forEach((point) => {
+        if (point.shape.type !== "point") return;
+
+        const isInside = containsPoint(
+          mask.shape,
+          point.shape.point.x,
+          point.shape.point.y
+        );
+
+        if (isInside) {
+          const category = point.properties?.category;
+          if (category === "positive") {
+            hasPositive = true;
+          } else if (category === "negative") {
+            hasNegative = true;
+          }
+        }
+      });
+
+      // Assign maskPolarity based on contained points (positive wins if both)
+      const currentPolarity = mask.maskPolarity;
+      let newPolarity: "positive" | "negative" | undefined = currentPolarity;
+
+      if (hasPositive) {
+        newPolarity = "positive";
+      } else if (hasNegative) {
+        newPolarity = "negative";
+      }
+
+      // Update the mask if polarity changed
+      if (newPolarity !== currentPolarity) {
+        annotator.updateAnnotation(mask.id, {
+          ...mask,
+          maskPolarity: newPolarity,
+        });
+        assignedCount++;
+      }
+    });
+
+    if (assignedCount > 0) {
+      toast.success(`Auto-assigned ${assignedCount} mask(s) to layers`);
+    } else {
+      toast.info("All masks already correctly assigned");
     }
   };
 
@@ -124,7 +203,7 @@ export function DemoToolbar({
             "w-9 h-9",
             tool === "cell-detect" && "bg-purple-600 hover:bg-purple-700"
           )}
-          title="Detect cell edge"
+          title="Detect edge"
         >
           <Wand className="w-4 h-4" />
         </Button>
@@ -160,10 +239,20 @@ export function DemoToolbar({
         <Button
           variant="ghost"
           size="icon"
+          onClick={handleAutoAssignMasks}
+          className="w-9 h-9 hover:bg-purple-50 dark:hover:bg-purple-950/20"
+          title="Auto-assign masks to layers based on contained points"
+        >
+          <Sparkles className="w-4 h-4 text-purple-500" />
+        </Button>
+        <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={history.undo}
           disabled={!history.canUndo}
           className="w-9 h-9"
-          title={`Undo ${history.canUndo ? `(${history.undoSize})` : ''}`}
+          title={`Undo ${history.canUndo ? `(${history.undoSize})` : ""}`}
         >
           <Undo className="w-4 h-4" />
         </Button>
@@ -173,7 +262,7 @@ export function DemoToolbar({
           onClick={history.redo}
           disabled={!history.canRedo}
           className="w-9 h-9"
-          title={`Redo ${history.canRedo ? `(${history.redoSize})` : ''}`}
+          title={`Redo ${history.canRedo ? `(${history.redoSize})` : ""}`}
         >
           <Redo className="w-4 h-4" />
         </Button>

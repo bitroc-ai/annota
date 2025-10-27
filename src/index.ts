@@ -9,6 +9,7 @@
 // ============================================
 
 export type { Annotation, Point, AnnotationStyle, MaskPolarity } from './core/types';
+export { containsPoint, calculateBounds } from './core/types';
 export type { Layer, LayerConfig } from './core/layer';
 export {
   createPositiveMaskFilter,
@@ -98,4 +99,4 @@ export type { H5CoordinateLoaderOptions } from './loaders/h5-coordinates';
 export { loadPgmFile, loadPgmPolygons, annotationsToPgm, annotationToPgm } from './loaders/pgm';
 export type { PgmLoaderOptions } from './loaders/pgm';
 
-export { loadMaskPolygons } from './loaders/masks';
+export { loadMaskPolygons, exportMasksToPng } from './loaders/masks';

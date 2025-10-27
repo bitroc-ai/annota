@@ -1,4 +1,14 @@
 /**
+ * Annota Core Styles
+ */
+
+/* Remove focus outline from OpenSeadragon viewer */
+.openseadragon-container,
+.openseadragon-canvas {
+  outline: none !important;
+}
+
+/**
  * Editor styles - EXACT copy from Annotorious OpenSeadragon
  * SVGDrawingLayer.svelte lines 273-289
  * Now we mount inside .openseadragon-canvas just like Annotorious
