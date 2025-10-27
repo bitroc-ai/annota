@@ -6,6 +6,11 @@
 :root {
   --nextra-content-width: 100vw !important;
   --nextra-sidebar-width: 320px !important;
+  --nextra-bg: 255 255 255; /* Light mode background: white */
+}
+
+.dark {
+  --nextra-bg: 17 24 39; /* Dark mode background: dark gray (#111827) */
 }
 
 /* Simplified sidebar width override */

@@ -5,6 +5,7 @@ export default {
   styling: 'Styling',
   loaders: 'Data Loaders',
   popups: 'Popup System',
+  'context-menu': 'Context Menu',
   'vertex-editing': 'Vertex Editing',
   'undo-redo': 'Undo/Redo',
   integration: 'Integration Guide',
