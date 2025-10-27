@@ -17,7 +17,6 @@ export async function loadMaskPolygons(
   url: string,
   options: PgmLoaderOptions = {}
 ): Promise<Annotation[]> {
-  console.log('[MaskLoader] Loading mask from:', url);
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -31,7 +30,6 @@ export async function loadMaskPolygons(
   const view = new Uint8Array(arrayBuffer);
   const isPNG = view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4E && view[3] === 0x47;
 
-  console.log('[MaskLoader] File format detected:', isPNG ? 'PNG' : 'PGM');
 
   let annotations: Annotation[];
 
@@ -43,7 +41,6 @@ export async function loadMaskPolygons(
     annotations = await loadPgmFile(arrayBuffer);
   }
 
-  console.log('[MaskLoader] Extracted annotations:', annotations.length);
 
   // Apply layer and styling options
   const styledAnnotations = annotations.map((ann: Annotation) => ({
@@ -62,11 +59,8 @@ export async function loadMaskPolygons(
 
   // Log first styled annotation for debugging
   if (styledAnnotations.length > 0) {
-    console.log('[MaskLoader] 🎨 Sample styled annotation:', JSON.stringify(styledAnnotations[0], null, 2));
     const firstShape = styledAnnotations[0].shape;
     if (firstShape.type === 'polygon') {
-      console.log('[MaskLoader] 📍 Points sample:', firstShape.points.slice(0, 3));
-      console.log('[MaskLoader] 📐 Bounds:', firstShape.bounds);
     }
   }
 
@@ -78,7 +72,6 @@ export async function loadMaskPolygons(
  * Since canvas normalizes 16-bit to 8-bit, we use UPNG.js to decode properly
  */
 async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
-  console.log('[MaskLoader] Decoding 16-bit PNG...');
 
   try {
     // Decode 16-bit PNG using UPNG.js
@@ -102,10 +95,8 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
       }
     }
 
-    console.log(`[MaskLoader] Found ${instanceIds.size} instances in ${img.width}x${img.height} PNG`);
 
     // Initialize OpenCV if needed
-    console.log('[MaskLoader] Initializing OpenCV...');
     try {
       await initOpenCV();
     } catch (error) {
@@ -124,7 +115,6 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
     const annotations: Annotation[] = [];
     const { calculateBounds } = await import('../core/types');
 
-    console.log(`[MaskLoader] Starting to process ${instanceIds.size} instances...`);
 
     // Process each instance separately
     let processedCount = 0;
@@ -150,7 +140,6 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
       }
 
       processedCount++;
-      console.log(`[MaskLoader] Processing instance ${instanceId}: ${pixelCount} pixels`);
 
       // Create OpenCV Mat directly from binary data (avoid ImageData retina scaling)
       const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
@@ -165,7 +154,6 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
       const hierarchy = new cv.Mat();
       cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-      console.log(`[MaskLoader] Instance ${instanceId}: found ${contours.size()} contours`);
 
       // Process ALL contours (keep fragmented regions)
       for (let i = 0; i < contours.size(); i++) {
@@ -228,8 +216,6 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
       hierarchy.delete();
     }
 
-    console.log(`[MaskLoader] Processed ${processedCount} instances, skipped ${skippedCount} (too small)`);
-    console.log(`[MaskLoader] Extracted ${annotations.length} polygons from ${instanceIds.size} instances`);
     return annotations;
   } catch (error) {
     console.error('[MaskLoader] Error decoding 16-bit PNG:', error);
@@ -242,7 +228,6 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
  * Assumes 16-bit grayscale PNG with instance IDs as pixel values
  */
 async function loadPngMask(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
-  console.log('[MaskLoader] Loading 16-bit grayscale PNG mask...');
   return loadPngMask16bit(arrayBuffer);
 }
 
@@ -260,7 +245,6 @@ export async function exportMasksToPng(
   width: number,
   height: number
 ): Promise<ArrayBuffer> {
-  console.log(`[MaskExporter] Exporting ${annotations.length} masks to ${width}x${height} PNG`);
 
   // Create 16-bit grayscale array
   const data16 = new Uint16Array(width * height);
@@ -281,7 +265,6 @@ export async function exportMasksToPng(
     }
   }
 
-  console.log(`[MaskExporter] Rasterized ${instanceId - 1} instances`);
 
   // UPNG.js npm package doesn't support 16-bit grayscale encoding properly
   // We need to manually create the PNG format using pako for compression
@@ -369,7 +352,6 @@ function createPng16bitGrayscale(data16: Uint16Array, width: number, height: num
   const iendChunk = createChunk('IEND', new Uint8Array(0));
   png.set(iendChunk, offset);
 
-  console.log(`[PNG] Created 16-bit grayscale PNG: ${png.byteLength} bytes`);
   return png.buffer;
 }
 

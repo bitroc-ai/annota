@@ -35,49 +35,35 @@ export async function loadH5Coordinates(
 ): Promise<Annotation[]> {
   const { color = '#00FF00', fillOpacity = 0.8, strokeWidth = 2, properties = {} } = options;
 
-  console.log('[loadH5Coordinates] 🎯 CALLED:', { h5Path, color, fillOpacity, strokeWidth });
-
   try {
     // Dynamically import jsfive (only when needed)
-    console.log('[loadH5Coordinates] 📦 Importing jsfive...');
     // @ts-ignore - jsfive doesn't have type definitions
     const { File } = await import('jsfive');
-    console.log('[loadH5Coordinates] ✅ jsfive imported');
 
     // Fetch the H5 file
-    console.log('[loadH5Coordinates] 🌐 Fetching:', h5Path);
     const response = await fetch(h5Path);
-    console.log('[loadH5Coordinates] 📡 Fetch status:', response.status, response.statusText);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch H5 file: ${h5Path} (${response.status})`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    console.log('[loadH5Coordinates] 📦 Buffer size:', arrayBuffer.byteLength, 'bytes');
-
     const f = new File(arrayBuffer);
-    console.log('[loadH5Coordinates] ✅ HDF5 file opened');
 
     // Get the coordinates dataset
     const coords = f.get('coordinates');
     if (!coords) {
-      console.error('[loadH5Coordinates] ❌ No coordinates dataset!');
-      console.log('[loadH5Coordinates] Available keys:', Object.keys(f));
       throw new Error('No "coordinates" dataset found in H5 file');
     }
 
     const coordsData = coords.value;
     const shape = coords.shape; // [N, 2] format
-    console.log('[loadH5Coordinates] 📊 Shape:', shape, 'Data length:', coordsData?.length);
 
     if (shape.length !== 2 || shape[1] !== 2) {
       throw new Error(`Invalid coordinate format: expected [N, 2], got [${shape.join(', ')}]`);
     }
 
     const numPoints = shape[0];
-    console.log('[loadH5Coordinates] 🎯 Creating', numPoints, 'point annotations');
-
     const annotations: Annotation[] = [];
 
     // jsfive returns data in row-major order: [x0, y0, x1, y1, ...]
@@ -108,17 +94,9 @@ export async function loadH5Coordinates(
       });
     }
 
-    console.log('[loadH5Coordinates] ✅ Created', annotations.length, 'annotations');
-    if (annotations.length > 0) {
-      console.log(
-        '[loadH5Coordinates] 🎨 First annotation:',
-        JSON.stringify(annotations[0], null, 2)
-      );
-    }
-
     return annotations;
   } catch (error) {
-    console.error('[loadH5Coordinates] ❌ ERROR:', error);
+    console.error('[loadH5Coordinates] Error loading H5 file:', error);
     throw error;
   }
 }

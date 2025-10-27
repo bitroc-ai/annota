@@ -64,12 +64,10 @@ export async function initOpenCV(): Promise<boolean> {
 
   // Return existing promise if already loading
   if (isLoading && loadPromise) {
-    console.log('[OpenCV] Already loading, returning existing promise');
     return loadPromise;
   }
 
   // Load OpenCV.js script from CDN
-  console.log('[OpenCV] Loading from CDN (this may take 10-30 seconds)...');
   isLoading = true;
   loadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
@@ -78,13 +76,11 @@ export async function initOpenCV(): Promise<boolean> {
     script.src = 'https://docs.opencv.org/4.x/opencv.js';
 
     script.onload = () => {
-      console.log('[OpenCV] Script loaded, waiting for WebAssembly initialization...');
 
       // Check if cv is already available (sometimes it initializes immediately)
       if (window.cv && window.cv.Mat) {
         isLoading = false;
         loadPromise = null;
-        console.log('[OpenCV] ✓ Initialized successfully');
         resolve(true);
         return;
       }
@@ -100,14 +96,12 @@ export async function initOpenCV(): Promise<boolean> {
           clearInterval(checkReady);
           isLoading = false;
           loadPromise = null;
-          console.log('[OpenCV] ✓ Initialized successfully');
           resolve(true);
           return;
         }
 
         // Progress feedback every 10 seconds
         if (checks % 100 === 0) {
-          console.log(`[OpenCV] Still initializing... (${checks / 10}s)`);
         }
 
         if (checks >= maxChecks) {

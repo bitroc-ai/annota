@@ -42,7 +42,6 @@ export class ContourTool extends BaseTool {
       this.initializingOpenCV = true;
       initOpenCV()
         .then(() => {
-          console.log('[ContourTool] OpenCV initialized and ready');
           this.initializingOpenCV = false;
         })
         .catch(error => {
@@ -141,10 +140,6 @@ export class ContourTool extends BaseTool {
       if (result) {
         const { polygon, confidence, area, metadata } = result;
 
-        console.log(
-          `[ContourTool] Detected contour with ${polygon.length} points, area: ${area}, confidence: ${confidence.toFixed(2)}`
-        );
-
         // Convert region-relative polygon points to image coordinates
         const imagePolygon = polygon.map(point => {
           // Convert from region-relative to canvas pixel coordinates
@@ -187,7 +182,6 @@ export class ContourTool extends BaseTool {
         };
 
         this.annotator.state.store.add(annotation);
-        console.log('[ContourTool] Contour annotation added');
 
         // Select the newly created annotation
         this.selectAnnotation(annotation.id);

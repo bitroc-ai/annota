@@ -179,13 +179,11 @@ export class PixiStage {
 
     // Check layer visibility - hide graphics if layer is not visible
     if (this.layerManager && !isAnnotationVisible(annotation, this.layerManager)) {
-      console.log('[PixiStage] Hiding annotation', id, 'layer:', annotation.properties?.layer);
       graphics.visible = false;
       return;
     }
 
     // Make sure graphics is visible
-    console.log('[PixiStage] Showing annotation', id, 'layer:', annotation.properties?.layer);
     graphics.visible = true;
 
     // Compute style
@@ -450,7 +448,6 @@ export class PixiStage {
     // Performance logging (can be disabled in production)
     // Disabled to avoid requiring @types/node in browser environment
     // if (process.env.NODE_ENV === 'development' && visible + culled > 50) {
-    //   console.log(
     //     `[PixiStage] Culling: ${visible} visible, ${culled} culled, ${rerendered} re-rendered`
     //   );
     // }
@@ -468,7 +465,6 @@ export class PixiStage {
    * Handle layer visibility/opacity changes
    */
   private handleLayerChange(): void {
-    console.log('[PixiStage] Layer change detected, re-rendering', this.annotationMap.size, 'annotations');
     // Re-render all annotations to update visibility and opacity
     this.annotationMap.forEach((_entry, id) => {
       this.renderAnnotation(id);

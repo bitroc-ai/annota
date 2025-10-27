@@ -33,7 +33,6 @@ export function Annotator({ viewer, children, ...options }: AnnotatorProps) {
     let cancelled = false;
     let annotatorInstance: OpenSeadragonAnnotator | undefined;
 
-    console.log('Creating annotator with canvas ready');
     createOpenSeadragonAnnotator(viewer, options).then(annotator => {
       if (cancelled) {
         annotator.destroy();
@@ -45,7 +44,6 @@ export function Annotator({ viewer, children, ...options }: AnnotatorProps) {
 
     return () => {
       cancelled = true;
-      console.log('Destroying annotator');
       if (annotatorInstance) {
         annotatorInstance.destroy();
       }

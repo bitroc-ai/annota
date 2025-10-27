@@ -227,12 +227,6 @@ function DemoContent({ currentImage }: { currentImage: string }) {
             ...masksWithPolarity,
           ];
 
-          console.log('[Playground] Adding annotations:', {
-            total: allAnnotations.length,
-            masks: totalMasks,
-            firstMask: masksWithPolarity.length > 0 ? masksWithPolarity[0] : null,
-          });
-
           annotator.addAnnotations(allAnnotations);
 
           const messages = [];
