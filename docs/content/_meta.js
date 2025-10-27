@@ -18,5 +18,6 @@ export default {
   changelog: {
     title: 'Changelog',
     type: 'page',
+    href: '/docs/changelog',
   },
 }

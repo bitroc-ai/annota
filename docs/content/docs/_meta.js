@@ -6,4 +6,5 @@ export default {
   architecture: 'Architecture',
   guides: 'Guides',
   'use-cases': 'Use Cases',
+  changelog: 'Changelog',
 }
