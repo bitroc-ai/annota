@@ -1,5 +1,5 @@
-import { Callout, Steps, Tabs, Cards } from "nextra/components";
-import { Layers, Cpu, GitBranch, Zap, Code2, Package } from "lucide-react";
+import { Callout, Steps, Cards } from "nextra/components";
+import { Layers, GitBranch, Zap, Code2 } from "lucide-react";
 
 # Architecture
 
@@ -191,22 +191,22 @@ const style = (annotation: Annotation) => ({
 - Canvas lifecycle management
 - Viewport synchronization
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant OSD as OpenSeadragon
-    participant Adapter
-    participant Store
-    participant Renderer
+**Event Flow Example:**
 
-    User->>OSD: Click (screen coords)
-    OSD->>Adapter: pointer event
-    Adapter->>Adapter: Transform to image coords
-    Adapter->>Store: Spatial query at point
-    Store-->>Adapter: Annotations found
-    Adapter->>Store: Update selection
-    Store->>Renderer: Change notification
-    Renderer->>OSD: Redraw canvas
+```mermaid
+graph LR
+    A[User Click] --> B[Viewer]
+    B --> C[Adapter]
+    C --> D[Transform coords]
+    D --> E[Store query]
+    E --> F[Update selection]
+    F --> G[Renderer]
+    G --> H[Redraw]
+
+    style A fill:#e3f2fd
+    style C fill:#fce4ec
+    style E fill:#f3e5f5
+    style G fill:#e8f5e9
 ```
 
 **Code Location:** `src/adapters/openseadragon/`
@@ -245,47 +245,40 @@ sequenceDiagram
 ### Annotation Creation Flow
 
 ```mermaid
-sequenceDiagram
-    participant Tool as Drawing Tool
-    participant Adapter
-    participant Store
-    participant Renderer
-    participant UI as React UI
+graph LR
+    A[Drawing Tool] --> B[create]
+    B --> C[Adapter]
+    C --> D[Store.add]
+    D --> E[Update R-tree]
+    E --> F[Notify observers]
+    F --> G[Renderer]
+    F --> H[React UI]
+    G --> I[Add to scene]
+    H --> J[Re-render]
 
-    Tool->>Tool: User completes drawing
-    Tool->>Adapter: createAnnotation(shape)
-    Adapter->>Store: store.add(annotation)
-    Store->>Store: Update R-tree index
-    Store->>Store: Notify observers
-    Store-->>Renderer: 'created' event
-    Store-->>UI: 'created' event (via hooks)
-    Renderer->>Renderer: Add to scene
-    Renderer->>Renderer: Render frame
-    UI->>UI: Re-render (React)
+    style A fill:#e3f2fd
+    style D fill:#f3e5f5
+    style G fill:#e8f5e9
+    style H fill:#fff3e0
 ```
 
 ### Selection & Editing Flow
 
 ```mermaid
-sequenceDiagram
-    participant User
-    participant OSD as Viewer
-    participant Store
-    participant Editor as SVG Editor
-    participant Renderer
+graph LR
+    A[User Click] --> B[Viewer]
+    B --> C[Store.getAt]
+    C --> D[Store.setSelection]
+    D --> E[Notify]
+    E --> F[Editor]
+    E --> G[Renderer]
+    F --> H[Show handles]
+    G --> I[Highlight]
 
-    User->>OSD: Click annotation
-    OSD->>Store: getAt(imagePoint)
-    Store-->>OSD: annotation
-    OSD->>Store: setSelection([id])
-    Store->>Store: Notify 'selection-changed'
-    Store-->>Editor: Show handles
-    Store-->>Renderer: Highlight selection
-
-    User->>Editor: Drag vertex
-    Editor->>Store: updateAnnotation(id, newShape)
-    Store->>Store: Notify 'updated'
-    Store-->>Renderer: Re-render
+    style A fill:#e3f2fd
+    style C fill:#f3e5f5
+    style F fill:#fff3e0
+    style G fill:#e8f5e9
 ```
 
 ## Performance Architecture
