@@ -1,0 +1,122 @@
+---
+title: Changelog
+description: Release history and version notes for Annota
+---
+
+# Changelog
+
+All notable changes to Annota are documented here.
+
+## v0.4.0
+
+Released on October 27, 2025
+
+### New Features
+
+- **Auto-assign Masks to Layers** (✨): Added Sparkles button to toolbar that automatically classifies masks as positive/negative based on contained point annotations
+- **16-bit PNG Mask Export**: Added Download button to mask layers for exporting proper 16-bit grayscale PNG masks
+- **UI Improvements**: Removed OpenSeadragon focus outline (black border) globally for cleaner interface
+- **Simplified Playground**: Removed layer creation/deletion features from playground to reduce complexity
+
+### Technical Improvements
+
+- Implemented manual PNG encoder with proper 16-bit grayscale support using pako compression
+- Exported `containsPoint` and `calculateBounds` utilities from core for external use
+- Added spatial point-in-polygon checking for intelligent mask classification
+- Download button now always visible on mask layers (not just on hover)
+
+###Dependencies
+
+- Added `pako` (2.1.0) for PNG compression
+- Added `@types/pako` (2.0.4) for TypeScript support
+
+### Breaking Changes
+
+- Removed `examples/demo` directory (functionality migrated to `docs/playground`)
+
+### Installation
+
+```bash
+npm install annota@0.4.0
+# or
+pnpm add annota@0.4.0
+```
+
+---
+
+## v0.3.2
+
+Released on October 26, 2025
+
+### Changes
+
+- Smart click behavior for vertex editing
+- Polygon vertex editing mode with conditional vertex display
+- Refactored hooks into individual files for better maintainability
+
+### Installation
+
+```bash
+npm install annota@0.3.2
+# or
+pnpm add annota@0.3.2
+```
+
+---
+
+## v0.3.1
+
+Released on October 26, 2025
+
+### Changes
+
+- Context menu improvements and style function precedence fixes
+- New `useContextMenuBinding` hook
+
+### Installation
+
+```bash
+npm install annota@0.3.1
+# or
+pnpm add annota@0.3.1
+```
+
+---
+
+## v0.3.0
+
+Released on October 26, 2025
+
+### Changes
+
+- Context menu system
+- Mask polarity support
+
+### Installation
+
+```bash
+npm install annota@0.3.0
+# or
+pnpm add annota@0.3.0
+```
+
+---
+
+## v0.2.1
+
+Released on October 26, 2025
+
+### Changes
+
+- Complete annotation framework with undo/redo system
+- High-performance rendering with 10,000+ annotations
+- Polygon vertex editing capabilities
+- Multi-layer organization and management
+
+### Installation
+
+```bash
+npm install annota@0.2.1
+# or
+pnpm add annota@0.2.1
+```

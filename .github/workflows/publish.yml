@@ -95,33 +95,45 @@ jobs:
             CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           fi
 
-          # Create changelog file
-          CHANGELOG_FILE="docs/content/changelog/v${{ steps.version.outputs.VERSION }}.mdx"
-          mkdir -p docs/content/changelog
+          # Prepend new version to consolidated changelog
+          CHANGELOG_FILE="docs/content/docs/changelog.mdx"
+          TEMP_FILE=$(mktemp)
 
-          cat > "$CHANGELOG_FILE" << EOF
-          ---
-          title: v${{ steps.version.outputs.VERSION }}
-          description: Release notes for Annota v${{ steps.version.outputs.VERSION }}
-          date: $(date -u +"%Y-%m-%d")
-          ---
+          # Read existing changelog after frontmatter
+          sed -n '1,/^---$/p' "$CHANGELOG_FILE" > "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          echo "# Changelog" >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
+          echo "All notable changes to Annota are documented here." >> "$TEMP_FILE"
+          echo "" >> "$TEMP_FILE"
 
-          # v${{ steps.version.outputs.VERSION }}
+          # Add new version entry
+          cat >> "$TEMP_FILE" << EOF
+          ## v${{ steps.version.outputs.VERSION }}
 
-          Released on $(date -u +"%Y-%m-%d")
+          Released on $(date -u +"%B %d, %Y")
 
-          ## Changes
+          ### Changes
 
           ${CHANGELOG}
 
-          ## Installation
+          ### Installation
 
           \`\`\`bash
           npm install annota@${{ steps.version.outputs.VERSION }}
           # or
           pnpm add annota@${{ steps.version.outputs.VERSION }}
           \`\`\`
+
+          ---
+
           EOF
+
+          # Append rest of existing changelog (skip frontmatter and header)
+          sed -n '/^## v/,$p' "$CHANGELOG_FILE" >> "$TEMP_FILE"
+
+          # Replace original file
+          mv "$TEMP_FILE" "$CHANGELOG_FILE"
 
           # Save changelog content for GitHub release
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
@@ -132,7 +144,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/content/changelog/
+          git add docs/content/docs/changelog.mdx
           git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
           git push origin HEAD:main || echo "No changes to push"
 
@@ -161,6 +173,6 @@ jobs:
             pnpm add annota@${{ steps.version.outputs.VERSION }}
             ```
 
-            See the [full changelog](https://github.com/bitroc-ai/annota/blob/main/docs/content/changelog/v${{ steps.version.outputs.VERSION }}.mdx) for more details.
+            See the [full changelog](https://annota.bitroc.ai/docs/changelog) for more details.
           draft: false
           prerelease: false
