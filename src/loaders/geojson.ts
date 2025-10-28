@@ -34,7 +34,7 @@ interface GeoJSONFeatureCollection {
 }
 
 /**
- * Export annotations to GeoJSON format
+ * Export annotations to JSON format (GeoJSON specification)
  *
  * Converts Annota annotations to GeoJSON FeatureCollection compatible with
  * geospatial tools and libraries like Leaflet, OpenLayers, etc.
@@ -45,10 +45,10 @@ interface GeoJSONFeatureCollection {
  * @example
  * ```ts
  * const annotations = annotator.state.store.all();
- * const geojson = exportToGeoJSON(annotations);
+ * const json = exportJson(annotations);
  *
  * // Download as file
- * const blob = new Blob([JSON.stringify(geojson, null, 2)], {
+ * const blob = new Blob([JSON.stringify(json, null, 2)], {
  *   type: 'application/geo+json'
  * });
  * const url = URL.createObjectURL(blob);
@@ -58,7 +58,7 @@ interface GeoJSONFeatureCollection {
  * a.click();
  * ```
  */
-export function exportToGeoJSON(annotations: Annotation[]): GeoJSONFeatureCollection {
+export function exportJson(annotations: Annotation[]): GeoJSONFeatureCollection {
   const features: GeoJSONFeature[] = [];
 
   for (const annotation of annotations) {
@@ -191,7 +191,7 @@ function annotationToGeoJSONFeature(annotation: Annotation): GeoJSONFeature | nu
 }
 
 /**
- * Download GeoJSON as a file
+ * Download annotations as JSON file (GeoJSON format)
  *
  * @param geojson - GeoJSON FeatureCollection to download
  * @param filename - Filename for the download (default: 'annotations.geojson')
@@ -199,11 +199,11 @@ function annotationToGeoJSONFeature(annotation: Annotation): GeoJSONFeature | nu
  * @example
  * ```ts
  * const annotations = annotator.state.store.all();
- * const geojson = exportToGeoJSON(annotations);
- * downloadGeoJSON(geojson, 'my-annotations.geojson');
+ * const json = exportJson(annotations);
+ * downloadJson(json, 'my-annotations.geojson');
  * ```
  */
-export function downloadGeoJSON(
+export function downloadJson(
   geojson: GeoJSONFeatureCollection,
   filename: string = 'annotations.geojson'
 ): void {

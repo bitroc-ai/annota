@@ -167,6 +167,8 @@ export function PolygonEditor({
   const handleRadius = 5 / scale;
   const edgeHandleRadius = 3.5 / scale;
   const strokeWidth = 2 / scale;
+  const vertexHitPadding = 3 / scale; // Scale-aware hit padding for vertex handles
+  const edgeHitPadding = 3 / scale; // Scale-aware hit padding for edge handles
   const minVertices = 3;
   const canDeleteVertex = points.length > minVertices;
 
@@ -222,7 +224,7 @@ export function PolygonEditor({
               <circle
                 cx={midpoint.x}
                 cy={midpoint.y}
-                r={edgeHandleRadius + 3}
+                r={edgeHandleRadius + edgeHitPadding}
                 fill="transparent"
                 className="annota-handle-hit"
                 style={{ cursor: 'copy' }}
@@ -252,7 +254,7 @@ export function PolygonEditor({
                 <circle
                   cx={point.x}
                   cy={point.y}
-                  r={handleRadius + 3}
+                  r={handleRadius + vertexHitPadding}
                   fill="transparent"
                   className="annota-handle-hit"
                   style={{ cursor: 'grab' }}

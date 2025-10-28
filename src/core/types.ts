@@ -364,3 +364,119 @@ function distanceToSegment(
 export function boundsIntersect(a: Bounds, b: Bounds): boolean {
   return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
 }
+
+/**
+ * Translate a shape by a delta (dx, dy)
+ * Returns a new shape with all coordinates translated
+ */
+export function translateShape(shape: Shape, dx: number, dy: number): Shape {
+  switch (shape.type) {
+    case 'point':
+      return {
+        type: 'point',
+        point: { x: shape.point.x + dx, y: shape.point.y + dy },
+        bounds: {
+          minX: shape.point.x + dx,
+          minY: shape.point.y + dy,
+          maxX: shape.point.x + dx,
+          maxY: shape.point.y + dy,
+        },
+      };
+
+    case 'circle':
+      return {
+        type: 'circle',
+        center: { x: shape.center.x + dx, y: shape.center.y + dy },
+        radius: shape.radius,
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'ellipse':
+      return {
+        type: 'ellipse',
+        center: { x: shape.center.x + dx, y: shape.center.y + dy },
+        radiusX: shape.radiusX,
+        radiusY: shape.radiusY,
+        rotation: shape.rotation,
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'rectangle':
+      return {
+        type: 'rectangle',
+        x: shape.x + dx,
+        y: shape.y + dy,
+        width: shape.width,
+        height: shape.height,
+        bounds: {
+          minX: shape.x + dx,
+          minY: shape.y + dy,
+          maxX: shape.x + shape.width + dx,
+          maxY: shape.y + shape.height + dy,
+        },
+      };
+
+    case 'line':
+      return {
+        type: 'line',
+        start: { x: shape.start.x + dx, y: shape.start.y + dy },
+        end: { x: shape.end.x + dx, y: shape.end.y + dy },
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'polygon':
+      return {
+        type: 'polygon',
+        points: shape.points.map(p => ({ x: p.x + dx, y: p.y + dy })),
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'freehand':
+      return {
+        type: 'freehand',
+        points: shape.points.map(p => ({ x: p.x + dx, y: p.y + dy })),
+        closed: shape.closed,
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'multipolygon':
+      return {
+        type: 'multipolygon',
+        polygons: shape.polygons.map(poly => poly.map(p => ({ x: p.x + dx, y: p.y + dy }))),
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    default:
+      return shape;
+  }
+}

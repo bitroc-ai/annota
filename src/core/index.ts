@@ -46,3 +46,12 @@ export {
   UpdateCommand,
   createHistoryManager,
 } from './history';
+
+// Selection
+export type {
+  SelectionManager,
+  SelectionChangeEvent,
+  SelectionObserver,
+} from './selection';
+
+export { createSelectionManager } from './selection';

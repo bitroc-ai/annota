@@ -17,7 +17,7 @@ import {
   Merge,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory, containsPoint, downloadGeoJSON, exportToGeoJSON, canMergeAnnotations } from "annota";
+import { useAnnotator, useViewer, useHistory, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -139,16 +139,16 @@ export function DemoToolbar({
     }
   };
 
-  const handleExportGeoJSON = () => {
+  const handleExportJson = () => {
     if (!annotator) return;
     const annotations = annotator.state.store.all();
     if (annotations.length === 0) {
       toast.info("No annotations to export");
       return;
     }
-    const geojson = exportToGeoJSON(annotations);
-    downloadGeoJSON(geojson, "annotations.geojson");
-    toast.success(`Exported ${annotations.length} annotations to GeoJSON`);
+    const json = exportJson(annotations);
+    downloadJson(json, "annotations.geojson");
+    toast.success(`Exported ${annotations.length} annotations to JSON`);
   };
 
   const handleMerge = () => {
@@ -339,7 +339,7 @@ export function DemoToolbar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleExportGeoJSON}
+          onClick={handleExportJson}
           className="w-9 h-9 hover:bg-green-50 dark:hover:bg-green-950/20"
           title="Export annotations as GeoJSON"
         >

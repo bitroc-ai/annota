@@ -46,6 +46,7 @@ export function PointEditor({ annotation, scale, onGrab }: PointEditorProps) {
 
   const { point } = annotation.shape;
   const handleRadius = 5 / scale; // Scale-aware handle size
+  const hitAreaPadding = 8 / scale; // Scale-aware hit area padding
 
   return (
     <g className="annota-point-editor">
@@ -53,7 +54,7 @@ export function PointEditor({ annotation, scale, onGrab }: PointEditorProps) {
       <circle
         cx={point.x}
         cy={point.y}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         style={{ cursor: 'grab', pointerEvents: 'all' }}
         onPointerDown={onGrab('POINT')}

@@ -16,6 +16,8 @@ export {
   createNegativeMaskFilter,
   createMaskPolarityFilter,
 } from './core/layer';
+export type { SelectionManager, SelectionChangeEvent } from './core/selection';
+export { createSelectionManager } from './core/selection';
 
 // ============================================
 // React Components & Hooks
@@ -101,7 +103,7 @@ export type { PgmLoaderOptions } from './loaders/pgm';
 
 export { loadMaskPolygons, exportMasksToPng } from './loaders/masks';
 
-export { exportToGeoJSON, downloadGeoJSON } from './loaders/geojson';
+export { exportJson, downloadJson } from './loaders/geojson';
 
 // Geometry operations
 export {

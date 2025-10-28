@@ -124,7 +124,7 @@ export function usePopup(options: { autoShow?: boolean } = {}): UsePopupResult {
     setVisibleAnnotationId(null);
     // Also clear selection when hiding popup
     if (annotator) {
-      annotator.state.selection.selected = [];
+      annotator.state.selection.clear();
     }
   }, [annotator]);
 

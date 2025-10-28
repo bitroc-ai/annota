@@ -114,6 +114,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
   const { x, y, width, height } = annotation.shape;
   const handleRadius = 5 / scale;
   const strokeWidth = 2 / scale;
+  const hitAreaPadding = 8 / scale; // Scale-aware hit area padding
 
   return (
     <g className="annota-rectangle-editor">
@@ -144,7 +145,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x}
         cy={y}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'nwse-resize' }}
@@ -163,7 +164,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x + width}
         cy={y}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'nesw-resize' }}
@@ -182,7 +183,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x}
         cy={y + height}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'nesw-resize' }}
@@ -201,7 +202,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x + width}
         cy={y + height}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         style={{ cursor: 'nwse-resize' }}
         onPointerDown={onGrab('BOTTOM_RIGHT')}
@@ -220,7 +221,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x + width / 2}
         cy={y}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'ns-resize' }}
@@ -239,7 +240,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x + width / 2}
         cy={y + height}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'ns-resize' }}
@@ -258,7 +259,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x}
         cy={y + height / 2}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'ew-resize' }}
@@ -277,7 +278,7 @@ export function RectangleEditor({ annotation, scale, onGrab }: RectangleEditorPr
       <circle
         cx={x + width}
         cy={y + height / 2}
-        r={handleRadius + 8}
+        r={handleRadius + hitAreaPadding}
         fill="transparent"
         className="annota-handle-hit"
         style={{ cursor: 'ew-resize' }}

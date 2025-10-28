@@ -93,12 +93,18 @@ export abstract class BaseTool implements ToolHandler {
    * Only returns annotations that are editable (not on locked layers)
    */
   protected checkAnnotationHit(clickPoint: { x: number; y: number }): Annotation | null {
-    if (!this.annotator || !this.options.checkAnnotationHits) {
+    if (!this.annotator || !this.options.checkAnnotationHits || !this.viewer) {
       return null;
     }
 
     const annotations = this.annotator.state.store.all();
     const layerManager = this.annotator.state.layerManager;
+
+    // Calculate scale-invariant hit radius (5 pixels on screen)
+    // Fallback to fixed radius if viewport zoom is not available (e.g., in tests)
+    const hitRadiusPixels = 5; // pixels on screen
+    const zoom = this.viewer.viewport?.getZoom?.() || 1;
+    const hitRadius = hitRadiusPixels / zoom;
 
     return (
       annotations.find((ann: Annotation) => {
@@ -109,11 +115,10 @@ export abstract class BaseTool implements ToolHandler {
 
         // For point annotations, use a radius-based hit detection
         if (ann.shape.type === 'point') {
-          const HIT_RADIUS = 10; // pixels in image coordinates
           const dx = clickPoint.x - ann.shape.point.x;
           const dy = clickPoint.y - ann.shape.point.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          return distance <= HIT_RADIUS;
+          return distance <= hitRadius;
         }
 
         // For other shapes, use bounds-based detection

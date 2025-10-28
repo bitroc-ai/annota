@@ -3,12 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { exportToGeoJSON } from './geojson';
+import { exportJson } from './geojson';
 import type { Annotation } from '../core/types';
 
-describe('exportToGeoJSON', () => {
+describe('exportJson', () => {
   it('should export empty array as empty FeatureCollection', () => {
-    const result = exportToGeoJSON([]);
+    const result = exportJson([]);
 
     expect(result).toEqual({
       type: 'FeatureCollection',
@@ -29,7 +29,7 @@ describe('exportToGeoJSON', () => {
       },
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.type).toBe('FeatureCollection');
     expect(result.features).toHaveLength(1);
@@ -64,7 +64,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry).toEqual({
@@ -91,7 +91,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry).toEqual({
@@ -117,7 +117,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry).toEqual({
@@ -147,7 +147,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry.type).toBe('Polygon');
@@ -174,7 +174,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry.type).toBe('LineString');
@@ -207,7 +207,7 @@ describe('exportToGeoJSON', () => {
       properties: {},
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features).toHaveLength(1);
     expect(result.features[0].geometry.type).toBe('MultiPolygon');
@@ -241,7 +241,7 @@ describe('exportToGeoJSON', () => {
       maskPolarity: 'positive',
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features[0].properties.maskPolarity).toBe('positive');
   });
@@ -259,7 +259,7 @@ describe('exportToGeoJSON', () => {
       },
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features[0].properties.classification).toEqual({
       name: 'tumor',
@@ -280,7 +280,7 @@ describe('exportToGeoJSON', () => {
       },
     };
 
-    const result = exportToGeoJSON([annotation]);
+    const result = exportJson([annotation]);
 
     expect(result.features[0].properties.customField).toBe('customValue');
     expect(result.features[0].properties.anotherField).toBe(123);
@@ -314,7 +314,7 @@ describe('exportToGeoJSON', () => {
       },
     ];
 
-    const result = exportToGeoJSON(annotations);
+    const result = exportJson(annotations);
 
     expect(result.features).toHaveLength(3);
     expect(result.features[0].id).toBe('point-1');
@@ -336,7 +336,7 @@ describe('exportToGeoJSON', () => {
       },
     ];
 
-    const result = exportToGeoJSON(annotations);
+    const result = exportJson(annotations);
 
     // Should only include the point annotation, skip the unknown type
     expect(result.features).toHaveLength(1);

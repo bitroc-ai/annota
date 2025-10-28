@@ -49,7 +49,7 @@ export const initKeyboardCommands = (
 
     // Escape: Clear selection
     if (enableEscapeToClear && event.key === 'Escape') {
-      if (annotator.state.selection.selected.length > 0) {
+      if (annotator.state.selection.hasSelection()) {
         event.preventDefault();
         annotator.setSelected([]);
       }
@@ -76,19 +76,19 @@ export const initKeyboardCommands = (
 
     // Delete/Backspace: delete selected annotations
     if (enableDelete && (event.key === 'Delete' || event.key === 'Backspace')) {
-      const selectedIds = annotator.state.selection.selected;
+      const selectedIds = annotator.state.selection.getSelected();
 
       if (selectedIds.length > 0) {
         // Prevent backspace from navigating back in browser
         event.preventDefault();
 
         // Delete all selected annotations using history
-        selectedIds.forEach(id => {
+        selectedIds.forEach((id: string) => {
           annotator.deleteAnnotation(id);
         });
 
         // Clear selection
-        annotator.state.selection.selected = [];
+        annotator.state.selection.clear();
       }
     }
   };
