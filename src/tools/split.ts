@@ -13,10 +13,13 @@ import { SplitCommand } from '../core/history';
  * Tool for splitting annotations into multiple pieces
  *
  * Usage:
- * 1. Click on annotation to select it for splitting
- * 2. Click to draw split line vertices
- * 3. Double-click or Enter to execute split
- * 4. Escape to cancel
+ * 1. Click on an annotation to select it for splitting
+ * 2. Click again to start drawing the split line
+ * 3. Click to add more vertices to the split line
+ * 4. Double-click or press Enter to execute the split
+ * 5. Press Escape to cancel
+ *
+ * Note: The tool prevents canvas panning while active to allow line drawing
  */
 export class SplitTool extends BaseTool {
   private state: 'idle' | 'selected' | 'drawing' = 'idle';
@@ -32,6 +35,16 @@ export class SplitTool extends BaseTool {
   }
 
   /**
+   * Handle press event - prepare for potential click or drag
+   */
+  onCanvasPress = (evt: OpenSeadragon.CanvasPressEvent): void => {
+    if (!this.enabled) return;
+
+    // Always prevent default when tool is active to stop panning
+    (evt as any).preventDefaultAction = true;
+  };
+
+  /**
    * Handle click event - select annotation or add split line vertex
    */
   onCanvasClick = (evt: OpenSeadragon.ViewerEvent): void => {
@@ -42,20 +55,26 @@ export class SplitTool extends BaseTool {
     // Get click point in image coordinates
     const clickPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
 
-    if (this.state === 'idle' || this.state === 'selected') {
-      // Check if click hit an annotation
+    if (this.state === 'idle') {
+      // First: Select an annotation to split
       const hitAnnotation = this.checkAnnotationHit(clickPoint);
 
       if (hitAnnotation) {
-        // Select annotation for splitting
         this.targetAnnotation = hitAnnotation;
         this.splitLinePoints = [];
         this.state = 'selected';
         this.selectAnnotation(hitAnnotation.id);
+        console.log('[SplitTool] Annotation selected. Click to start drawing split line.');
       }
+    } else if (this.state === 'selected') {
+      // Second: Start drawing split line
+      this.state = 'drawing';
+      this.splitLinePoints = [clickPoint];
+      console.log('[SplitTool] Split line started. Click to add vertices, double-click or Enter to split.');
     } else if (this.state === 'drawing') {
       // Add point to split line
       this.splitLinePoints.push(clickPoint);
+      console.log(`[SplitTool] Added vertex ${this.splitLinePoints.length}`);
 
       // Check for double-click to complete (if very close to previous point)
       if (this.splitLinePoints.length >= 2) {
@@ -68,6 +87,7 @@ export class SplitTool extends BaseTool {
         if (dist < 5) {
           // Remove duplicate point
           this.splitLinePoints.pop();
+          console.log('[SplitTool] Double-click detected, executing split...');
           this.completeSplit();
           return;
         }
