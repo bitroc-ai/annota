@@ -285,14 +285,17 @@ export function renderMultiPolygon(
     // Transform points to local space
     const localPoints = polygon.flatMap(p => [p.x - origin.x, p.y - origin.y]);
 
-    // Draw fill
-    graphics.beginFill(style.fill.color, style.fill.alpha);
-    graphics.drawPolygon(localPoints);
-    graphics.endFill();
+    // Draw fill using PixiJS v8 API
+    graphics.poly(localPoints, true);
+    graphics.fill({ color: style.fill.color, alpha: style.fill.alpha });
 
-    // Draw stroke
-    graphics.lineStyle(style.stroke.width / scale, style.stroke.color, style.stroke.alpha);
-    graphics.drawPolygon(localPoints);
+    // Draw stroke using PixiJS v8 API
+    graphics.poly(localPoints, true);
+    graphics.stroke({
+      width: style.stroke.width / scale,
+      color: style.stroke.color,
+      alpha: style.stroke.alpha,
+    });
   }
 }
 

@@ -26,12 +26,18 @@ import {
   // SplitCommand, // Will be used for split tool
 } from '../../core/history';
 import {
+  createSelectionManager,
+  type SelectionManager,
+  type SelectionChangeEvent,
+} from '../../core/selection';
+import {
   mergeAnnotations,
   // splitAnnotation, // Will be used for split tool
   canMergeAnnotations,
   // canSplitAnnotation, // Will be used for split tool
 } from '../../core/operations';
 import type { Filter, StyleExpression } from '../../core/types';
+import { translateShape } from '../../core/types';
 import { createPixiStage } from '../../rendering/pixi/stage';
 import { pointerEventToImage } from './coordinates';
 
@@ -41,6 +47,7 @@ import { pointerEventToImage } from './coordinates';
 export interface OpenSeadragonAnnotatorOptions {
   store?: AnnotationStore;
   layerManager?: LayerManager;
+  selectionManager?: SelectionManager;
   historyManager?: HistoryManager;
   historyOptions?: HistoryManagerOptions;
   style?: StyleExpression;
@@ -54,9 +61,9 @@ export interface OpenSeadragonAnnotatorOptions {
 export interface OpenSeadragonAnnotatorState {
   store: AnnotationStore;
   layerManager: LayerManager;
+  selection: SelectionManager;
   history: HistoryManager;
   hover: { current: string | undefined };
-  selection: { selected: string[] };
   editing: { current: string | undefined; mode: 'vertices' | undefined };
 }
 
@@ -136,9 +143,9 @@ export async function createOpenSeadragonAnnotator(
 ): Promise<OpenSeadragonAnnotator> {
   const store = options.store || createAnnotationStore();
   const layerManager = options.layerManager || createLayerManager();
+  const selection = options.selectionManager || createSelectionManager();
   const history = options.historyManager || createHistoryManager(options.historyOptions);
   const hover: { current: string | undefined } = { current: undefined };
-  const selection: { selected: string[] } = { selected: [] };
   const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
 
   // Event emitter state
@@ -223,19 +230,22 @@ export async function createOpenSeadragonAnnotator(
       emitEvent('deleteAnnotation', annotation);
 
       // Clean up selection if deleted annotation was selected
-      if (selection.selected.includes(annotation.id)) {
-        const previousSelection = [...selection.selected];
-        selection.selected = selection.selected.filter(id => id !== annotation.id);
-        stage.setSelected(selection.selected);
-        if (JSON.stringify(previousSelection) !== JSON.stringify(selection.selected)) {
-          emitEvent('selectionChanged', { selected: selection.selected });
-        }
+      if (selection.isSelected(annotation.id)) {
+        selection.remove(annotation.id);
       }
     });
     stage.redraw();
   };
 
   store.observe(onStoreChange);
+
+  // Sync with selection changes
+  const onSelectionChange = (event: SelectionChangeEvent) => {
+    stage.setSelected(event.current);
+    emitEvent('selectionChanged', { selected: event.current });
+  };
+
+  selection.observe(onSelectionChange);
 
   // Sync with viewport changes
   // Use 'animation-start' for immediate sync at the START of pan/zoom
@@ -281,158 +291,142 @@ export async function createOpenSeadragonAnnotator(
 
   canvas.addEventListener('pointermove', onPointerMove);
 
-  // Click and drag-to-select detection
-  let lastPress: { x: number; y: number; imagePoint: { x: number; y: number } } | undefined;
-  let selectionBox: {
-    start: { x: number; y: number };
-    current: { x: number; y: number };
-    isActive: boolean;
+  // Transient interaction state (exists only during press-drag-release cycle)
+  let pressState: {
+    viewportPos: { x: number; y: number };
+    imagePos: { x: number; y: number };
+    annotationId?: string;
+    originalAnnotation?: import('../../core/types').Annotation;
   } | undefined;
 
   const onCanvasPress = (evt: OpenSeadragon.CanvasPressEvent) => {
-    const { x, y } = evt.position;
     const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
     if (!imagePoint) return;
 
-    lastPress = { x, y, imagePoint };
-
-    // Check if click is on empty space (no annotation hit)
     const hitTolerance = 5 / viewer.viewport.getZoom();
     const hit = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
 
-    // Only start selection box if clicking on empty space
-    if (!hit) {
-      selectionBox = {
-        start: { ...imagePoint },
-        current: { ...imagePoint },
-        isActive: false, // Will become active on drag
-      };
-    }
-  };
+    // Save press state for drag/release handling
+    pressState = {
+      viewportPos: { x: evt.position.x, y: evt.position.y },
+      imagePos: imagePoint,
+      annotationId: hit?.id,
+      originalAnnotation: hit ? { ...hit } : undefined
+    };
 
-  const onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent) => {
-    if (!selectionBox || !lastPress) return;
-
-    const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
-    if (!imagePoint) return;
-
-    // Calculate distance from press point
-    const dx = evt.position.x - lastPress.x;
-    const dy = evt.position.y - lastPress.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    // Activate selection box if dragged more than 10px
-    if (dist > 10) {
-      selectionBox.isActive = true;
-      selectionBox.current = { ...imagePoint };
-
-      // Find all annotations within selection rectangle
-      const minX = Math.min(selectionBox.start.x, selectionBox.current.x);
-      const minY = Math.min(selectionBox.start.y, selectionBox.current.y);
-      const maxX = Math.max(selectionBox.start.x, selectionBox.current.x);
-      const maxY = Math.max(selectionBox.start.y, selectionBox.current.y);
-
-      // Use spatial index to find intersecting annotations
-      const intersecting = store.getIntersecting(
-        { minX, minY, maxX, maxY },
-        options.filter
-      );
-
-      // Check modifier keys for additive selection
+    if (hit) {
+      // Pressed on annotation - handle selection
       const originalEvent = evt.originalEvent as MouseEvent;
       const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
 
       if (isMultiSelectKey) {
-        // Add to existing selection
-        const newIds = intersecting.map(ann => ann.id);
-        const combined = new Set([...selection.selected, ...newIds]);
-        selection.selected = Array.from(combined);
+        selection.toggle(hit.id);
       } else {
-        // Replace selection
-        selection.selected = intersecting.map(ann => ann.id);
+        const currentSelection = selection.getSelected();
+        const isAlreadySoleSelection = currentSelection.length === 1 && currentSelection[0] === hit.id;
+        if (!isAlreadySoleSelection) {
+          selection.select(hit.id);
+        }
       }
 
-      stage.setSelected(selection.selected);
+      // Prevent panning - we'll drag the annotation instead
+      (evt as any).preventDefaultAction = true;
+    }
+    // If pressed on empty space, pressState.annotationId will be undefined
+    // which signals drag-to-select mode
+  };
 
-      // Trigger repaint to show selection box (if we add visual feedback)
+  const onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent) => {
+    if (!pressState) return;
+
+    const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
+    if (!imagePoint) return;
+
+    // Drag-to-move: if we pressed on an annotation, move it
+    if (pressState.annotationId && pressState.originalAnnotation) {
+      (evt as any).preventDefaultAction = true;
+
+      // Calculate delta from ORIGINAL press position (not mutating pressState!)
+      const dx = imagePoint.x - pressState.imagePos.x;
+      const dy = imagePoint.y - pressState.imagePos.y;
+
+      // Translate from original annotation shape
+      const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
+
+      // Update annotation in store
+      store.update(pressState.annotationId, {
+        ...pressState.originalAnnotation,
+        shape: translatedShape
+      });
+
+      return;
+    }
+
+    // Drag-to-select: if we pressed on empty space (no annotationId)
+    const dx = evt.position.x - pressState.viewportPos.x;
+    const dy = evt.position.y - pressState.viewportPos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Only start selecting if dragged more than 10px
+    if (dist > 10) {
+      // Calculate selection rectangle from press start to current position
+      const minX = Math.min(pressState.imagePos.x, imagePoint.x);
+      const minY = Math.min(pressState.imagePos.y, imagePoint.y);
+      const maxX = Math.max(pressState.imagePos.x, imagePoint.x);
+      const maxY = Math.max(pressState.imagePos.y, imagePoint.y);
+
+      const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, options.filter);
+
+      const originalEvent = evt.originalEvent as MouseEvent;
+      const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
+
+      if (isMultiSelectKey) {
+        selection.add(intersecting.map(ann => ann.id));
+      } else {
+        selection.select(intersecting.map(ann => ann.id));
+      }
+
       viewer.forceRedraw();
     }
   };
 
   const onCanvasRelease = (evt: OpenSeadragon.CanvasReleaseEvent) => {
-    if (!lastPress) return;
+    if (!pressState) return;
 
-    const { x, y } = evt.position;
-    const dx = x - lastPress.x;
-    const dy = y - lastPress.y;
+    // Calculate movement distance
+    const dx = evt.position.x - pressState.viewportPos.x;
+    const dy = evt.position.y - pressState.viewportPos.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
+    const isClick = dist < 5;
 
-    // Check if this was a drag-to-select operation
-    if (selectionBox && selectionBox.isActive) {
-      // Emit selection changed event
-      emitEvent('selectionChanged', { selected: selection.selected });
-
-      // Clean up selection box
-      selectionBox = undefined;
-      lastPress = undefined;
+    const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
+    if (!imagePoint) {
+      pressState = undefined;
       return;
     }
 
-    // Only treat as click if pointer didn't move much (< 5px)
-    if (dist < 5) {
-      const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
-      if (!imagePoint) return;
+    const hitTolerance = 5 / viewer.viewport.getZoom();
+    const hitOnRelease = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
+    const originalEvent = evt.originalEvent as MouseEvent;
+    const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
 
-      const hitTolerance = 5 / viewer.viewport.getZoom();
-      const hit = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
-
-      // Check for modifier keys
-      const originalEvent = evt.originalEvent as MouseEvent;
-      const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
-
-      if (hit) {
-        const previousSelection = [...selection.selected];
-
-        if (isMultiSelectKey) {
-          // Ctrl/Cmd+Click: Toggle annotation in selection (add/remove)
-          if (selection.selected.includes(hit.id)) {
-            // Remove from selection
-            selection.selected = selection.selected.filter(id => id !== hit.id);
-          } else {
-            // Add to selection
-            selection.selected = [...selection.selected, hit.id];
-          }
-        } else {
-          // Regular click: Replace selection
-          if (selection.selected.includes(hit.id) && selection.selected.length === 1) {
-            // Already selected and only selection - keep it
-            selection.selected = [hit.id];
-          } else {
-            // Replace with this annotation
-            selection.selected = [hit.id];
-          }
-        }
-
-        stage.setSelected(selection.selected);
-        if (JSON.stringify(previousSelection) !== JSON.stringify(selection.selected)) {
-          emitEvent('selectionChanged', { selected: selection.selected });
-        }
-      } else {
-        // Click on empty area
-        if (!isMultiSelectKey) {
-          // Clear selection only if not holding Ctrl/Cmd
-          if (selection.selected.length > 0) {
-            selection.selected = [];
-            stage.setSelected([]);
-            emitEvent('selectionChanged', { selected: [] });
-          }
-        }
+    // Handle different release scenarios
+    if (pressState.annotationId && hitOnRelease && pressState.annotationId !== hitOnRelease.id) {
+      // Released on different annotation - select it
+      isMultiSelectKey ? selection.toggle(hitOnRelease.id) : selection.select(hitOnRelease.id);
+    } else if (pressState.annotationId && !isClick && pressState.originalAnnotation) {
+      // Dragged annotation - add to history for undo/redo
+      const currentAnnotation = store.get(pressState.annotationId);
+      if (currentAnnotation) {
+        history.execute(new UpdateCommand(store, pressState.originalAnnotation, currentAnnotation));
       }
+    } else if (!pressState.annotationId && isClick && !hitOnRelease && !isMultiSelectKey) {
+      // Clicked empty space - clear selection
+      selection.clear();
     }
 
-    // Clean up
-    selectionBox = undefined;
-    lastPress = undefined;
+    // Clean up state
+    pressState = undefined;
   };
 
   viewer.addHandler('canvas-press', onCanvasPress);
@@ -514,7 +508,7 @@ export async function createOpenSeadragonAnnotator(
 
     mergeSelected() {
       // Get selected annotations
-      const selectedIds = selection.selected;
+      const selectedIds = selection.getSelected();
       if (selectedIds.length < 2) {
         console.warn('[mergeSelected] Need at least 2 annotations to merge');
         return null;
@@ -546,9 +540,7 @@ export async function createOpenSeadragonAnnotator(
       history.execute(new MergeCommand(store, annotations, merged));
 
       // Select the merged annotation
-      selection.selected = [merged.id];
-      stage.setSelected([merged.id]);
-      emitEvent('selectionChanged', { selected: [merged.id] });
+      selection.select(merged.id);
 
       return merged;
     },
@@ -557,19 +549,13 @@ export async function createOpenSeadragonAnnotator(
       return store.all();
     },
 
-    // Selection management
+    // Selection management (delegate to selection manager)
     setSelected(id) {
-      const ids = Array.isArray(id) ? id : [id];
-      const previousSelection = [...selection.selected];
-      selection.selected = ids;
-      stage.setSelected(ids);
-      if (JSON.stringify(previousSelection) !== JSON.stringify(ids)) {
-        emitEvent('selectionChanged', { selected: ids });
-      }
+      selection.select(id);
     },
 
     getSelected() {
-      return selection.selected;
+      return selection.getSelected();
     },
 
     // Layer management (delegate to layer manager)

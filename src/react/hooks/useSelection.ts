@@ -10,24 +10,49 @@ export function useSelection(): Annotation[] {
   const annotator = useAnnotator();
   const store = useAnnotationStore();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [, forceUpdate] = useState(0);
 
   useEffect(() => {
     if (!annotator) return;
 
-    // Poll selection state (simple approach - could be improved with events)
-    const interval = setInterval(() => {
-      const currentIds = annotator.state.selection.selected;
-      // Use functional update to avoid including selectedIds in dependencies
-      setSelectedIds(prev => {
-        if (JSON.stringify(currentIds) !== JSON.stringify(prev)) {
-          return [...currentIds];
-        }
-        return prev;
-      });
-    }, 50);
+    // Subscribe to selection changes via observer
+    const handleSelectionChange = () => {
+      const currentIds = annotator.state.selection.getSelected();
+      setSelectedIds(currentIds);
+    };
 
-    return () => clearInterval(interval);
-  }, [annotator]); // Remove selectedIds from dependencies
+    // Set initial selection
+    handleSelectionChange();
+
+    // Observe selection changes
+    annotator.state.selection.observe(handleSelectionChange);
+
+    return () => {
+      annotator.state.selection.unobserve(handleSelectionChange);
+    };
+  }, [annotator]);
+
+  // Subscribe to store changes to re-render when selected annotations are updated
+  useEffect(() => {
+    if (!store || selectedIds.length === 0) return;
+
+    const handleStoreChange = (event: any) => {
+      // Check if any updated annotations are in the selection
+      const updatedIds = event.updated.map((u: any) => u.newValue.id);
+      const hasSelectedUpdate = updatedIds.some((id: string) => selectedIds.includes(id));
+
+      if (hasSelectedUpdate) {
+        // Force re-render to get updated annotations from store
+        forceUpdate(prev => prev + 1);
+      }
+    };
+
+    store.observe(handleStoreChange);
+
+    return () => {
+      store.unobserve(handleStoreChange);
+    };
+  }, [store, selectedIds]);
 
   if (!store) return [];
 
