@@ -12,9 +12,10 @@ import {
   Undo,
   Redo,
   Sparkles,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory, containsPoint } from "annota";
+import { useAnnotator, useViewer, useHistory, containsPoint, downloadGeoJSON, exportToGeoJSON } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -133,6 +134,18 @@ export function DemoToolbar({
     } else {
       toast.info("All masks already correctly assigned");
     }
+  };
+
+  const handleExportGeoJSON = () => {
+    if (!annotator) return;
+    const annotations = annotator.state.store.all();
+    if (annotations.length === 0) {
+      toast.info("No annotations to export");
+      return;
+    }
+    const geojson = exportToGeoJSON(annotations);
+    downloadGeoJSON(geojson, "annotations.geojson");
+    toast.success(`Exported ${annotations.length} annotations to GeoJSON`);
   };
 
   return (
@@ -268,6 +281,15 @@ export function DemoToolbar({
         </Button>
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
         {layerPanel}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleExportGeoJSON}
+          className="w-9 h-9 hover:bg-green-50 dark:hover:bg-green-950/20"
+          title="Export annotations as GeoJSON"
+        >
+          <FileJson className="w-4 h-4 text-green-600 dark:text-green-500" />
+        </Button>
         <Button
           variant="secondary"
           size="icon"
