@@ -84,7 +84,7 @@ export type { KeyboardCommandsOptions } from './core/shortcuts';
 // Tools (High-Level Only)
 // ============================================
 
-export { PointTool, RectangleTool, PolygonTool, PushTool, ContourTool } from './tools';
+export { PointTool, RectangleTool, PolygonTool, PushTool, ContourTool, SplitTool } from './tools';
 
 // ============================================
 // Loaders
