@@ -7,6 +7,43 @@ description: Release history and version notes for Annota
 
 All notable changes to Annota are documented here.
 
+## v0.5.0
+
+Released on TBD
+
+### Major Features
+
+**Multi-Select Support**: Comprehensive multi-select functionality with Ctrl/Cmd+Click, drag-to-select rectangle, and Ctrl/Cmd+A for select all.
+
+**Merge Tool**: Combine multiple selected annotations into a single annotation using polygon union operations. Accessible via toolbar button (enabled when 2+ annotations selected) or programmatically via `annotator.mergeSelected()`.
+
+**Split Tool**: Cut annotations into multiple pieces using an interactive line drawing tool. Click to add split line vertices, double-click or Enter to execute, Escape to cancel.
+
+### Core Improvements
+
+- New `operations.ts` module with reusable geometry operations
+- `MergeCommand` and `SplitCommand` for atomic operations with full undo/redo
+- Enhanced selection system with drag-to-select and modifier key support
+- Keyboard shortcuts: Ctrl/Cmd+A (select all), Escape (clear selection)
+
+### Dependencies
+
+- **Added**: `polygon-clipping` (0.15.7) - Fast polygon boolean operations (~40KB)
+
+### Breaking Changes
+
+None - all new APIs are additive and backward compatible.
+
+### Installation
+
+```bash
+npm install annota@0.5.0
+# or
+pnpm add annota@0.5.0
+```
+
+---
+
 ## v0.4.3
 
 Released on October 28, 2025

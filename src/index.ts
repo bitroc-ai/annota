@@ -102,3 +102,12 @@ export type { PgmLoaderOptions } from './loaders/pgm';
 export { loadMaskPolygons, exportMasksToPng } from './loaders/masks';
 
 export { exportToGeoJSON, downloadGeoJSON } from './loaders/geojson';
+
+// Geometry operations
+export {
+  mergeAnnotations,
+  splitAnnotation,
+  canMergeAnnotations,
+  canSplitAnnotation,
+  toPolygonCoordinates,
+} from './core/operations';

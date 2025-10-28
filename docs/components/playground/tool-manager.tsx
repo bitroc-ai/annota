@@ -7,6 +7,7 @@ import {
   PolygonTool,
   PushTool,
   ContourTool,
+  SplitTool,
 } from 'annota';
 import type { ToolType } from './toolbar';
 
@@ -72,6 +73,8 @@ export function ToolManager({
       }),
     [activeLayerId]
   );
+  const splitTool = useMemo(() => new SplitTool(), []);
+
   // Update dynamic properties
   useEffect(() => {
     pushTool.setPushRadius(pushRadius);
@@ -91,6 +94,7 @@ export function ToolManager({
     handler: contourTool,
     enabled: tool === 'cell-detect' && !!contourTool && !!viewer,
   });
+  useTool({ viewer, handler: splitTool, enabled: tool === 'split' && !!viewer });
 
   // Render push cursor (disabled when viewer is null)
   const { cursorPos, radiusInPixels } = usePushToolCursor(viewer, pushTool, tool === 'push' && !!viewer);

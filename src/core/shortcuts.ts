@@ -16,6 +16,10 @@ export interface KeyboardCommandsOptions {
   enableDelete?: boolean;
   /** Whether to enable Ctrl/Cmd+Z for undo and Ctrl/Cmd+Shift+Z for redo */
   enableUndoRedo?: boolean;
+  /** Whether to enable Ctrl/Cmd+A to select all annotations */
+  enableSelectAll?: boolean;
+  /** Whether to enable Escape to clear selection */
+  enableEscapeToClear?: boolean;
 }
 
 export const initKeyboardCommands = (
@@ -26,11 +30,31 @@ export const initKeyboardCommands = (
     container = document,
     enableDelete = true,
     enableUndoRedo = true,
+    enableSelectAll = true,
+    enableEscapeToClear = true,
   } = options;
 
   const handleKeyDown = (evt: Event) => {
     const event = evt as KeyboardEvent;
     const cmdKey = isMac ? event.metaKey : event.ctrlKey;
+
+    // Select All: Ctrl/Cmd+A
+    if (enableSelectAll && cmdKey && event.key === 'a') {
+      event.preventDefault();
+      const allAnnotations = annotator.state.store.all();
+      const allIds = allAnnotations.map(ann => ann.id);
+      annotator.setSelected(allIds);
+      return;
+    }
+
+    // Escape: Clear selection
+    if (enableEscapeToClear && event.key === 'Escape') {
+      if (annotator.state.selection.selected.length > 0) {
+        event.preventDefault();
+        annotator.setSelected([]);
+      }
+      return;
+    }
 
     // Undo: Ctrl/Cmd+Z (without Shift)
     if (enableUndoRedo && cmdKey && event.key === 'z' && !event.shiftKey) {

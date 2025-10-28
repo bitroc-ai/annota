@@ -9,3 +9,4 @@ export * from './rectangle';
 export * from './polygon';
 export * from './push';
 export * from './contour';
+export * from './split';

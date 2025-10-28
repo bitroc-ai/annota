@@ -136,6 +136,86 @@ export class BatchCommand implements Command {
   }
 }
 
+/**
+ * Merge command for combining multiple annotations into one
+ */
+export class MergeCommand implements Command {
+  constructor(
+    private store: AnnotationStore,
+    private originalAnnotations: Annotation[],
+    private mergedAnnotation: Annotation,
+    private description: string = 'Merge annotations'
+  ) {}
+
+  execute(): void {
+    // Delete original annotations
+    this.originalAnnotations.forEach(ann => {
+      this.store.delete(ann.id);
+    });
+
+    // Add merged annotation
+    this.store.add(this.mergedAnnotation);
+  }
+
+  undo(): void {
+    // Delete merged annotation
+    this.store.delete(this.mergedAnnotation.id);
+
+    // Restore original annotations
+    this.originalAnnotations.forEach(ann => {
+      this.store.add(ann);
+    });
+  }
+
+  redo(): void {
+    this.execute();
+  }
+
+  getDescription(): string {
+    return `${this.description} (${this.originalAnnotations.length} → 1)`;
+  }
+}
+
+/**
+ * Split command for dividing an annotation into multiple pieces
+ */
+export class SplitCommand implements Command {
+  constructor(
+    private store: AnnotationStore,
+    private originalAnnotation: Annotation,
+    private splitAnnotations: Annotation[],
+    private description: string = 'Split annotation'
+  ) {}
+
+  execute(): void {
+    // Delete original annotation
+    this.store.delete(this.originalAnnotation.id);
+
+    // Add split annotations
+    this.splitAnnotations.forEach(ann => {
+      this.store.add(ann);
+    });
+  }
+
+  undo(): void {
+    // Delete split annotations
+    this.splitAnnotations.forEach(ann => {
+      this.store.delete(ann.id);
+    });
+
+    // Restore original annotation
+    this.store.add(this.originalAnnotation);
+  }
+
+  redo(): void {
+    this.execute();
+  }
+
+  getDescription(): string {
+    return `${this.description} (1 → ${this.splitAnnotations.length})`;
+  }
+}
+
 // ============================================
 // History State Events
 // ============================================

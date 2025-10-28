@@ -13,9 +13,11 @@ import {
   Redo,
   Sparkles,
   FileJson,
+  Scissors,
+  Merge,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory, containsPoint, downloadGeoJSON, exportToGeoJSON } from "annota";
+import { useAnnotator, useViewer, useHistory, containsPoint, downloadGeoJSON, exportToGeoJSON, canMergeAnnotations } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -26,7 +28,8 @@ export type ToolType =
   | "rectangle"
   | "polygon"
   | "cell-detect"
-  | "push";
+  | "push"
+  | "split";
 
 interface DemoToolbarProps {
   tool: ToolType;
@@ -148,6 +151,35 @@ export function DemoToolbar({
     toast.success(`Exported ${annotations.length} annotations to GeoJSON`);
   };
 
+  const handleMerge = () => {
+    if (!annotator) return;
+
+    const selectedIds = annotator.state.selection.selected;
+    if (selectedIds.length < 2) {
+      toast.info("Select 2 or more annotations to merge");
+      return;
+    }
+
+    // Get selected annotations
+    const annotations = selectedIds
+      .map(id => annotator.state.store.get(id))
+      .filter(ann => ann !== undefined);
+
+    // Check if can merge
+    if (!canMergeAnnotations(annotations as any[])) {
+      toast.error("Cannot merge selected annotations (incompatible types)");
+      return;
+    }
+
+    // Perform merge
+    const merged = annotator.mergeSelected();
+    if (merged) {
+      toast.success(`Merged ${selectedIds.length} annotations into one`);
+    } else {
+      toast.error("Failed to merge annotations");
+    }
+  };
+
   return (
     <Card className="p-2 backdrop-blur-sm bg-white/95 dark:bg-slate-950/95">
       <div className="flex flex-col items-center gap-1">
@@ -219,6 +251,29 @@ export function DemoToolbar({
           title="Detect edge"
         >
           <Wand className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={tool === "split" ? "default" : "ghost"}
+          size="icon"
+          onClick={() => onToolChange("split")}
+          className={cn(
+            "w-9 h-9",
+            tool === "split" && "bg-orange-600 hover:bg-orange-700"
+          )}
+          title="Split annotation with a line"
+        >
+          <Scissors className="w-4 h-4" />
+        </Button>
+        <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleMerge}
+          disabled={!annotator || annotator.state.selection.selected.length < 2}
+          className="w-9 h-9 hover:bg-blue-50 dark:hover:bg-blue-950/20 disabled:opacity-50"
+          title="Merge selected annotations"
+        >
+          <Merge className="w-4 h-4 text-blue-600 dark:text-blue-500" />
         </Button>
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
         <Button
