@@ -90,6 +90,96 @@ function calculateBounds(points: Point[]) {
 }
 
 /**
+ * Compute convex hull using Graham scan algorithm
+ * Returns points in counter-clockwise order
+ */
+function convexHull(points: [number, number][]): [number, number][] {
+  if (points.length < 3) {
+    return points;
+  }
+
+  // Find the bottom-most point (or left-most if tied)
+  let start = 0;
+  for (let i = 1; i < points.length; i++) {
+    if (points[i][1] < points[start][1] ||
+        (points[i][1] === points[start][1] && points[i][0] < points[start][0])) {
+      start = i;
+    }
+  }
+
+  // Sort points by polar angle with respect to start point
+  const sorted = points.slice();
+  const startPoint = sorted[start];
+  sorted.splice(start, 1);
+
+  sorted.sort((a, b) => {
+    const angleA = Math.atan2(a[1] - startPoint[1], a[0] - startPoint[0]);
+    const angleB = Math.atan2(b[1] - startPoint[1], b[0] - startPoint[0]);
+    if (angleA !== angleB) {
+      return angleA - angleB;
+    }
+    // If same angle, sort by distance
+    const distA = (a[0] - startPoint[0]) ** 2 + (a[1] - startPoint[1]) ** 2;
+    const distB = (b[0] - startPoint[0]) ** 2 + (b[1] - startPoint[1]) ** 2;
+    return distA - distB;
+  });
+
+  // Build convex hull
+  const hull: [number, number][] = [startPoint, sorted[0], sorted[1]];
+
+  for (let i = 2; i < sorted.length; i++) {
+    let top = hull.length - 1;
+
+    // Remove points that make clockwise turn
+    while (hull.length > 1 && ccw(hull[top - 1], hull[top], sorted[i]) <= 0) {
+      hull.pop();
+      top--;
+    }
+
+    hull.push(sorted[i]);
+  }
+
+  // Close the polygon
+  hull.push(hull[0]);
+
+  return hull;
+}
+
+/**
+ * Cross product to determine orientation (counter-clockwise test)
+ * Returns positive if counter-clockwise, negative if clockwise, 0 if collinear
+ */
+function ccw(a: [number, number], b: [number, number], c: [number, number]): number {
+  return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+}
+
+/**
+ * Merge multiple separate polygons by computing convex hull
+ * This creates a single polygon that bounds all input polygons
+ */
+function connectPolygons(multiPolygon: polygonClipping.MultiPolygon): [number, number][] {
+  if (multiPolygon.length === 0) {
+    return [];
+  }
+
+  if (multiPolygon.length === 1) {
+    return multiPolygon[0][0];
+  }
+
+  // Collect all points from all polygons
+  const allPoints: [number, number][] = [];
+  for (const poly of multiPolygon) {
+    // Only use outer ring (poly[0])
+    for (const point of poly[0]) {
+      allPoints.push(point);
+    }
+  }
+
+  // Compute and return convex hull
+  return convexHull(allPoints);
+}
+
+/**
  * Merge multiple annotations into a single annotation using polygon union
  *
  * @param annotations - Array of annotations to merge (must be polygon-compatible)
@@ -142,10 +232,12 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
     const properties = { ...baseAnnotation.properties };
 
     // Create merged annotation
+    // Always prefer single polygon if possible
     let shape: PolygonShape | MultiPolygonShape;
 
-    if (result.length === 1 && result[0].length === 1) {
-      // Single polygon with no holes
+    if (result.length === 1) {
+      // Single polygon (may have holes in result[0][1], result[0][2], etc.)
+      // For now, only use the outer ring (result[0][0]) and ignore holes
       const points = coordinatesToPoints(result[0][0]);
       shape = {
         type: 'polygon',
@@ -153,13 +245,13 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
         bounds: calculateBounds(points),
       };
     } else {
-      // Multiple polygons or polygons with holes -> MultiPolygon
-      const polygons = result.map(poly => coordinatesToPoints(poly[0]));
-      const allPoints = polygons.flat();
+      // Multiple separate polygons - connect them into a single polygon
+      const mergedPolygon = connectPolygons(result);
+      const points = coordinatesToPoints(mergedPolygon);
       shape = {
-        type: 'multipolygon',
-        polygons,
-        bounds: calculateBounds(allPoints),
+        type: 'polygon',
+        points,
+        bounds: calculateBounds(points),
       };
     }
 

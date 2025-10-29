@@ -17,7 +17,7 @@ import {
   Merge,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
+import { useAnnotator, useViewer, useHistory, useSelection, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ export function DemoToolbar({
   const annotator = useAnnotator();
   const viewerControls = useViewer(viewer);
   const history = useHistory();
+  const selectedAnnotations = useSelection();
 
   const handleClearAll = () => {
     if (!annotator) return;
@@ -269,7 +270,7 @@ export function DemoToolbar({
           variant="ghost"
           size="icon"
           onClick={handleMerge}
-          disabled={!annotator || annotator.state.selection.getSelectionCount() < 2}
+          disabled={!annotator || selectedAnnotations.length < 2}
           className="w-9 h-9 hover:bg-blue-50 dark:hover:bg-blue-950/20 disabled:opacity-50"
           title="Merge selected annotations"
         >
