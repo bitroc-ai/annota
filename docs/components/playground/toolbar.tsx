@@ -154,7 +154,7 @@ export function DemoToolbar({
   const handleMerge = () => {
     if (!annotator) return;
 
-    const selectedIds = annotator.state.selection.selected;
+    const selectedIds = annotator.state.selection.getSelected();
     if (selectedIds.length < 2) {
       toast.info("Select 2 or more annotations to merge");
       return;
@@ -269,7 +269,7 @@ export function DemoToolbar({
           variant="ghost"
           size="icon"
           onClick={handleMerge}
-          disabled={!annotator || annotator.state.selection.selected.length < 2}
+          disabled={!annotator || annotator.state.selection.getSelectionCount() < 2}
           className="w-9 h-9 hover:bg-blue-50 dark:hover:bg-blue-950/20 disabled:opacity-50"
           title="Merge selected annotations"
         >

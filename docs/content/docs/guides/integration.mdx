@@ -242,7 +242,7 @@ function AnnotationItem({ id }: { id: string }) {
     <div
       onClick={() => {
         // Select annotation
-        annotator.state.selection.selected = [id];
+        annotator.state.selection.select(id);
       }}
     >
       {annotation.properties?.class}: {annotation.shape.type}
