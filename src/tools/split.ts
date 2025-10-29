@@ -10,26 +10,28 @@ import { splitAnnotation, canSplitAnnotation } from '../core/operations';
 import { SplitCommand } from '../core/history';
 
 /**
- * Tool for splitting annotations into multiple pieces
+ * Tool for splitting annotations with a simple 2-point line
  *
- * Usage:
- * 1. Click on an annotation to select it and start drawing the split line
- * 2. Click to add more vertices to the split line
- * 3. Double-click or press Enter to execute the split
- * 4. Press Escape to cancel
+ * Workflow:
+ * 1. Select an annotation (before activating tool)
+ * 2. Activate split tool
+ * 3. Click to set start point of split line
+ * 4. Move mouse - line follows cursor
+ * 5. Click to set end point and execute split immediately
+ * 6. Tool auto-exits to pan mode
  *
  * Features:
  * - Orange line shows where the split will occur
- * - Gray dashed line shows preview from last vertex to cursor
- * - Prevents canvas panning while drawing
+ * - Line follows mouse movement
+ * - Second click executes split
+ * - Press Escape to cancel
  */
 export class SplitTool extends BaseTool {
   private state: 'idle' | 'drawing' = 'idle';
   private targetAnnotation: Annotation | null = null;
-  private splitLinePoints: Point[] = [];
-  private previewLineId: string | null = null;
-  private livePreviewId: string | null = null;
+  private startPoint: Point | null = null;
   private currentMousePos: Point | null = null;
+  private previewLineId: string | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
     super('split', {
@@ -43,7 +45,7 @@ export class SplitTool extends BaseTool {
    * Update the visual preview of the split line
    */
   private updatePreviewLine(): void {
-    if (!this.annotator || this.splitLinePoints.length < 1) return;
+    if (!this.annotator || !this.startPoint || !this.currentMousePos) return;
 
     const store = this.annotator.state.store;
 
@@ -55,45 +57,35 @@ export class SplitTool extends BaseTool {
       }
     }
 
-    // Create new preview line annotation
-    if (this.splitLinePoints.length >= 1) {
-      this.previewLineId = `split-line-${Date.now()}`;
+    // Create new preview line annotation from start to current mouse position
+    this.previewLineId = `split-line-${Date.now()}`;
 
-      // Calculate bounds for the line
-      let minX = this.splitLinePoints[0].x;
-      let minY = this.splitLinePoints[0].y;
-      let maxX = this.splitLinePoints[0].x;
-      let maxY = this.splitLinePoints[0].y;
+    const minX = Math.min(this.startPoint.x, this.currentMousePos.x);
+    const minY = Math.min(this.startPoint.y, this.currentMousePos.y);
+    const maxX = Math.max(this.startPoint.x, this.currentMousePos.x);
+    const maxY = Math.max(this.startPoint.y, this.currentMousePos.y);
 
-      for (const point of this.splitLinePoints) {
-        minX = Math.min(minX, point.x);
-        minY = Math.min(minY, point.y);
-        maxX = Math.max(maxX, point.x);
-        maxY = Math.max(maxY, point.y);
-      }
+    const previewAnnotation: Annotation = {
+      id: this.previewLineId,
+      shape: {
+        type: 'freehand',
+        points: [this.startPoint, this.currentMousePos],
+        closed: false,
+        bounds: { minX, minY, maxX, maxY },
+      },
+      style: {
+        stroke: '#ff6b00', // Orange color for split line
+        strokeWidth: 3,
+        strokeOpacity: 1,
+        fill: 'transparent',
+        fillOpacity: 0,
+      },
+      properties: {
+        _isSplitPreview: true,
+      },
+    };
 
-      const previewAnnotation: Annotation = {
-        id: this.previewLineId,
-        shape: {
-          type: 'freehand',
-          points: [...this.splitLinePoints],
-          closed: false,
-          bounds: { minX, minY, maxX, maxY },
-        },
-        style: {
-          stroke: '#ff6b00', // Orange color for split line
-          strokeWidth: 3,
-          strokeOpacity: 1,
-          fill: 'transparent',
-          fillOpacity: 0,
-        },
-        properties: {
-          _isSplitPreview: true,
-        },
-      };
-
-      store.add(previewAnnotation);
-    }
+    store.add(previewAnnotation);
   }
 
   /**
@@ -111,96 +103,35 @@ export class SplitTool extends BaseTool {
   }
 
   /**
-   * Update live preview line from last vertex to current mouse position
-   */
-  private updateLivePreview(): void {
-    if (!this.annotator || !this.currentMousePos || this.splitLinePoints.length < 1) {
-      this.removeLivePreview();
-      return;
-    }
-
-    const store = this.annotator.state.store;
-
-    // Remove old live preview if exists
-    if (this.livePreviewId) {
-      const existing = store.get(this.livePreviewId);
-      if (existing) {
-        store.delete(this.livePreviewId);
-      }
-    }
-
-    // Create live preview line from last vertex to cursor
-    this.livePreviewId = `split-live-${Date.now()}`;
-    const lastPoint = this.splitLinePoints[this.splitLinePoints.length - 1];
-    const previewPoints = [lastPoint, this.currentMousePos];
-
-    const minX = Math.min(lastPoint.x, this.currentMousePos.x);
-    const minY = Math.min(lastPoint.y, this.currentMousePos.y);
-    const maxX = Math.max(lastPoint.x, this.currentMousePos.x);
-    const maxY = Math.max(lastPoint.y, this.currentMousePos.y);
-
-    const livePreviewAnnotation: Annotation = {
-      id: this.livePreviewId,
-      shape: {
-        type: 'freehand',
-        points: previewPoints,
-        closed: false,
-        bounds: { minX, minY, maxX, maxY },
-      },
-      style: {
-        stroke: '#999999', // Gray color for live preview
-        strokeWidth: 2,
-        strokeOpacity: 0.4,
-        fill: 'transparent',
-        fillOpacity: 0,
-      },
-      properties: {
-        _isSplitLivePreview: true,
-      },
-    };
-
-    store.add(livePreviewAnnotation);
-  }
-
-  /**
-   * Remove live preview line
-   */
-  private removeLivePreview(): void {
-    if (!this.annotator || !this.livePreviewId) return;
-
-    const store = this.annotator.state.store;
-    const existing = store.get(this.livePreviewId);
-    if (existing) {
-      store.delete(this.livePreviewId);
-    }
-    this.livePreviewId = null;
-  }
-
-  /**
-   * Handle press event - prepare for potential click or drag
+   * Handle press event - prevent default to stop panning
    */
   onCanvasPress = (evt: OpenSeadragon.CanvasPressEvent): void => {
     if (!this.enabled) return;
-
     // Always prevent default when tool is active to stop panning
     (evt as any).preventDefaultAction = true;
   };
 
   /**
-   * Handle drag event - update live preview as mouse moves
+   * Handle mouse move event - update line preview during movement
    */
-  onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent): void => {
-    if (!this.enabled || !this.viewer || this.state !== 'drawing') return;
+  private onMouseMove = (evt: MouseEvent): void => {
+    if (!this.enabled || !this.viewer) return;
 
-    const { originalEvent } = evt as any;
-    this.currentMousePos = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
-    this.updateLivePreview();
+    // Get mouse position relative to viewer element
+    const rect = this.viewer.element.getBoundingClientRect();
+    const offsetX = evt.clientX - rect.left;
+    const offsetY = evt.clientY - rect.top;
 
-    (evt as any).preventDefaultAction = true;
+    this.currentMousePos = this.viewerToImageCoords(offsetX, offsetY);
+
+    // Update preview line if we're in drawing mode
+    if (this.state === 'drawing' && this.startPoint) {
+      this.updatePreviewLine();
+    }
   };
 
   /**
-   * Handle click event - select annotation and start drawing, or add vertex
+   * Handle click event - set start point or end point
    */
   onCanvasClick = (evt: OpenSeadragon.ViewerEvent): void => {
     if (!this.enabled || !this.viewer || !this.annotator) return;
@@ -211,55 +142,36 @@ export class SplitTool extends BaseTool {
     const clickPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
 
     if (this.state === 'idle') {
-      // Select an annotation and immediately start drawing the split line
-      const hitAnnotation = this.checkAnnotationHit(clickPoint);
+      // First click: get target annotation and set start point
+      // Check if there's already a selected annotation we can use
+      const selectedIds = this.annotator.state.selection.getSelected();
+      let targetToUse: Annotation | null = null;
 
-      if (hitAnnotation) {
-        this.targetAnnotation = hitAnnotation;
-        this.splitLinePoints = [clickPoint];
-        this.state = 'drawing';
-        this.selectAnnotation(hitAnnotation.id);
-        this.updatePreviewLine();
-        console.log('[SplitTool] Drawing split line. Click to add vertices, double-click or Enter to split.');
-      }
-    } else if (this.state === 'drawing') {
-      // Check if we clicked on a different annotation
-      const hitAnnotation = this.checkAnnotationHit(clickPoint);
-
-      if (hitAnnotation && hitAnnotation.id !== this.targetAnnotation?.id) {
-        // Clicked on a different annotation - cancel current operation and start new one
-        console.log('[SplitTool] Switching to different annotation');
-        this.removePreviewLine();
-        this.removeLivePreview();
-        this.targetAnnotation = hitAnnotation;
-        this.splitLinePoints = [clickPoint];
-        this.state = 'drawing';
-        this.selectAnnotation(hitAnnotation.id);
-        this.updatePreviewLine();
-        console.log('[SplitTool] Drawing split line on new annotation. Click to add vertices, double-click or Enter to split.');
-      } else {
-        // Add point to split line
-        this.splitLinePoints.push(clickPoint);
-        this.updatePreviewLine();
-        console.log(`[SplitTool] Added vertex ${this.splitLinePoints.length}`);
-
-        // Check for double-click to complete (if very close to previous point)
-        if (this.splitLinePoints.length >= 2) {
-          const lastTwo = this.splitLinePoints.slice(-2);
-          const dx = lastTwo[1].x - lastTwo[0].x;
-          const dy = lastTwo[1].y - lastTwo[0].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          // If double-clicked (distance < 5 pixels in image space)
-          if (dist < 5) {
-            // Remove duplicate point
-            this.splitLinePoints.pop();
-            console.log('[SplitTool] Double-click detected, executing split...');
-            this.completeSplit();
-            return;
-          }
+      if (selectedIds.length === 1) {
+        const selectedAnnotation = this.annotator.state.store.get(selectedIds[0]);
+        if (selectedAnnotation && canSplitAnnotation(selectedAnnotation)) {
+          targetToUse = selectedAnnotation;
+          console.log('[SplitTool] Using already-selected annotation');
         }
       }
+
+      // If no suitable selected annotation, check if we clicked on one
+      if (!targetToUse) {
+        targetToUse = this.checkAnnotationHit(clickPoint);
+      }
+
+      if (targetToUse) {
+        this.targetAnnotation = targetToUse;
+        this.startPoint = clickPoint;
+        this.currentMousePos = clickPoint;
+        this.state = 'drawing';
+        this.selectAnnotation(targetToUse.id);
+        console.log('[SplitTool] Start point set. Move mouse and click to set end point.');
+      }
+    } else if (this.state === 'drawing') {
+      // Second click: execute split immediately
+      console.log('[SplitTool] End point set, executing split...');
+      this.completeSplit(clickPoint);
     }
 
     if (this.options.preventDefaultAction) {
@@ -275,9 +187,9 @@ export class SplitTool extends BaseTool {
 
     if (evt.key === 'Enter') {
       // Complete split with Enter key
-      if (this.state === 'drawing' && this.splitLinePoints.length >= 2) {
+      if (this.state === 'drawing' && this.startPoint && this.currentMousePos) {
         evt.preventDefault();
-        this.completeSplit();
+        this.completeSplit(this.currentMousePos);
       }
     } else if (evt.key === 'Escape') {
       // Cancel split
@@ -287,20 +199,10 @@ export class SplitTool extends BaseTool {
   };
 
   /**
-   * Start drawing the split line
-   */
-  startDrawing(firstPoint: Point): void {
-    if (!this.targetAnnotation) return;
-
-    this.state = 'drawing';
-    this.splitLinePoints = [firstPoint];
-  }
-
-  /**
    * Complete the split operation
    */
-  private completeSplit(): void {
-    if (!this.annotator || !this.targetAnnotation || this.splitLinePoints.length < 2) {
+  private completeSplit(endPoint: Point): void {
+    if (!this.annotator || !this.targetAnnotation || !this.startPoint) {
       this.cancel();
       return;
     }
@@ -312,8 +214,11 @@ export class SplitTool extends BaseTool {
       return;
     }
 
+    // Create split line with start and end points
+    const splitLine = [this.startPoint, endPoint];
+
     // Perform split operation
-    const splitPieces = splitAnnotation(this.targetAnnotation, this.splitLinePoints);
+    const splitPieces = splitAnnotation(this.targetAnnotation, splitLine);
 
     if (!splitPieces || splitPieces.length < 2) {
       console.error('[SplitTool] Split operation failed or did not divide annotation');
@@ -332,12 +237,14 @@ export class SplitTool extends BaseTool {
     );
     this.annotator.state.history.execute(command);
 
+    console.log('[SplitTool] Split completed successfully');
+
     // Select the first split piece
     if (splitPieces.length > 0) {
       this.selectAnnotation(splitPieces[0].id);
     }
 
-    // Reset state
+    // Reset state for next split
     this.reset();
   }
 
@@ -345,8 +252,8 @@ export class SplitTool extends BaseTool {
    * Cancel the current split operation
    */
   private cancel(): void {
+    console.log('[SplitTool] Split cancelled');
     this.removePreviewLine();
-    this.removeLivePreview();
     this.reset();
   }
 
@@ -356,7 +263,7 @@ export class SplitTool extends BaseTool {
   private reset(): void {
     this.state = 'idle';
     this.targetAnnotation = null;
-    this.splitLinePoints = [];
+    this.startPoint = null;
     this.currentMousePos = null;
   }
 
@@ -366,10 +273,15 @@ export class SplitTool extends BaseTool {
   init(viewer: OpenSeadragon.Viewer, annotator: any): void {
     super.init(viewer, annotator);
 
-    // Add keyboard event listener
+    // Add keyboard and mouse event listeners
     const canvas = viewer.canvas;
     if (canvas) {
       canvas.addEventListener('keydown', this.onKeyDown);
+    }
+
+    // Add mouse move listener to the viewer element
+    if (viewer.element) {
+      viewer.element.addEventListener('mousemove', this.onMouseMove);
     }
   }
 
@@ -377,9 +289,13 @@ export class SplitTool extends BaseTool {
    * Destroy the tool
    */
   destroy(): void {
-    // Remove keyboard event listener
+    // Remove keyboard and mouse event listeners
     if (this.viewer?.canvas) {
       this.viewer.canvas.removeEventListener('keydown', this.onKeyDown);
+    }
+
+    if (this.viewer?.element) {
+      this.viewer.element.removeEventListener('mousemove', this.onMouseMove);
     }
 
     this.reset();
@@ -387,10 +303,13 @@ export class SplitTool extends BaseTool {
   }
 
   /**
-   * Get current split line for rendering (if needed for visual feedback)
+   * Get current split line for debugging
    */
   getSplitLine(): Point[] {
-    return this.splitLinePoints;
+    if (this.startPoint && this.currentMousePos) {
+      return [this.startPoint, this.currentMousePos];
+    }
+    return [];
   }
 
   /**

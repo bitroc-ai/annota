@@ -13,6 +13,7 @@ Tools enable users to interact with the image and create annotations. Each tool 
 | **PolygonTool**   | Draw polygons               | Click vertices, double-click to finish |
 | **PushTool**      | Edit polygon vertices       | Click and drag to push/pull vertices   |
 | **ContourTool**   | Extract contours from masks | Click to detect contours               |
+| **SplitTool**     | Cut annotations into pieces | Click start point, click end point     |
 
 ## Using Tools
 
@@ -274,6 +275,199 @@ import { loadOpenCV } from "annota";
 await loadOpenCV();
 
 const contourTool = new ContourTool({ threshold: 128 });
+```
+
+## Split Tool
+
+Cut annotations into multiple pieces with a simple line.
+
+### Basic Usage
+
+```tsx
+import { SplitTool } from "annota";
+
+const splitTool = new SplitTool();
+```
+
+### Workflow
+
+1. **Select an annotation** (before or during tool activation)
+2. **Activate the split tool**
+3. **Click** to set the start point of the split line
+4. **Move mouse** - an orange line preview follows the cursor
+5. **Click** to set the end point and execute the split
+6. Tool automatically exits after split completes
+
+### Interaction
+
+- **First click**: Sets the start point of the split line
+- **Mouse move**: Updates the orange preview line
+- **Second click**: Executes the split operation
+- **Escape**: Cancels the split operation
+- **Enter**: Completes split with current line (alternative to clicking)
+
+### Configuration
+
+```tsx
+const splitTool = new SplitTool({
+  preventDefaultAction: true, // Prevent panning during split
+  checkAnnotationHits: true,  // Enable annotation hit detection
+});
+```
+
+### Visual Feedback
+
+The split tool provides clear visual feedback:
+- **Orange line** (color: `#ff6b00`) shows where the split will occur
+- Line follows mouse movement in real-time
+- Line width: 3 pixels for visibility
+
+### Use Cases
+
+- Dividing large tumor regions into smaller sections
+- Separating overlapping annotations
+- Creating training data from large masks
+- Refining segmentation boundaries
+- Splitting merged tissue regions
+
+### Supported Annotation Types
+
+The split tool works with:
+- Polygons
+- Rectangles (converted to polygons)
+- MultiPolygons
+- Closed freehand shapes
+
+### Requirements
+
+- Annotation must be selected before splitting
+- Split line must intersect the annotation
+- Split line must have at least 2 points
+- Annotation must be polygon-compatible
+
+### Example
+
+```tsx
+import { SplitTool, useTool } from "annota";
+import { useState } from "react";
+
+function SplitToolController({ viewer }) {
+  const [splitTool] = useState(() => new SplitTool());
+  const [enabled, setEnabled] = useState(false);
+
+  useTool({
+    viewer,
+    handler: enabled ? splitTool : null,
+    enabled,
+  });
+
+  return (
+    <button onClick={() => setEnabled(!enabled)}>
+      {enabled ? "Exit Split Mode" : "Split Tool"}
+    </button>
+  );
+}
+```
+
+## Merge Operation
+
+Combine multiple selected annotations into a single annotation using polygon union.
+
+### Basic Usage
+
+Unlike tools, merge is performed via the annotator instance:
+
+```tsx
+import { useAnnotator } from "annota";
+
+function MergeButton() {
+  const annotator = useAnnotator();
+
+  const handleMerge = () => {
+    // Merge all currently selected annotations
+    const merged = annotator.mergeSelected();
+    if (merged) {
+      console.log("Successfully merged annotations");
+    }
+  };
+
+  return <button onClick={handleMerge}>Merge Selected</button>;
+}
+```
+
+### How It Works
+
+The merge operation:
+1. Takes all selected annotations
+2. Converts them to polygon format
+3. Computes the polygon union using `polygon-clipping`
+4. Creates a single new annotation from the result
+5. Always returns a single polygon (even if inputs are disjoint)
+6. Replaces the original annotations
+
+### Merging Disjoint Polygons
+
+When merging annotations that don't touch:
+- The result is the **convex hull** of all polygons
+- This creates a single polygon that bounds all inputs
+- Properties and style are inherited from the first annotation
+
+### Configuration
+
+```tsx
+// Select multiple annotations first
+annotator.setSelected([id1, id2, id3]);
+
+// Then merge them
+const merged = annotator.mergeSelected();
+```
+
+### Supported Annotation Types
+
+The merge operation works with:
+- Polygons
+- Rectangles (converted to polygons)
+- MultiPolygons
+- Closed freehand shapes
+
+**Note**: All selected annotations must be polygon-compatible.
+
+### Programmatic Usage
+
+```tsx
+import { mergeAnnotations, canMergeAnnotations } from "annota";
+
+// Check if annotations can be merged
+const annotations = [annotation1, annotation2, annotation3];
+if (canMergeAnnotations(annotations)) {
+  // Perform the merge
+  const merged = mergeAnnotations(annotations);
+
+  if (merged) {
+    // Add to store
+    annotator.addAnnotation(merged);
+    // Remove originals
+    annotations.forEach(ann => annotator.deleteAnnotation(ann.id));
+  }
+}
+```
+
+### Use Cases
+
+- Combining multiple regions into a single annotation
+- Merging adjacent tissue sections
+- Consolidating overlapping masks
+- Creating unified ROIs from multiple selections
+- Simplifying annotation sets
+
+### Undo/Redo Support
+
+Both split and merge operations support undo/redo through the history system:
+
+```tsx
+// After splitting or merging
+annotator.undo(); // Reverts the operation
+annotator.redo(); // Reapplies the operation
 ```
 
 ## Tool Options
