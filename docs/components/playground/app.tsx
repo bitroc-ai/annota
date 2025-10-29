@@ -80,13 +80,19 @@ function DemoContent({ currentImage }: { currentImage: string }) {
   }, [annotator]);
 
   // Double-click to enter edit mode
-  useAnnotationDoubleClick(annotator?.viewer, useCallback((annotation: Annotation) => {
-    const editorConfig = getEditorConfig(annotation);
-    if (editorConfig?.supportsVertexEditing) {
-      startEditing(annotation.id);
-      toast.success("Vertex editing mode enabled");
-    }
-  }, [startEditing]));
+  useAnnotationDoubleClick(
+    annotator?.viewer,
+    useCallback(
+      (annotation: Annotation) => {
+        const editorConfig = getEditorConfig(annotation);
+        if (editorConfig?.supportsVertexEditing) {
+          startEditing(annotation.id);
+          toast.success("Vertex editing mode enabled");
+        }
+      },
+      [startEditing]
+    )
+  );
 
   // Escape key to exit edit mode
   useEffect(() => {
@@ -121,7 +127,10 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         zIndex: 1,
         filter: (ann) => {
           // Point annotations with category="positive"
-          return ann.shape.type === "point" && ann.properties?.category === "positive";
+          return (
+            ann.shape.type === "point" &&
+            ann.properties?.category === "positive"
+          );
         },
       });
     }
@@ -136,7 +145,10 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         zIndex: 2,
         filter: (ann) => {
           // Point annotations with category="negative"
-          return ann.shape.type === "point" && ann.properties?.category === "negative";
+          return (
+            ann.shape.type === "point" &&
+            ann.properties?.category === "negative"
+          );
         },
       });
     }
@@ -151,7 +163,8 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         zIndex: 3,
         filter: (ann) => {
           // Polygon/mask annotations with maskPolarity="positive" or default polygons
-          const isPolygon = ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
+          const isPolygon =
+            ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
           if (!isPolygon) return false;
 
           // Explicit positive or no polarity set (default to positive)
@@ -170,7 +183,8 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         zIndex: 4,
         filter: (ann) => {
           // Polygon/mask annotations with maskPolarity="negative"
-          const isPolygon = ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
+          const isPolygon =
+            ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
           return isPolygon && ann.maskPolarity === "negative";
         },
       });
@@ -187,20 +201,26 @@ function DemoContent({ currentImage }: { currentImage: string }) {
       // Clear existing H5 and mask annotations
       const allAnnotations = annotator.state.store.all();
       const loadedAnnotations = allAnnotations.filter(
-        (ann) => ann.properties?.source === "h5" || ann.properties?.source === "png-mask" || ann.properties?.source === "pgm"
+        (ann) =>
+          ann.properties?.source === "h5" ||
+          ann.properties?.source === "png-mask" ||
+          ann.properties?.source === "pgm"
       );
       loadedAnnotations.forEach((ann) => annotator.state.store.delete(ann.id));
 
       try {
         // Load H5 annotations (points) and mask polygons in parallel
-        const [positiveAnnotations, negativeAnnotations, maskAnnotations] = await Promise.all([
-          loadH5AnnotationsByCategory(imageNumber, "positive"),
-          loadH5AnnotationsByCategory(imageNumber, "negative"),
-          loadMaskPolygons(`/playground/masks/test/${imageNumber}.png`).catch((err) => {
-            console.warn('[Playground] Failed to load mask:', err);
-            return [] as Annotation[];
-          }), // Fallback to empty if no mask file
-        ]);
+        const [positiveAnnotations, negativeAnnotations, maskAnnotations] =
+          await Promise.all([
+            loadH5AnnotationsByCategory(imageNumber, "positive"),
+            loadH5AnnotationsByCategory(imageNumber, "negative"),
+            loadMaskPolygons(`/playground/masks/test/${imageNumber}.png`).catch(
+              (err) => {
+                console.warn("[Playground] Failed to load mask:", err);
+                return [] as Annotation[];
+              }
+            ), // Fallback to empty if no mask file
+          ]);
 
         // Assign maskPolarity to loaded masks (default to positive)
         // Remove style property so categoryStyleFunction applies the correct styling
@@ -231,7 +251,9 @@ function DemoContent({ currentImage }: { currentImage: string }) {
 
           const messages = [];
           if (totalH5 > 0) {
-            messages.push(`${positiveAnnotations.length} positive, ${negativeAnnotations.length} negative`);
+            messages.push(
+              `${positiveAnnotations.length} positive, ${negativeAnnotations.length} negative`
+            );
           }
           if (totalMasks > 0) {
             messages.push(`${totalMasks} mask(s)`);
@@ -364,7 +386,7 @@ export function PlaygroundApp() {
   return (
     <AnnotaProvider>
       <div className="h-[calc(100vh-4rem)] w-full bg-slate-50 dark:bg-slate-950">
-        <Toaster />
+        <Toaster position="top-right" />
         <div className="relative h-full">
           <AnnotaViewer
             className="h-full"

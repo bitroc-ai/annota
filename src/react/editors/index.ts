@@ -11,3 +11,6 @@ export type { RectangleEditorProps } from './Rectangle';
 
 export { PolygonEditor, editPolygon, deletePolygonVertex } from './Polygon';
 export type { PolygonEditorProps } from './Polygon';
+
+export { FreehandEditor, editFreehand } from './Freehand';
+export type { FreehandEditorProps } from './Freehand';

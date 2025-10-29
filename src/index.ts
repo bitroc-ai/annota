@@ -62,8 +62,8 @@ export type { ContextMenuProps, ContextMenuItemProps } from './react/ContextMenu
 export { AnnotationEditor, registerShapeEditor, unregisterShapeEditor, getEditorConfig } from './react/Editor';
 export type { AnnotationEditorProps, ShapeEditorConfig } from './react/Editor';
 
-export { PointEditor, RectangleEditor, PolygonEditor } from './react/editors';
-export type { PointEditorProps, RectangleEditorProps, PolygonEditorProps } from './react/editors';
+export { PointEditor, RectangleEditor, PolygonEditor, FreehandEditor } from './react/editors';
+export type { PointEditorProps, RectangleEditorProps, PolygonEditorProps, FreehandEditorProps } from './react/editors';
 
 // ============================================
 // Annotator Instance Type

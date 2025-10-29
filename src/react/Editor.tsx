@@ -24,6 +24,8 @@ import {
   PolygonEditor,
   editPolygon,
   deletePolygonVertex,
+  FreehandEditor,
+  editFreehand,
 } from './editors';
 import type { Annotation, Shape } from '../core/types';
 
@@ -298,6 +300,14 @@ const defaultEditors: Record<string, ShapeEditorConfig> = {
     component: PolygonEditor,
     supportsVertexEditing: true,
   },
+  freehand: {
+    editFn: (shape, handle, delta) => {
+      if (shape.type !== 'freehand') return shape;
+      return editFreehand(shape, handle, delta);
+    },
+    component: FreehandEditor,
+    supportsVertexEditing: false,
+  },
 };
 
 // Custom editor registry (for apps to extend)
@@ -412,6 +422,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
     return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [annotation, selectedVertexIndex, annotator]);
 
+  // Don't render editor for non-editable annotations
   if (!annotation || !annotator) return null;
 
   const handleChange = (shape: Shape) => {
