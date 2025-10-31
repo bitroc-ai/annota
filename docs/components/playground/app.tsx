@@ -19,7 +19,7 @@ import {
 } from "annota";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
-import { DemoToolbar } from "@/components/playground/toolbar";
+import { AnnotationToolbar, GeneralToolbar } from "@/components/playground/toolbar";
 import { ToolSettings } from "@/components/playground/tool-settings";
 import { DebugPanel } from "@/components/playground/debug-panel";
 import { ToolManager } from "@/components/playground/tool-manager";
@@ -405,8 +405,9 @@ export function PlaygroundApp() {
             <AnnotationContextMenu />
             <DemoContent currentImage={currentImage} />
           </Annotator>
+          {/* Annotation Toolbar - Left side */}
           <div className="absolute top-4 left-4 bottom-4">
-            <DemoToolbar
+            <AnnotationToolbar
               tool={tool}
               onToolChange={setTool}
               viewer={viewer}
@@ -430,6 +431,8 @@ export function PlaygroundApp() {
               }
             />
           </div>
+
+          {/* Tool Settings - Next to annotation toolbar */}
           <div className="absolute top-4 left-20">
             <ToolSettings
               tool={tool}
@@ -439,6 +442,13 @@ export function PlaygroundApp() {
               onPushRadiusChange={setPushRadius}
             />
           </div>
+
+          {/* General Toolbar - Bottom right */}
+          <div className="absolute bottom-4 right-4">
+            <GeneralToolbar viewer={viewer} />
+          </div>
+
+          {/* Debug Panel - Top right */}
           <DebugPanel
             currentImage={currentImage}
             onNextImage={handleNextImage}
