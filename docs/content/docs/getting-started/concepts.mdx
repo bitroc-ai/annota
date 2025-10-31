@@ -9,7 +9,7 @@ An annotation is a mark or label on an image. In Annota, every annotation is a J
 ```typescript
 interface Annotation {
   id: string; // Unique identifier
-  shape: PointShape | RectangleShape | PolygonShape; // Geometry
+  shape: PointShape | RectangleShape | PolygonShape | ImageShape; // Geometry
   properties?: Record<string, any>; // Custom metadata
   style?: AnnotationStyle; // Visual styling
 }
@@ -17,7 +17,7 @@ interface Annotation {
 
 ### Shape Types
 
-Annota supports three shape types:
+Annota supports multiple shape types:
 
 #### Point
 
@@ -80,6 +80,37 @@ Use polygons for:
 - Tracing tumor boundaries
 - Segmentation masks
 - Complex region outlines
+
+#### Image
+
+An image overlay for displaying analysis results:
+
+```typescript
+{
+  type: 'image',
+  x: 1000,
+  y: 1000,
+  width: 640,
+  height: 640,
+  url: 'data:image/png;base64,...', // Base64 data URL
+  opacity: 0.6,
+  bounds: { minX: 1000, minY: 1000, maxX: 1640, maxY: 1640 }
+}
+```
+
+Use image shapes for:
+
+- AI model prediction overlays (heatmaps, segmentation masks)
+- Pathology analysis results
+- Region-specific processing outputs
+- Fixed-size analysis visualizations
+
+**Key features:**
+- Static overlays (fixed dimensions representing analysis output size)
+- Supports base64 data URLs for embedding small images
+- Semi-transparent by default for overlay visualization
+- Can be repositioned but not resized
+- Efficient WebGL rendering via PixiJS sprites
 
 ### Properties
 

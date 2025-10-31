@@ -1,0 +1,414 @@
+# Image Overlays for Analysis Results
+
+Image shapes allow you to display AI model predictions, heatmaps, and analysis results as persistent overlays on your slide images. This is particularly useful in pathology workflows where you want to visualize region-specific analysis outputs.
+
+## Use Case: Pathology Analysis Workflow
+
+A typical workflow for displaying analysis results:
+
+1. User selects a region of interest (ROI) on the slide
+2. Backend analyzes the region (AI model inference, image processing, etc.)
+3. Backend returns JSON metadata + a base64-encoded result image
+4. Frontend creates a persistent image annotation to display the result
+
+## Creating an Image Annotation
+
+```tsx
+import { useAnnotator } from "annota";
+
+function AnalysisButton() {
+  const annotator = useAnnotator();
+  const viewer = annotator?.viewer;
+
+  const handleAnalyze = async () => {
+    if (!annotator || !viewer) return;
+
+    // 1. Get ROI center position
+    const viewport = viewer.viewport;
+    const center = viewport.getCenter();
+    const imageCenter = viewport.viewportToImageCoordinates(center);
+
+    // 2. Call your analysis API
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slideId: 'slide-123',
+        x: imageCenter.x - 320,  // Top-left corner
+        y: imageCenter.y - 320,
+        width: 640,
+        height: 640,
+      }),
+    });
+
+    const result = await response.json();
+    // result = {
+    //   image: "data:image/png;base64,iVBORw0KG...",
+    //   metadata: {
+    //     analysisType: 'tumor_detection',
+    //     confidence: 0.87,
+    //     cellCount: 156
+    //   }
+    // }
+
+    // 3. Create image annotation
+    const annotation = {
+      id: `analysis-${Date.now()}`,
+      shape: {
+        type: 'image' as const,
+        x: imageCenter.x - 320,
+        y: imageCenter.y - 320,
+        width: 640,
+        height: 640,
+        url: result.image,  // Base64 data URL
+        opacity: 0.6,       // Semi-transparent overlay
+        bounds: {
+          minX: imageCenter.x - 320,
+          minY: imageCenter.y - 320,
+          maxX: imageCenter.x + 320,
+          maxY: imageCenter.y + 320,
+        },
+      },
+      properties: {
+        analysisType: result.metadata.analysisType,
+        confidence: result.metadata.confidence,
+        cellCount: result.metadata.cellCount,
+        timestamp: Date.now(),
+      },
+    };
+
+    // 4. Add to annotator
+    annotator.state.store.add(annotation);
+  };
+
+  return (
+    <button onClick={handleAnalyze}>
+      Analyze Region
+    </button>
+  );
+}
+```
+
+## Image Format
+
+Image shapes support base64 data URLs for embedding small images directly:
+
+```typescript
+const imageAnnotation = {
+  shape: {
+    type: 'image',
+    url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
+    // or
+    url: 'data:image/jpeg;base64,/9j/4AAQSkZJRgAB...',
+  },
+};
+```
+
+**Recommended formats:**
+- **PNG**: Best for masks, heatmaps (supports transparency, lossless)
+- **JPEG**: Good for photo-like analysis results (smaller file size)
+- **WebP**: Modern format with good compression (if browser support is sufficient)
+
+## Displaying Analysis Metadata
+
+You can display the analysis metadata in a popup when users click on the image overlay:
+
+```tsx
+import { useAnnotationPopup } from "annota";
+
+function AnalysisPopup() {
+  const popup = useAnnotationPopup();
+
+  if (!popup.annotation || popup.annotation.shape.type !== 'image') {
+    return null;
+  }
+
+  const { properties } = popup.annotation;
+
+  return (
+    <AnnotationPopup>
+      <div className="p-4 space-y-2">
+        <h3 className="font-semibold">
+          {properties?.analysisType || 'Analysis Result'}
+        </h3>
+        <div className="text-sm space-y-1">
+          <div>
+            <span className="font-medium">Confidence:</span>{' '}
+            {(properties?.confidence * 100).toFixed(1)}%
+          </div>
+          <div>
+            <span className="font-medium">Cell Count:</span>{' '}
+            {properties?.cellCount}
+          </div>
+          <div>
+            <span className="font-medium">Time:</span>{' '}
+            {new Date(properties?.timestamp).toLocaleString()}
+          </div>
+        </div>
+      </div>
+    </AnnotationPopup>
+  );
+}
+```
+
+## Editing Image Overlays
+
+Image annotations support basic repositioning (drag to move) but have fixed dimensions since they represent analysis output sizes:
+
+```tsx
+import { ImageEditor } from "annota";
+
+// Image editor is automatically registered
+// Users can:
+// - Click to select
+// - Drag to reposition
+// - Delete with Delete/Backspace key
+// - Cannot resize (dimensions are fixed)
+```
+
+When selected, image overlays show a purple dashed outline to indicate selection state.
+
+## Performance Considerations
+
+### Image Size
+
+Keep image overlays reasonably sized:
+- ✅ **640×640 or smaller**: Good for typical analysis patches
+- ⚠️ **1024×1024**: Acceptable but watch file size
+- ❌ **Larger**: Consider tiling or using polygon masks instead
+
+### Base64 Encoding
+
+Base64 encoding increases file size by ~33%. For a 640×640 PNG:
+- Original: ~50-100 KB (depending on compression)
+- Base64: ~65-130 KB
+
+This is acceptable for embedding small analysis results directly in the annotation data.
+
+### Texture Caching
+
+Annota automatically caches loaded textures:
+- First load: Decodes base64 and creates WebGL texture
+- Subsequent renders: Reuses cached texture
+- Memory efficient: Textures cleaned up when annotations deleted
+
+## Styling Options
+
+Control the appearance of image overlays:
+
+```typescript
+const annotation = {
+  shape: {
+    type: 'image',
+    url: imageData,
+    opacity: 0.6,  // Shape-level opacity
+    // ...
+  },
+  style: {
+    fillOpacity: 0.6,  // Alternative: style-level opacity
+  },
+};
+```
+
+**Opacity values:**
+- `1.0`: Fully opaque (hides underlying image)
+- `0.6`: Semi-transparent (default, good for overlays)
+- `0.3`: Very transparent (subtle visualization)
+
+## Complete Example
+
+Here's a complete example combining ROI selection with analysis:
+
+```tsx
+import { useState } from "react";
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotator,
+  RectangleTool,
+  useTool,
+} from "annota";
+
+function AnalysisViewer() {
+  const [viewer, setViewer] = useState(undefined);
+  const [selectedROI, setSelectedROI] = useState(null);
+
+  return (
+    <AnnotaProvider>
+      <div className="h-screen flex">
+        <div className="flex-1">
+          <AnnotaViewer
+            options={{
+              tileSources: { type: "image", url: "/slide.dzi" },
+            }}
+            onViewerReady={setViewer}
+          />
+          <Annotator viewer={viewer}>
+            <ROISelector onROISelect={setSelectedROI} />
+            <AnalysisResults />
+          </Annotator>
+        </div>
+        <div className="w-80 p-4">
+          <AnalysisControls selectedROI={selectedROI} />
+        </div>
+      </div>
+    </AnnotaProvider>
+  );
+}
+
+function ROISelector({ onROISelect }) {
+  const annotator = useAnnotator();
+  const rectangleTool = new RectangleTool();
+
+  useTool({
+    viewer: annotator?.viewer,
+    handler: rectangleTool,
+    enabled: true,
+  });
+
+  // Listen for new rectangles
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      if (annotation.shape.type === 'rectangle') {
+        onROISelect(annotation);
+      }
+    };
+
+    annotator.on('createAnnotation', handleCreate);
+    return () => annotator.off('createAnnotation', handleCreate);
+  }, [annotator, onROISelect]);
+
+  return null;
+}
+
+function AnalysisControls({ selectedROI }) {
+  const annotator = useAnnotator();
+  const [loading, setLoading] = useState(false);
+
+  const handleAnalyze = async () => {
+    if (!selectedROI || !annotator) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          x: selectedROI.shape.x,
+          y: selectedROI.shape.y,
+          width: selectedROI.shape.width,
+          height: selectedROI.shape.height,
+        }),
+      });
+
+      const result = await response.json();
+
+      // Create image overlay
+      const overlay = {
+        id: `analysis-${Date.now()}`,
+        shape: {
+          type: 'image' as const,
+          x: selectedROI.shape.x,
+          y: selectedROI.shape.y,
+          width: selectedROI.shape.width,
+          height: selectedROI.shape.height,
+          url: result.image,
+          opacity: 0.6,
+          bounds: {
+            minX: selectedROI.shape.x,
+            minY: selectedROI.shape.y,
+            maxX: selectedROI.shape.x + selectedROI.shape.width,
+            maxY: selectedROI.shape.y + selectedROI.shape.height,
+          },
+        },
+        properties: result.metadata,
+      };
+
+      annotator.state.store.add(overlay);
+    } catch (error) {
+      console.error('Analysis failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Analysis</h2>
+      {selectedROI ? (
+        <div>
+          <p className="text-sm text-gray-600 mb-2">
+            ROI: {selectedROI.shape.width} × {selectedROI.shape.height} px
+          </p>
+          <button
+            onClick={handleAnalyze}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            {loading ? 'Analyzing...' : 'Run Analysis'}
+          </button>
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">
+          Draw a rectangle to select region for analysis
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AnalysisResults() {
+  const annotator = useAnnotator();
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const updateResults = () => {
+      const imageAnnotations = annotator
+        .getAnnotations()
+        .filter(ann => ann.shape.type === 'image');
+      setResults(imageAnnotations);
+    };
+
+    annotator.on('createAnnotation', updateResults);
+    annotator.on('deleteAnnotation', updateResults);
+
+    return () => {
+      annotator.off('createAnnotation', updateResults);
+      annotator.off('deleteAnnotation', updateResults);
+    };
+  }, [annotator]);
+
+  return (
+    <div className="absolute top-4 right-4 bg-white p-4 rounded shadow">
+      <h3 className="font-semibold mb-2">Results: {results.length}</h3>
+      <div className="space-y-2">
+        {results.map((result) => (
+          <div key={result.id} className="text-sm">
+            {result.properties?.analysisType}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. **Keep images small**: Use 256×256 to 640×640 patches for typical analysis regions
+2. **Use PNG for masks**: Lossless compression and transparency support
+3. **Store metadata**: Use `properties` to store analysis results, timestamps, model versions
+4. **Semi-transparent overlays**: Default opacity of 0.6 works well for most use cases
+5. **Delete ROI after analysis**: Remove the selection rectangle after creating the result overlay
+6. **Layer organization**: Create a dedicated layer for analysis results
+
+## Related
+
+- [Core Concepts](/docs/getting-started/concepts) - Learn about all shape types
+- [Layer Management](/docs/use-cases/layer-management) - Organize analysis results in layers
+- [Event Handling](/docs/use-cases/event-handling) - React to annotation changes
