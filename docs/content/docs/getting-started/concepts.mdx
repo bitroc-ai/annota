@@ -83,7 +83,7 @@ Use polygons for:
 
 #### Image
 
-An image overlay for displaying analysis results:
+An image overlay displaying raster data at a fixed position and size:
 
 ```typescript
 {
@@ -100,15 +100,15 @@ An image overlay for displaying analysis results:
 
 Use image shapes for:
 
-- AI model prediction overlays (heatmaps, segmentation masks)
-- Pathology analysis results
-- Region-specific processing outputs
-- Fixed-size analysis visualizations
+- Embedding small raster images (logos, icons, watermarks)
+- Displaying processed image regions (heatmaps, overlays)
+- Visual markers with custom graphics
+- Any fixed-size image content
 
 **Key features:**
-- Static overlays (fixed dimensions representing analysis output size)
-- Supports base64 data URLs for embedding small images
-- Semi-transparent by default for overlay visualization
+- Fixed dimensions (position and size are preserved)
+- Supports base64 data URLs for embedding images
+- Adjustable opacity for blending with underlying content
 - Can be repositioned but not resized
 - Efficient WebGL rendering via PixiJS sprites
 

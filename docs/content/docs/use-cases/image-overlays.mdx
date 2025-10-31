@@ -1,13 +1,13 @@
-# Image Overlays for Analysis Results
+# Image Overlays
 
-Image shapes allow you to display AI model predictions, heatmaps, and analysis results as persistent overlays on your slide images. This is particularly useful in pathology workflows where you want to visualize region-specific analysis outputs.
+Image shapes allow you to embed raster images at fixed positions and sizes within your viewer. Common uses include displaying processed image regions, custom visual markers, logos, or any fixed-size image content that needs to be positioned on the main image.
 
-## Use Case: Pathology Analysis Workflow
+## Example Use Case: Region Processing Workflow
 
-A typical workflow for displaying analysis results:
+A typical workflow for displaying processed image regions:
 
-1. User selects a region of interest (ROI) on the slide
-2. Backend analyzes the region (AI model inference, image processing, etc.)
+1. User selects a region of interest (ROI) on the image
+2. Backend processes the region (processing, transformation, etc.)
 3. Backend returns JSON metadata + a base64-encoded result image
 4. Frontend creates a persistent image annotation to display the result
 
@@ -16,11 +16,11 @@ A typical workflow for displaying analysis results:
 ```tsx
 import { useAnnotator } from "annota";
 
-function AnalysisButton() {
+function ProcessButton() {
   const annotator = useAnnotator();
   const viewer = annotator?.viewer;
 
-  const handleAnalyze = async () => {
+  const handleProcess = async () => {
     if (!annotator || !viewer) return;
 
     // 1. Get ROI center position
@@ -28,8 +28,8 @@ function AnalysisButton() {
     const center = viewport.getCenter();
     const imageCenter = viewport.viewportToImageCoordinates(center);
 
-    // 2. Call your analysis API
-    const response = await fetch('/api/analyze', {
+    // 2. Call your processing API
+    const response = await fetch('/api/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -45,15 +45,15 @@ function AnalysisButton() {
     // result = {
     //   image: "data:image/png;base64,iVBORw0KG...",
     //   metadata: {
-    //     analysisType: 'tumor_detection',
-    //     confidence: 0.87,
-    //     cellCount: 156
+    //     processType: 'enhancement',
+    //     timestamp: Date.now(),
+    //     parameters: {...}
     //   }
     // }
 
     // 3. Create image annotation
     const annotation = {
-      id: `analysis-${Date.now()}`,
+      id: `overlay-${Date.now()}`,
       shape: {
         type: 'image' as const,
         x: imageCenter.x - 320,
@@ -70,10 +70,9 @@ function AnalysisButton() {
         },
       },
       properties: {
-        analysisType: result.metadata.analysisType,
-        confidence: result.metadata.confidence,
-        cellCount: result.metadata.cellCount,
-        timestamp: Date.now(),
+        processType: result.metadata.processType,
+        timestamp: result.metadata.timestamp,
+        parameters: result.metadata.parameters,
       },
     };
 
@@ -82,8 +81,8 @@ function AnalysisButton() {
   };
 
   return (
-    <button onClick={handleAnalyze}>
-      Analyze Region
+    <button onClick={handleProcess}>
+      Process Region
     </button>
   );
 }
@@ -109,14 +108,14 @@ const imageAnnotation = {
 - **JPEG**: Good for photo-like analysis results (smaller file size)
 - **WebP**: Modern format with good compression (if browser support is sufficient)
 
-## Displaying Analysis Metadata
+## Displaying Metadata
 
-You can display the analysis metadata in a popup when users click on the image overlay:
+You can display the image metadata in a popup when users click on the image overlay:
 
 ```tsx
 import { useAnnotationPopup } from "annota";
 
-function AnalysisPopup() {
+function ImagePopup() {
   const popup = useAnnotationPopup();
 
   if (!popup.annotation || popup.annotation.shape.type !== 'image') {
@@ -129,19 +128,19 @@ function AnalysisPopup() {
     <AnnotationPopup>
       <div className="p-4 space-y-2">
         <h3 className="font-semibold">
-          {properties?.analysisType || 'Analysis Result'}
+          {properties?.title || 'Image Overlay'}
         </h3>
         <div className="text-sm space-y-1">
           <div>
-            <span className="font-medium">Confidence:</span>{' '}
-            {(properties?.confidence * 100).toFixed(1)}%
+            <span className="font-medium">Type:</span>{' '}
+            {properties?.processType}
           </div>
           <div>
-            <span className="font-medium">Cell Count:</span>{' '}
-            {properties?.cellCount}
+            <span className="font-medium">Size:</span>{' '}
+            {properties?.width} × {properties?.height}
           </div>
           <div>
-            <span className="font-medium">Time:</span>{' '}
+            <span className="font-medium">Created:</span>{' '}
             {new Date(properties?.timestamp).toLocaleString()}
           </div>
         </div>
@@ -153,7 +152,7 @@ function AnalysisPopup() {
 
 ## Editing Image Overlays
 
-Image annotations support basic repositioning (drag to move) but have fixed dimensions since they represent analysis output sizes:
+Image annotations support basic repositioning (drag to move) but have fixed dimensions:
 
 ```tsx
 import { ImageEditor } from "annota";
@@ -400,12 +399,12 @@ function AnalysisResults() {
 
 ## Best Practices
 
-1. **Keep images small**: Use 256×256 to 640×640 patches for typical analysis regions
-2. **Use PNG for masks**: Lossless compression and transparency support
-3. **Store metadata**: Use `properties` to store analysis results, timestamps, model versions
-4. **Semi-transparent overlays**: Default opacity of 0.6 works well for most use cases
-5. **Delete ROI after analysis**: Remove the selection rectangle after creating the result overlay
-6. **Layer organization**: Create a dedicated layer for analysis results
+1. **Keep images small**: Use 256×256 to 640×640 for typical overlays
+2. **Use PNG for transparency**: Lossless compression and alpha channel support
+3. **Store metadata**: Use `properties` to store relevant information about the image
+4. **Semi-transparent overlays**: Default opacity of 0.6 works well for blending
+5. **Organize with layers**: Create dedicated layers for different types of overlays
+6. **Consider file size**: Base64 encoding adds ~33% overhead
 
 ## Related
 
