@@ -316,7 +316,7 @@ export function renderImage(
 ): PIXI.Sprite | null {
   // Check if texture is already cached and loaded
   const cachedTexture = textureCache.get(shape.url);
-  if (cachedTexture && cachedTexture.valid) {
+  if (cachedTexture) {
     // Use cached texture - create sprite immediately
     const sprite = new PIXI.Sprite(cachedTexture);
     sprite.x = shape.x;
