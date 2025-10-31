@@ -8,29 +8,46 @@
 // Core Types
 // ============================================
 
-export type { Annotation, Point, AnnotationStyle, MaskPolarity } from './core/types';
-export { containsPoint, calculateBounds } from './core/types';
-export type { Layer, LayerConfig } from './core/layer';
+export type {
+  Annotation,
+  Point,
+  AnnotationStyle,
+  MaskPolarity,
+  Shape,
+  ShapeType,
+  ImageShape,
+  RectangleShape,
+  CircleShape,
+  EllipseShape,
+  PointShape,
+  LineShape,
+  PolygonShape,
+  FreehandShape,
+  MultiPolygonShape,
+  Bounds,
+} from "./core/types";
+export { containsPoint, calculateBounds, translateShape } from "./core/types";
+export type { Layer, LayerConfig } from "./core/layer";
 export {
   createPositiveMaskFilter,
   createNegativeMaskFilter,
   createMaskPolarityFilter,
-} from './core/layer';
-export type { SelectionManager, SelectionChangeEvent } from './core/selection';
-export { createSelectionManager } from './core/selection';
+} from "./core/layer";
+export type { SelectionManager, SelectionChangeEvent } from "./core/selection";
+export { createSelectionManager } from "./core/selection";
 
 // ============================================
 // React Components & Hooks
 // ============================================
 
-export { AnnotaProvider, useAnnotator } from './react/Provider';
-export type { AnnotaProviderProps } from './react/Provider';
+export { AnnotaProvider, useAnnotator } from "./react/Provider";
+export type { AnnotaProviderProps } from "./react/Provider";
 
-export { Annotator } from './react/Annotator';
-export type { AnnotatorProps } from './react/Annotator';
+export { Annotator } from "./react/Annotator";
+export type { AnnotatorProps } from "./react/Annotator";
 
-export { Viewer as AnnotaViewer } from './react/Viewer';
-export type { ViewerProps as AnnotaViewerProps } from './react/Viewer';
+export { Viewer as AnnotaViewer } from "./react/Viewer";
+export type { ViewerProps as AnnotaViewerProps } from "./react/Viewer";
 
 export {
   useAnnotations,
@@ -51,19 +68,47 @@ export {
   useContextMenu,
   useContextMenuBinding,
   useEditing,
-} from './react/hooks';
-export type { UseLayerManagerResult, UseHistoryResult, UseContextMenuResult, ContextMenuState, UseEditingResult } from './react/hooks';
+} from "./react/hooks";
+export type {
+  UseLayerManagerResult,
+  UseHistoryResult,
+  UseContextMenuResult,
+  ContextMenuState,
+  UseEditingResult,
+} from "./react/hooks";
 
-export { AnnotationPopup } from './react/Popup';
+export { AnnotationPopup } from "./react/Popup";
 
-export { ContextMenu, ContextMenuItem, ContextMenuDivider } from './react/ContextMenu';
-export type { ContextMenuProps, ContextMenuItemProps } from './react/ContextMenu';
+export {
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuDivider,
+} from "./react/ContextMenu";
+export type {
+  ContextMenuProps,
+  ContextMenuItemProps,
+} from "./react/ContextMenu";
 
-export { AnnotationEditor, registerShapeEditor, unregisterShapeEditor, getEditorConfig } from './react/Editor';
-export type { AnnotationEditorProps, ShapeEditorConfig } from './react/Editor';
+export {
+  AnnotationEditor,
+  registerShapeEditor,
+  unregisterShapeEditor,
+  getEditorConfig,
+} from "./react/Editor";
+export type { AnnotationEditorProps, ShapeEditorConfig } from "./react/Editor";
 
-export { PointEditor, RectangleEditor, PolygonEditor, FreehandEditor } from './react/editors';
-export type { PointEditorProps, RectangleEditorProps, PolygonEditorProps, FreehandEditorProps } from './react/editors';
+export {
+  PointEditor,
+  RectangleEditor,
+  PolygonEditor,
+  FreehandEditor,
+} from "./react/editors";
+export type {
+  PointEditorProps,
+  RectangleEditorProps,
+  PolygonEditorProps,
+  FreehandEditorProps,
+} from "./react/editors";
 
 // ============================================
 // Annotator Instance Type
@@ -73,37 +118,49 @@ export type {
   OpenSeadragonAnnotator as AnnotatorInstance,
   AnnotatorEvent,
   AnnotatorEventHandler,
-} from './adapters/openseadragon/annotator';
+} from "./adapters/openseadragon/annotator";
 
 // ============================================
 // Keyboard Shortcuts
 // ============================================
 
-export { initKeyboardCommands } from './core/shortcuts';
-export type { KeyboardCommandsOptions } from './core/shortcuts';
+export { initKeyboardCommands } from "./core/shortcuts";
+export type { KeyboardCommandsOptions } from "./core/shortcuts";
 
 // ============================================
 // Tools (High-Level Only)
 // ============================================
 
-export { PointTool, RectangleTool, PolygonTool, PushTool, ContourTool, SplitTool } from './tools';
+export {
+  PointTool,
+  RectangleTool,
+  PolygonTool,
+  PushTool,
+  ContourTool,
+  SplitTool,
+} from "./tools";
 
 // ============================================
 // Loaders
 // ============================================
 
-export { loadH5Masks } from './loaders/h5';
-export type { H5MaskLoaderOptions } from './loaders/h5';
+export { loadH5Masks } from "./loaders/h5";
+export type { H5MaskLoaderOptions } from "./loaders/h5";
 
-export { loadH5Coordinates } from './loaders/h5-coordinates';
-export type { H5CoordinateLoaderOptions } from './loaders/h5-coordinates';
+export { loadH5Coordinates } from "./loaders/h5-coordinates";
+export type { H5CoordinateLoaderOptions } from "./loaders/h5-coordinates";
 
-export { loadPgmFile, loadPgmPolygons, annotationsToPgm, annotationToPgm } from './loaders/pgm';
-export type { PgmLoaderOptions } from './loaders/pgm';
+export {
+  loadPgmFile,
+  loadPgmPolygons,
+  annotationsToPgm,
+  annotationToPgm,
+} from "./loaders/pgm";
+export type { PgmLoaderOptions } from "./loaders/pgm";
 
-export { loadMaskPolygons, exportMasksToPng } from './loaders/masks';
+export { loadMaskPolygons, exportMasksToPng } from "./loaders/masks";
 
-export { exportJson, downloadJson } from './loaders/geojson';
+export { exportJson, downloadJson } from "./loaders/geojson";
 
 // Geometry operations
 export {
@@ -112,4 +169,4 @@ export {
   canMergeAnnotations,
   canSplitAnnotation,
   toPolygonCoordinates,
-} from './core/operations';
+} from "./core/operations";
