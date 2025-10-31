@@ -274,13 +274,32 @@ export async function createOpenSeadragonAnnotator(
   });
   resizeObserver.observe(viewer.canvas);
 
+  // Helper to create a filter that combines user filter with layer visibility
+  const createVisibilityFilter = (userFilter?: Filter): Filter => {
+    return (annotation: import('../../core/types').Annotation) => {
+      // First check user filter
+      if (userFilter && !userFilter(annotation)) {
+        return false;
+      }
+
+      // Then check layer visibility
+      const layer = layerManager.getLayerForAnnotation(annotation);
+      if (layer && !layer.visible) {
+        return false;
+      }
+
+      return true;
+    };
+  };
+
   // Hover detection
   const onPointerMove = (event: PointerEvent) => {
     const imagePoint = pointerEventToImage(viewer, event);
     if (!imagePoint) return;
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
-    const hit = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
+    const visibilityFilter = createVisibilityFilter(options.filter);
+    const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
 
     const hitId: string | undefined = hit ? hit.id : undefined;
     if (hitId !== hover.current) {
@@ -304,7 +323,8 @@ export async function createOpenSeadragonAnnotator(
     if (!imagePoint) return;
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
-    const hit = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
+    const visibilityFilter = createVisibilityFilter(options.filter);
+    const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
 
     // Save press state for drag/release handling
     pressState = {
@@ -375,7 +395,8 @@ export async function createOpenSeadragonAnnotator(
       const maxX = Math.max(pressState.imagePos.x, imagePoint.x);
       const maxY = Math.max(pressState.imagePos.y, imagePoint.y);
 
-      const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, options.filter);
+      const visibilityFilter = createVisibilityFilter(options.filter);
+      const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, visibilityFilter);
 
       const originalEvent = evt.originalEvent as MouseEvent;
       const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
@@ -406,7 +427,8 @@ export async function createOpenSeadragonAnnotator(
     }
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
-    const hitOnRelease = store.getAt(imagePoint.x, imagePoint.y, options.filter, hitTolerance);
+    const visibilityFilter = createVisibilityFilter(options.filter);
+    const hitOnRelease = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
     const originalEvent = evt.originalEvent as MouseEvent;
     const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
 

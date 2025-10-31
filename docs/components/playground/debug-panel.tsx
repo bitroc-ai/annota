@@ -11,7 +11,7 @@ export function DebugPanel({ currentImage, onNextImage }: DebugPanelProps) {
   const annotations = useAnnotations();
 
   return (
-    <div className="absolute bottom-2 right-2 z-10">
+    <div className="absolute top-2 right-2 z-10">
       <div className="bg-white/95 dark:bg-slate-950/95 border border-slate-200 dark:border-slate-800 backdrop-blur p-1 rounded-md flex items-center gap-3 shadow-sm">
         <span className="text-xs">
           Annotations: <span className="font-mono">{annotations.length}</span>
