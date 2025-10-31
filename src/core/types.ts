@@ -31,7 +31,8 @@ export type ShapeType =
   | 'polygon'
   | 'freehand'
   | 'line'
-  | 'multipolygon';
+  | 'multipolygon'
+  | 'image';
 
 export interface BaseShape {
   type: ShapeType;
@@ -87,6 +88,16 @@ export interface MultiPolygonShape extends BaseShape {
   polygons: Point[][];
 }
 
+export interface ImageShape extends BaseShape {
+  type: 'image';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  url: string; // Data URL or image source URL
+  opacity?: number; // Optional opacity (0-1)
+}
+
 export type Shape =
   | PointShape
   | CircleShape
@@ -95,7 +106,8 @@ export type Shape =
   | LineShape
   | PolygonShape
   | FreehandShape
-  | MultiPolygonShape;
+  | MultiPolygonShape
+  | ImageShape;
 
 // ============================================
 // Style Types
@@ -218,6 +230,14 @@ export function calculateBounds(shape: Shape): Bounds {
         maxY: Math.max(...ys),
       };
     }
+
+    case 'image':
+      return {
+        minX: shape.x,
+        minY: shape.y,
+        maxX: shape.x + shape.width,
+        maxY: shape.y + shape.height,
+      };
   }
 }
 
@@ -278,6 +298,16 @@ export function containsPoint(shape: Shape, x: number, y: number, buffer = 0): b
 
     case 'multipolygon':
       return shape.polygons.some(polygon => pointInPolygon(x, y, polygon, buffer));
+
+    case 'image': {
+      // Image shapes are selectable within their bounding rectangle
+      return (
+        x >= shape.x - buffer &&
+        x <= shape.x + shape.width + buffer &&
+        y >= shape.y - buffer &&
+        y <= shape.y + shape.height + buffer
+      );
+    }
   }
 }
 
@@ -473,6 +503,23 @@ export function translateShape(shape: Shape, dx: number, dy: number): Shape {
           minY: shape.bounds.minY + dy,
           maxX: shape.bounds.maxX + dx,
           maxY: shape.bounds.maxY + dy,
+        },
+      };
+
+    case 'image':
+      return {
+        type: 'image',
+        x: shape.x + dx,
+        y: shape.y + dy,
+        width: shape.width,
+        height: shape.height,
+        url: shape.url,
+        opacity: shape.opacity,
+        bounds: {
+          minX: shape.x + dx,
+          minY: shape.y + dy,
+          maxX: shape.x + shape.width + dx,
+          maxY: shape.y + shape.height + dy,
         },
       };
 

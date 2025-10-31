@@ -9,7 +9,7 @@ import type { Annotation, Filter, StyleExpression } from '../../core/types';
 import type { LayerManager } from '../../core/layer';
 import { isAnnotationVisible } from '../../core/layer';
 import { computeStyle } from './styles';
-import { renderShape } from './shapes';
+import { renderShape, renderImage } from './shapes';
 
 /**
  * Stage options
@@ -27,6 +27,7 @@ export interface StageOptions {
 interface AnnotationGraphics {
   annotation: Annotation;
   graphics: PIXI.Graphics;
+  sprite?: PIXI.Sprite; // For image shapes
   lastRenderedScale?: number; // Track last scale for LOD changes
   lastRenderedState?: {
     hovered: boolean;
@@ -164,6 +165,13 @@ export class PixiStage {
     if (entry) {
       this.container.removeChild(entry.graphics);
       entry.graphics.destroy();
+
+      // Also clean up sprite if it exists (for image shapes)
+      if (entry.sprite) {
+        this.container.removeChild(entry.sprite);
+        entry.sprite.destroy();
+      }
+
       this.annotationMap.delete(id);
     }
   }
@@ -214,17 +222,35 @@ export class PixiStage {
       graphics.alpha = 1;
     }
 
-    // LOD (Level of Detail): Simplify rendering when zoomed out
-    // Only apply to complex shapes (polygons, rectangles) - not to points which are already simple
-    const pixelSize = this.getAnnotationPixelSize(annotation);
-    const isComplexShape = annotation.shape.type !== 'point';
+    // Handle image shapes differently - they use sprites
+    if (annotation.shape.type === 'image') {
+      // Clear any existing sprite
+      if (entry.sprite) {
+        this.container.removeChild(entry.sprite);
+        entry.sprite.destroy();
+      }
 
-    if (isComplexShape && pixelSize < 3) {
-      // When complex annotation is < 3 pixels, simplify to a point
-      this.renderSimplifiedAnnotation(graphics, annotation, finalStyle);
+      // Render image shape as sprite
+      const sprite = renderImage(this.container, annotation.shape, finalStyle, this.scale);
+      if (sprite) {
+        entry.sprite = sprite;
+      }
+
+      // Clear graphics (image shapes don't use graphics)
+      graphics.clear();
     } else {
-      // Normal detailed rendering (includes all point annotations)
-      renderShape(graphics, annotation.shape, finalStyle, this.scale);
+      // LOD (Level of Detail): Simplify rendering when zoomed out
+      // Only apply to complex shapes (polygons, rectangles) - not to points which are already simple
+      const pixelSize = this.getAnnotationPixelSize(annotation);
+      const isComplexShape = annotation.shape.type !== 'point';
+
+      if (isComplexShape && pixelSize < 3) {
+        // When complex annotation is < 3 pixels, simplify to a point
+        this.renderSimplifiedAnnotation(graphics, annotation, finalStyle);
+      } else {
+        // Normal detailed rendering (includes all point annotations)
+        renderShape(graphics, annotation.shape, finalStyle, this.scale);
+      }
     }
   }
 

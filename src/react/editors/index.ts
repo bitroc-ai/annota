@@ -14,3 +14,6 @@ export type { PolygonEditorProps } from './Polygon';
 
 export { FreehandEditor, editFreehand } from './Freehand';
 export type { FreehandEditorProps } from './Freehand';
+
+export { ImageEditor, editImage } from './Image';
+export type { ImageEditorProps } from './Image';

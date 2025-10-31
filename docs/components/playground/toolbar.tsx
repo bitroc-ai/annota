@@ -15,6 +15,7 @@ import {
   FileJson,
   Scissors,
   Merge,
+  Image,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnnotator, useViewer, useHistory, useSelection, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
@@ -181,6 +182,68 @@ export function DemoToolbar({
     }
   };
 
+  const handleAddImageAnnotation = () => {
+    if (!annotator || !viewer) return;
+
+    // Get center of viewport
+    const viewport = viewer.viewport;
+    const center = viewport.getCenter();
+    const imageCenter = viewport.viewportToImageCoordinates(center);
+
+    // Create a 64x64 sample image annotation with a gradient
+    // Generate a simple gradient as base64 PNG
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Create gradient (red to transparent)
+    const gradient = ctx.createLinearGradient(0, 0, 64, 64);
+    gradient.addColorStop(0, 'rgba(255, 100, 100, 0.7)');
+    gradient.addColorStop(1, 'rgba(100, 100, 255, 0.3)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+
+    // Add some text
+    ctx.fillStyle = 'white';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Analysis', 32, 28);
+    ctx.fillText('Result', 32, 42);
+
+    const imageData = canvas.toDataURL('image/png');
+
+    // Create image annotation (64x64 to match canvas size)
+    const annotation = {
+      id: `image-${Date.now()}`,
+      shape: {
+        type: 'image' as const,
+        x: imageCenter.x - 32,
+        y: imageCenter.y - 32,
+        width: 64,
+        height: 64,
+        url: imageData,
+        opacity: 0.6,
+        bounds: {
+          minX: imageCenter.x - 32,
+          minY: imageCenter.y - 32,
+          maxX: imageCenter.x + 32,
+          maxY: imageCenter.y + 32,
+        },
+      },
+      properties: {
+        type: 'analysis_result',
+        analysisType: 'sample',
+        timestamp: Date.now(),
+        note: 'This is a sample image annotation showing how analysis results can be overlaid on the slide',
+      },
+    };
+
+    annotator.state.store.add(annotation);
+    toast.success('Added sample image annotation at viewport center');
+  };
+
   return (
     <Card className="p-2 backdrop-blur-sm bg-white/95 dark:bg-slate-950/95">
       <div className="flex flex-col items-center gap-1">
@@ -266,6 +329,16 @@ export function DemoToolbar({
           <Scissors className="w-4 h-4" />
         </Button>
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleAddImageAnnotation}
+          disabled={!annotator || !viewer}
+          className="w-9 h-9 hover:bg-purple-50 dark:hover:bg-purple-950/20 disabled:opacity-50"
+          title="Add sample image annotation (analysis result overlay)"
+        >
+          <Image className="w-4 h-4 text-purple-600 dark:text-purple-500" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"

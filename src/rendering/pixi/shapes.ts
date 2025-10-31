@@ -14,6 +14,7 @@ import type {
   PolygonShape,
   FreehandShape,
   MultiPolygonShape,
+  ImageShape,
 } from '../../core/types';
 import type { ComputedStyle } from './styles';
 
@@ -299,6 +300,83 @@ export function renderMultiPolygon(
   }
 }
 
+// Cache for loaded image textures to avoid repeated loading
+const textureCache = new Map<string, PIXI.Texture>();
+
+/**
+ * Render an image shape
+ * Note: This creates a PIXI.Sprite instead of using Graphics
+ * The sprite will be managed separately by the annotation layer
+ */
+export function renderImage(
+  container: PIXI.Container,
+  shape: ImageShape,
+  _style: ComputedStyle,
+  _scale: number
+): PIXI.Sprite | null {
+  // Check if texture is already cached and loaded
+  const cachedTexture = textureCache.get(shape.url);
+  if (cachedTexture && cachedTexture.valid) {
+    // Use cached texture - create sprite immediately
+    const sprite = new PIXI.Sprite(cachedTexture);
+    sprite.x = shape.x;
+    sprite.y = shape.y;
+
+    // Use scale to set size
+    const scaleX = shape.width / cachedTexture.width;
+    const scaleY = shape.height / cachedTexture.height;
+    sprite.scale.set(scaleX, scaleY);
+
+    sprite.alpha = shape.opacity !== undefined ? shape.opacity : 0.6;
+    container.addChild(sprite);
+    return sprite;
+  }
+
+  // Texture not cached - need to load it
+  const sprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+  sprite.x = shape.x;
+  sprite.y = shape.y;
+  sprite.alpha = shape.opacity !== undefined ? shape.opacity : 0.6;
+  container.addChild(sprite);
+
+  // Load the texture asynchronously
+  const img = new Image();
+  img.onload = () => {
+    try {
+      // Create texture directly from the loaded image element
+      // PixiJS v8 handles this internally without BaseTexture
+      const texture = PIXI.Texture.from(img);
+
+      // Ensure texture is valid before proceeding
+      if (!texture || texture.width === 0 || texture.height === 0) {
+        console.error('Failed to create valid texture from image');
+        return;
+      }
+
+      // Cache the texture for future use
+      textureCache.set(shape.url, texture);
+
+      // Update sprite
+      sprite.texture = texture;
+
+      // Use scale to set size - check that sprite.scale exists
+      if (sprite.scale) {
+        const scaleX = shape.width / texture.width;
+        const scaleY = shape.height / texture.height;
+        sprite.scale.set(scaleX, scaleY);
+      }
+    } catch (err) {
+      console.error('Failed to create texture from image:', err);
+    }
+  };
+  img.onerror = (err) => {
+    console.error('Failed to load image for annotation:', err);
+  };
+  img.src = shape.url;
+
+  return sprite;
+}
+
 /**
  * Render any shape (dispatcher)
  */
@@ -334,6 +412,10 @@ export function renderShape(
       break;
     case 'multipolygon':
       renderMultiPolygon(graphics, shape, style, scale);
+      break;
+    case 'image':
+      // Image shapes are handled differently - they use sprites not graphics
+      // The caller should use renderImage() directly for image shapes
       break;
   }
 }

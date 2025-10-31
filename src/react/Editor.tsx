@@ -26,6 +26,8 @@ import {
   deletePolygonVertex,
   FreehandEditor,
   editFreehand,
+  ImageEditor,
+  editImage,
 } from './editors';
 import type { Annotation, Shape } from '../core/types';
 
@@ -306,6 +308,15 @@ const defaultEditors: Record<string, ShapeEditorConfig> = {
       return editFreehand(shape, handle, delta);
     },
     component: FreehandEditor,
+    supportsVertexEditing: false,
+  },
+  // Image shapes support basic position dragging
+  image: {
+    editFn: (shape, handle, delta) => {
+      if (shape.type !== 'image') return shape;
+      return editImage(shape, handle, delta);
+    },
+    component: ImageEditor,
     supportsVertexEditing: false,
   },
 };
