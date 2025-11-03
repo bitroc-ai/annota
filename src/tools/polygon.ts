@@ -8,8 +8,8 @@ import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 
-const DOUBLE_CLICK_THRESHOLD = 300; // ms
-const CLOSE_THRESHOLD = 10; // pixels in image space
+const SNAP_THRESHOLD = 10; // pixels in image space - snap to vertex within this distance
+const DOUBLE_CLICK_TIME = 300; // ms - time window to detect double-click
 
 /**
  * Tool for drawing polygon annotations
@@ -17,9 +17,9 @@ const CLOSE_THRESHOLD = 10; // pixels in image space
 export class PolygonTool extends BaseTool {
   private points: Point[] = [];
   private currentAnnotationId: string | null = null;
-  private lastClickTime = 0;
   private isDrawing = false;
   private previewPoint: Point | null = null;
+  private lastClickTime = 0;
 
   constructor(options: ToolHandlerOptions = {}) {
     super('polygon', {
@@ -56,7 +56,31 @@ export class PolygonTool extends BaseTool {
     const timeSinceLastClick = now - this.lastClickTime;
 
     // Check for double-click to finish polygon
-    if (this.isDrawing && timeSinceLastClick < DOUBLE_CLICK_THRESHOLD) {
+    if (this.isDrawing && timeSinceLastClick < DOUBLE_CLICK_TIME) {
+      // Check if double-click is near any existing vertex for snapping
+      if (this.points.length >= 3) {
+        let snapPoint: Point | null = null;
+        for (const point of this.points) {
+          const distance = Math.sqrt(
+            Math.pow(clickPoint.x - point.x, 2) + Math.pow(clickPoint.y - point.y, 2)
+          );
+          if (distance < SNAP_THRESHOLD) {
+            snapPoint = point;
+            break;
+          }
+        }
+
+        // If we found a snap point and it's not already the last point, add it
+        if (snapPoint) {
+          const lastPoint = this.points[this.points.length - 1];
+          const isLastPoint = lastPoint.x === snapPoint.x && lastPoint.y === snapPoint.y;
+          if (!isLastPoint) {
+            this.points.push(snapPoint);
+            this.updatePolygonWithPreview();
+          }
+        }
+      }
+
       this.finishPolygon();
       if (this.options.preventDefaultAction) {
         (evt as any).preventDefaultAction = true;
@@ -70,22 +94,6 @@ export class PolygonTool extends BaseTool {
     if (!this.isDrawing) {
       const hitAnnotation = this.checkAnnotationHit(clickPoint);
       if (hitAnnotation) {
-        if (this.options.preventDefaultAction) {
-          (evt as any).preventDefaultAction = true;
-        }
-        return;
-      }
-    }
-
-    // Check if clicking near first point to close polygon
-    if (this.isDrawing && this.points.length >= 3) {
-      const firstPoint = this.points[0];
-      const distance = Math.sqrt(
-        Math.pow(clickPoint.x - firstPoint.x, 2) + Math.pow(clickPoint.y - firstPoint.y, 2)
-      );
-
-      if (distance < CLOSE_THRESHOLD) {
-        this.finishPolygon();
         if (this.options.preventDefaultAction) {
           (evt as any).preventDefaultAction = true;
         }
@@ -169,20 +177,16 @@ export class PolygonTool extends BaseTool {
    * Finish the current polygon
    */
   private finishPolygon(): void {
-    let shouldSelect = false;
-
     if (!this.isDrawing || this.points.length < 3) {
       // Cancel if less than 3 points
       if (this.currentAnnotationId && this.annotator) {
         this.annotator.state.store.delete(this.currentAnnotationId);
       }
     } else {
-      shouldSelect = true;
-    }
-
-    // Select the newly created annotation
-    if (shouldSelect && this.currentAnnotationId) {
-      this.selectAnnotation(this.currentAnnotationId);
+      // Select the newly created annotation
+      if (this.currentAnnotationId) {
+        this.selectAnnotation(this.currentAnnotationId);
+      }
     }
 
     // Reset state
