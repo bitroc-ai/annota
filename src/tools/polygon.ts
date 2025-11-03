@@ -24,7 +24,7 @@ export class PolygonTool extends BaseTool {
   constructor(options: ToolHandlerOptions = {}) {
     super('polygon', {
       preventDefaultAction: true,
-      checkAnnotationHits: true,
+      checkAnnotationHits: false, // Disable hit checking while drawing
       ...options,
     });
   }
@@ -135,7 +135,10 @@ export class PolygonTool extends BaseTool {
           }),
         },
         style: this.options.annotationStyle,
-        properties: this.options.annotationProperties || {},
+        properties: {
+          ...this.options.annotationProperties,
+          _inProgress: true, // Mark as in-progress so Annotator doesn't block clicks
+        },
       };
 
       this.annotator.state.store.add(annotation);
@@ -183,8 +186,16 @@ export class PolygonTool extends BaseTool {
         this.annotator.state.store.delete(this.currentAnnotationId);
       }
     } else {
-      // Select the newly created annotation
-      if (this.currentAnnotationId) {
+      // Remove the _inProgress marker and select the newly created annotation
+      if (this.currentAnnotationId && this.annotator) {
+        const annotation = this.annotator.state.store.get(this.currentAnnotationId);
+        if (annotation) {
+          const { _inProgress, ...cleanProperties } = annotation.properties || {};
+          this.annotator.updateAnnotation(this.currentAnnotationId, {
+            ...annotation,
+            properties: cleanProperties,
+          });
+        }
         this.selectAnnotation(this.currentAnnotationId);
       }
     }

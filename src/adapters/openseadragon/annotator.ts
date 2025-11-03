@@ -335,6 +335,12 @@ export async function createOpenSeadragonAnnotator(
     };
 
     if (hit) {
+      // Don't block clicks on in-progress annotations (being drawn by tools)
+      if (hit.properties?._inProgress) {
+        pressState = undefined;
+        return;
+      }
+
       // Pressed on annotation - handle selection
       const originalEvent = evt.originalEvent as MouseEvent;
       const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
