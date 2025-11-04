@@ -7,11 +7,33 @@
  * <button onClick={() => viewer.zoomIn()}>Zoom In</button>
  * <button onClick={() => viewer.zoomOut()}>Zoom Out</button>
  * <button onClick={() => viewer.zoomToFit()}>Fit</button>
+ *
+ * // Get viewport metrics for scale rulers
+ * const metrics = viewer.getViewportMetrics();
+ * const micronsPerPixel = mpp * metrics.imagePixelsPerScreenPixelX;
  * ```
  */
 
 import { useCallback } from 'react';
 import OpenSeadragon from 'openseadragon';
+
+/**
+ * Viewport metrics for scale calculations and measurements
+ */
+export interface ViewportMetrics {
+  /** Number of image pixels visible horizontally */
+  visibleImagePixelsX: number;
+  /** Number of image pixels visible vertically */
+  visibleImagePixelsY: number;
+  /** Number of screen pixels in viewport width */
+  screenPixelsX: number;
+  /** Number of screen pixels in viewport height */
+  screenPixelsY: number;
+  /** Image pixels per screen pixel (horizontal) */
+  imagePixelsPerScreenPixelX: number;
+  /** Image pixels per screen pixel (vertical) */
+  imagePixelsPerScreenPixelY: number;
+}
 
 export interface UseViewerResult {
   /** Zoom in by a factor */
@@ -34,6 +56,12 @@ export interface UseViewerResult {
 
   /** Set zoom level */
   setZoom: (zoom: number) => void;
+
+  /**
+   * Get current viewport metrics for scale calculations
+   * Returns real-time metrics about visible image pixels and screen pixels
+   */
+  getViewportMetrics: () => ViewportMetrics;
 }
 
 export function useViewer(viewer: OpenSeadragon.Viewer | undefined): UseViewerResult {
@@ -86,6 +114,51 @@ export function useViewer(viewer: OpenSeadragon.Viewer | undefined): UseViewerRe
     [viewer]
   );
 
+  const getViewportMetrics = useCallback((): ViewportMetrics => {
+    if (!viewer) {
+      return {
+        visibleImagePixelsX: 0,
+        visibleImagePixelsY: 0,
+        screenPixelsX: 0,
+        screenPixelsY: 0,
+        imagePixelsPerScreenPixelX: 1,
+        imagePixelsPerScreenPixelY: 1,
+      };
+    }
+
+    const viewport = viewer.viewport;
+    const containerSize = viewport.getContainerSize();
+    const viewportBounds = viewport.getBounds();
+
+    // Convert viewport bounds to image coordinates
+    const topLeft = viewport.viewportToImageCoordinates(
+      viewportBounds.x,
+      viewportBounds.y
+    );
+    const bottomRight = viewport.viewportToImageCoordinates(
+      viewportBounds.x + viewportBounds.width,
+      viewportBounds.y + viewportBounds.height
+    );
+
+    const visibleImagePixelsX = bottomRight.x - topLeft.x;
+    const visibleImagePixelsY = bottomRight.y - topLeft.y;
+
+    const screenPixelsX = containerSize.x;
+    const screenPixelsY = containerSize.y;
+
+    const imagePixelsPerScreenPixelX = visibleImagePixelsX / screenPixelsX;
+    const imagePixelsPerScreenPixelY = visibleImagePixelsY / screenPixelsY;
+
+    return {
+      visibleImagePixelsX,
+      visibleImagePixelsY,
+      screenPixelsX,
+      screenPixelsY,
+      imagePixelsPerScreenPixelX,
+      imagePixelsPerScreenPixelY,
+    };
+  }, [viewer]);
+
   return {
     zoomIn,
     zoomOut,
@@ -94,5 +167,6 @@ export function useViewer(viewer: OpenSeadragon.Viewer | undefined): UseViewerRe
     panTo,
     getZoom,
     setZoom,
+    getViewportMetrics,
   };
 }
