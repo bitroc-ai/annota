@@ -31,7 +31,26 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
     useEffect(() => {
       if (!elementRef.current || viewerRef.current) return;
 
+      // Sensible performance defaults; user-provided options override these
+      const perfDefaults: Partial<OpenSeadragon.Options> = {
+        useCanvas: true,
+        immediateRender: true,
+        alwaysBlend: false,
+        blendTime: 0.05,
+        animationTime: 0.2,
+        imageLoaderLimit: 16,
+        maxImageCacheCount: 512,
+        preload: true,
+        timeout: 120000,
+        preserveImageSizeOnResize: true,
+        gestureSettingsMouse: {
+          clickToZoom: false,
+          dblClickToZoom: false,
+        } as any,
+      };
+
       const viewer = OpenSeadragon({
+        ...perfDefaults,
         ...options,
         element: elementRef.current,
       });
