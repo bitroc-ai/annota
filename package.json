@@ -1,6 +1,6 @@
 {
   "name": "annota",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "A React annotation framework for digital pathology and whole slide imaging",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
