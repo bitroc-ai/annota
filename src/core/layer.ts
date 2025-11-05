@@ -266,33 +266,126 @@ export function createLayerManager(): LayerManager {
 // ============================================
 
 /**
+ * Extract unique values for a given property key from a collection of annotations
+ * @param annotations Array of annotations to analyze
+ * @param propertyKey The property key to extract values from
+ * @returns Array of unique values found for the property
+ *
+ * @example
+ * const maskTypes = getPropertyValues(annotations, 'classification');
+ * // Returns: ['positive', 'negative']
+ *
+ * const ageGroups = getPropertyValues(annotations, 'ageGroup');
+ * // Returns: ['child', 'youth', 'adult', 'elderly']
+ */
+export function getPropertyValues(annotations: Annotation[], propertyKey: string): any[] {
+  const values = new Set<any>();
+  for (const annotation of annotations) {
+    const value = annotation.properties?.[propertyKey];
+    if (value !== undefined && value !== null) {
+      values.add(value);
+    }
+  }
+  return Array.from(values);
+}
+
+/**
+ * Get a summary of all property keys and their unique values
+ * @param annotations Array of annotations to analyze
+ * @returns Map of property keys to arrays of unique values
+ *
+ * @example
+ * const propertySummary = getPropertySummary(annotations);
+ * // Returns: {
+ * //   classification: ['positive', 'negative'],
+ * //   gender: ['male', 'female'],
+ * //   ageGroup: ['child', 'youth', 'adult', 'elderly']
+ * // }
+ */
+export function getPropertySummary(annotations: Annotation[]): Record<string, any[]> {
+  const summary: Record<string, Set<any>> = {};
+
+  for (const annotation of annotations) {
+    if (annotation.properties) {
+      for (const [key, value] of Object.entries(annotation.properties)) {
+        // Skip internal properties (prefixed with _)
+        if (key.startsWith('_')) continue;
+
+        if (!summary[key]) {
+          summary[key] = new Set();
+        }
+        if (value !== undefined && value !== null) {
+          summary[key].add(value);
+        }
+      }
+    }
+  }
+
+  // Convert Sets to Arrays
+  const result: Record<string, any[]> = {};
+  for (const [key, valueSet] of Object.entries(summary)) {
+    result[key] = Array.from(valueSet);
+  }
+  return result;
+}
+
+/**
+ * Create a filter for annotations with a specific property value
+ * @param propertyKey The property key to filter by
+ * @param value The value to match (or array of values for OR matching)
+ *
+ * @example
+ * // Single value filter
+ * const positiveFilter = createPropertyFilter('classification', 'positive');
+ *
+ * // Multiple values filter (OR logic)
+ * const youngFilter = createPropertyFilter('ageGroup', ['child', 'youth']);
+ */
+export function createPropertyFilter(propertyKey: string, value: any | any[]): Filter {
+  if (Array.isArray(value)) {
+    const valueSet = new Set(value);
+    return (annotation: Annotation) => {
+      const propValue = annotation.properties?.[propertyKey];
+      return propValue !== undefined && valueSet.has(propValue);
+    };
+  }
+
+  return (annotation: Annotation) => annotation.properties?.[propertyKey] === value;
+}
+
+/**
  * Create a filter for positive mask annotations
+ * Checks for properties.classification === 'positive'
+ * Falls back to polygon/multipolygon/path shapes without classification
  */
 export function createPositiveMaskFilter(): Filter {
   return (annotation: Annotation) => {
-    // If maskPolarity is explicitly set to 'positive', include it
-    // If maskPolarity is not set but annotation is a polygon/multipolygon, default to positive
-    if (annotation.maskPolarity === 'positive') return true;
-    if (!annotation.maskPolarity) {
-      // Default behavior: polygon shapes without explicit polarity are positive masks
+    const classification = annotation.properties?.classification;
+
+    // If classification is explicitly set to 'positive', include it
+    if (classification === 'positive') return true;
+
+    // If classification is not set, default behavior: polygon/path shapes are positive masks
+    if (!classification) {
       const shapeType = annotation.shape.type;
-      return shapeType === 'polygon' || shapeType === 'multipolygon';
+      return shapeType === 'polygon' || shapeType === 'multipolygon' || shapeType === 'path';
     }
+
     return false;
   };
 }
 
 /**
  * Create a filter for negative mask annotations
+ * Checks for properties.classification === 'negative'
  */
 export function createNegativeMaskFilter(): Filter {
-  return (annotation: Annotation) => {
-    return annotation.maskPolarity === 'negative';
-  };
+  return (annotation: Annotation) => annotation.properties?.classification === 'negative';
 }
 
 /**
- * Create a filter by mask polarity
+ * Create a filter based on mask polarity value
+ * @param polarity The mask polarity to filter by
  */
 export function createMaskPolarityFilter(polarity: 'positive' | 'negative'): Filter {
   return polarity === 'positive' ? createPositiveMaskFilter() : createNegativeMaskFilter();

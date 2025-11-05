@@ -260,7 +260,6 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
       shape,
       properties,
       style: baseAnnotation.style,
-      maskPolarity: baseAnnotation.maskPolarity,
     };
   } catch (error) {
     console.error('[mergeAnnotations] Failed to merge annotations:', error);
@@ -339,7 +338,6 @@ export function splitAnnotation(
         shape,
         properties: { ...annotation.properties },
         style: annotation.style,
-        maskPolarity: annotation.maskPolarity,
       });
     }
 

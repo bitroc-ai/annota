@@ -32,8 +32,10 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
       if (!elementRef.current || viewerRef.current) return;
 
       // Sensible performance defaults; user-provided options override these
-      const perfDefaults: Partial<OpenSeadragon.Options> = {
-        useCanvas: true,
+      const perfDefaults: Partial<OpenSeadragon.Options> & { drawer?: string } = {
+        // Drawer options: 'canvas' (default, best compatibility), 'webgl' (better performance), 'html' (legacy)
+        // webgl provides better performance but requires WebGL support
+        drawer: 'canvas',
         immediateRender: true,
         alwaysBlend: false,
         blendTime: 0.05,

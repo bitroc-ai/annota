@@ -225,7 +225,7 @@ describe('exportJson', () => {
     ]);
   });
 
-  it('should include maskPolarity in properties if present', () => {
+  it('should include classification in properties if present', () => {
     const annotation: Annotation = {
       id: 'mask-1',
       shape: {
@@ -237,13 +237,14 @@ describe('exportJson', () => {
         ],
         bounds: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
       },
-      properties: {},
-      maskPolarity: 'positive',
+      properties: {
+        classification: 'positive',
+      },
     };
 
     const result = exportJson([annotation]);
 
-    expect(result.features[0].properties.maskPolarity).toBe('positive');
+    expect(result.features[0].properties.classification).toBe('positive');
   });
 
   it('should include classification if category property exists', () => {

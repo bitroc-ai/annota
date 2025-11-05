@@ -12,7 +12,6 @@ export type {
   Annotation,
   Point,
   AnnotationStyle,
-  MaskPolarity,
   Shape,
   ShapeType,
   ImageShape,
@@ -24,6 +23,8 @@ export type {
   PolygonShape,
   FreehandShape,
   MultiPolygonShape,
+  PathShape,
+  ControlPoint,
   Bounds,
 } from "./core/types";
 export { containsPoint, calculateBounds, translateShape } from "./core/types";
@@ -32,6 +33,9 @@ export {
   createPositiveMaskFilter,
   createNegativeMaskFilter,
   createMaskPolarityFilter,
+  createPropertyFilter,
+  getPropertyValues,
+  getPropertySummary,
 } from "./core/layer";
 export type { SelectionManager, SelectionChangeEvent } from "./core/selection";
 export { createSelectionManager } from "./core/selection";
@@ -135,6 +139,7 @@ export {
   PointTool,
   RectangleTool,
   PolygonTool,
+  CurveTool,
   PushTool,
   ContourTool,
   SplitTool,

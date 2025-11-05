@@ -5,6 +5,7 @@ import {
   PointTool,
   RectangleTool,
   PolygonTool,
+  CurveTool,
   PushTool,
   ContourTool,
   SplitTool,
@@ -60,6 +61,17 @@ export function ToolManager({
       }),
     [activeLayerId]
   );
+  const curveTool = useMemo(
+    () =>
+      new CurveTool({
+        annotationProperties: {
+          layer: activeLayerId,
+          category: 'positive',
+          tags: [],
+        },
+      }),
+    [activeLayerId]
+  );
   const pushTool = useMemo(() => new PushTool({ pushRadius }), [pushRadius]);
   const contourTool = useMemo(
     () =>
@@ -88,6 +100,7 @@ export function ToolManager({
   useTool({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
   useTool({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' && !!viewer });
   useTool({ viewer, handler: polygonTool, enabled: tool === 'polygon' && !!viewer });
+  useTool({ viewer, handler: curveTool, enabled: tool === 'curve' && !!viewer });
   useTool({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
   useTool({
     viewer,

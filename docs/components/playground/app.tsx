@@ -162,13 +162,15 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         opacity: 0.6,
         zIndex: 3,
         filter: (ann) => {
-          // Polygon/mask annotations with maskPolarity="positive" or default polygons
-          const isPolygon =
-            ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
-          if (!isPolygon) return false;
+          // Polygon/mask/path annotations with classification="positive" or default
+          const isMaskShape =
+            ann.shape.type === "polygon" ||
+            ann.shape.type === "multipolygon" ||
+            ann.shape.type === "path";
+          if (!isMaskShape) return false;
 
-          // Explicit positive or no polarity set (default to positive)
-          return ann.maskPolarity === "positive" || !ann.maskPolarity;
+          // Explicit positive or no classification set (default to positive)
+          return ann.properties?.classification === "positive" || !ann.properties?.classification;
         },
       });
     }
@@ -182,10 +184,12 @@ function DemoContent({ currentImage }: { currentImage: string }) {
         opacity: 0.6,
         zIndex: 4,
         filter: (ann) => {
-          // Polygon/mask annotations with maskPolarity="negative"
-          const isPolygon =
-            ann.shape.type === "polygon" || ann.shape.type === "multipolygon";
-          return isPolygon && ann.maskPolarity === "negative";
+          // Polygon/mask/path annotations with classification="negative"
+          const isMaskShape =
+            ann.shape.type === "polygon" ||
+            ann.shape.type === "multipolygon" ||
+            ann.shape.type === "path";
+          return isMaskShape && ann.properties?.classification === "negative";
         },
       });
     }
@@ -222,15 +226,15 @@ function DemoContent({ currentImage }: { currentImage: string }) {
             ), // Fallback to empty if no mask file
           ]);
 
-        // Assign maskPolarity to loaded masks (default to positive)
+        // Assign classification to loaded masks (default to positive)
         // Remove style property so categoryStyleFunction applies the correct styling
         const masksWithPolarity = maskAnnotations.map((ann) => {
           const { style, ...annotationWithoutStyle } = ann;
           return {
             ...annotationWithoutStyle,
-            maskPolarity: "positive" as const,
             properties: {
               ...ann.properties,
+              classification: "positive",
               source: "png-mask",
             },
           };
@@ -307,14 +311,14 @@ export function PlaygroundApp() {
   );
 
   // Category-based styling: red for negative, green for positive
-  // Also supports maskPolarity for polygon/mask annotations
+  // Also supports label for polygon/mask annotations
   const categoryStyleFunction = useCallback(
     (annotation: Annotation): AnnotationStyle => {
       const category = annotation.properties?.category as string | undefined;
-      const maskPolarity = annotation.maskPolarity;
+      const classification = annotation.properties?.classification;
 
       // Check mask polarity first (for polygon masks)
-      if (maskPolarity === "negative") {
+      if (classification === "negative") {
         return {
           fill: "#FF0000", // Red fill for negative masks
           fillOpacity: 0.4,
@@ -324,7 +328,7 @@ export function PlaygroundApp() {
         };
       }
 
-      if (maskPolarity === "positive") {
+      if (classification === "positive") {
         return {
           fill: "#00FF00", // Green fill for positive masks
           fillOpacity: 0.3,

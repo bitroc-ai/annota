@@ -32,7 +32,8 @@ export type ShapeType =
   | 'freehand'
   | 'line'
   | 'multipolygon'
-  | 'image';
+  | 'image'
+  | 'path';
 
 export interface BaseShape {
   type: ShapeType;
@@ -98,6 +99,22 @@ export interface ImageShape extends BaseShape {
   opacity?: number; // Optional opacity (0-1)
 }
 
+/**
+ * Control point for bezier or spline curves
+ */
+export interface ControlPoint extends Point {
+  handleIn?: Point; // Incoming control handle (relative to point)
+  handleOut?: Point; // Outgoing control handle (relative to point)
+  smooth?: boolean; // Whether this is a smooth point or cusp
+}
+
+export interface PathShape extends BaseShape {
+  type: 'path';
+  points: ControlPoint[]; // Control points with optional handles
+  closed: boolean; // Whether the path is closed
+  smoothing?: 'bezier' | 'catmull-rom' | 'none'; // Smoothing algorithm
+}
+
 export type Shape =
   | PointShape
   | CircleShape
@@ -107,7 +124,8 @@ export type Shape =
   | PolygonShape
   | FreehandShape
   | MultiPolygonShape
-  | ImageShape;
+  | ImageShape
+  | PathShape;
 
 // ============================================
 // Style Types
@@ -127,23 +145,11 @@ export type StyleExpression = AnnotationStyle | ((annotation: Annotation) => Ann
 // Annotation Types
 // ============================================
 
-/**
- * Mask polarity for segmentation annotations
- * - 'positive': Areas to include in the mask
- * - 'negative': Areas to exclude from the mask
- */
-export type MaskPolarity = 'positive' | 'negative';
-
 export interface Annotation {
   id: string;
   shape: Shape;
   properties?: Record<string, any>;
   style?: AnnotationStyle;
-  /**
-   * Mask polarity for segmentation tasks
-   * Used to distinguish between positive (include) and negative (exclude) masks
-   */
-  maskPolarity?: MaskPolarity;
 }
 
 // ============================================
@@ -238,6 +244,17 @@ export function calculateBounds(shape: Shape): Bounds {
         maxX: shape.x + shape.width,
         maxY: shape.y + shape.height,
       };
+
+    case 'path': {
+      const xs = shape.points.map(p => p.x);
+      const ys = shape.points.map(p => p.y);
+      return {
+        minX: Math.min(...xs),
+        minY: Math.min(...ys),
+        maxX: Math.max(...xs),
+        maxY: Math.max(...ys),
+      };
+    }
   }
 }
 
@@ -307,6 +324,16 @@ export function containsPoint(shape: Shape, x: number, y: number, buffer = 0): b
         y >= shape.y - buffer &&
         y <= shape.y + shape.height + buffer
       );
+    }
+
+    case 'path': {
+      // Path is like polygon - check if point is inside when closed
+      if (shape.closed) {
+        return pointInPolygon(x, y, shape.points, buffer);
+      } else {
+        // For open paths, check distance to the path
+        return distanceToPolygon(x, y, shape.points) <= buffer;
+      }
     }
   }
 }
@@ -520,6 +547,26 @@ export function translateShape(shape: Shape, dx: number, dy: number): Shape {
           minY: shape.y + dy,
           maxX: shape.x + shape.width + dx,
           maxY: shape.y + shape.height + dy,
+        },
+      };
+
+    case 'path':
+      return {
+        type: 'path',
+        points: shape.points.map(p => ({
+          x: p.x + dx,
+          y: p.y + dy,
+          handleIn: p.handleIn,
+          handleOut: p.handleOut,
+          smooth: p.smooth,
+        })),
+        closed: shape.closed,
+        smoothing: shape.smoothing,
+        bounds: {
+          minX: shape.bounds.minX + dx,
+          minY: shape.bounds.minY + dy,
+          maxX: shape.bounds.maxX + dx,
+          maxY: shape.bounds.maxY + dy,
         },
       };
 

@@ -15,6 +15,8 @@ import type {
   FreehandShape,
   MultiPolygonShape,
   ImageShape,
+  PathShape,
+  ControlPoint,
 } from '../../core/types';
 import type { ComputedStyle } from './styles';
 
@@ -300,6 +302,138 @@ export function renderMultiPolygon(
   }
 }
 
+/**
+ * Render a path shape (closed curve)
+ * Supports Catmull-Rom spline and Bezier curve smoothing
+ */
+export function renderPath(
+  graphics: PIXI.Graphics,
+  shape: PathShape,
+  style: ComputedStyle,
+  scale: number
+): void {
+  if (shape.points.length < 2) return;
+
+  graphics.clear();
+
+  const origin = shape.points[0];
+  graphics.position.set(origin.x, origin.y);
+
+  // Start the path
+  graphics.moveTo(0, 0);
+
+  // Draw based on smoothing algorithm
+  if (shape.smoothing === 'bezier' && hasHandles(shape.points)) {
+    // Draw bezier curves using control handles
+    for (let i = 1; i < shape.points.length; i++) {
+      const p1 = shape.points[i - 1];
+      const p2 = shape.points[i];
+
+      const cp1 = p1.handleOut
+        ? { x: p1.x + p1.handleOut.x - origin.x, y: p1.y + p1.handleOut.y - origin.y }
+        : { x: p1.x - origin.x, y: p1.y - origin.y };
+
+      const cp2 = p2.handleIn
+        ? { x: p2.x + p2.handleIn.x - origin.x, y: p2.y + p2.handleIn.y - origin.y }
+        : { x: p2.x - origin.x, y: p2.y - origin.y };
+
+      graphics.bezierCurveTo(
+        cp1.x,
+        cp1.y,
+        cp2.x,
+        cp2.y,
+        p2.x - origin.x,
+        p2.y - origin.y
+      );
+    }
+
+    // Close the path if needed
+    if (shape.closed) {
+      const lastPoint = shape.points[shape.points.length - 1];
+      const firstPoint = shape.points[0];
+
+      const cp1 = lastPoint.handleOut
+        ? {
+            x: lastPoint.x + lastPoint.handleOut.x - origin.x,
+            y: lastPoint.y + lastPoint.handleOut.y - origin.y,
+          }
+        : { x: lastPoint.x - origin.x, y: lastPoint.y - origin.y };
+
+      const cp2 = firstPoint.handleIn
+        ? {
+            x: firstPoint.x + firstPoint.handleIn.x - origin.x,
+            y: firstPoint.y + firstPoint.handleIn.y - origin.y,
+          }
+        : { x: 0, y: 0 };
+
+      graphics.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, 0, 0);
+    }
+  } else if (shape.smoothing === 'catmull-rom') {
+    // Draw Catmull-Rom spline
+    const points = shape.closed
+      ? [...shape.points, shape.points[0], shape.points[1]]
+      : shape.points;
+
+    for (let i = 1; i < points.length - 2; i++) {
+      const p0 = i > 0 ? points[i - 1] : points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = i < points.length - 2 ? points[i + 2] : points[i + 1];
+
+      // Draw quadratic curve segments approximating Catmull-Rom
+      for (let t = 0; t <= 1; t += 0.1) {
+        const t2 = t * t;
+        const t3 = t2 * t;
+
+        const x =
+          0.5 *
+          (2 * p1.x +
+            (-p0.x + p2.x) * t +
+            (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+            (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+
+        const y =
+          0.5 *
+          (2 * p1.y +
+            (-p0.y + p2.y) * t +
+            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+
+        graphics.lineTo(x - origin.x, y - origin.y);
+      }
+    }
+  } else {
+    // No smoothing - draw straight lines
+    for (let i = 1; i < shape.points.length; i++) {
+      const p = shape.points[i];
+      graphics.lineTo(p.x - origin.x, p.y - origin.y);
+    }
+
+    if (shape.closed) {
+      graphics.lineTo(0, 0);
+    }
+  }
+
+  // Fill if closed
+  if (shape.closed) {
+    graphics.fill({ color: style.fill.color, alpha: style.fill.alpha });
+  }
+
+  // Stroke the path
+  graphics.stroke({
+    width: style.stroke.width / scale,
+    color: style.stroke.color,
+    alpha: style.stroke.alpha,
+  });
+}
+
+/**
+ * Helper: Check if any points have control handles
+ */
+function hasHandles(points: ControlPoint[]): boolean {
+  return points.some(p => p.handleIn || p.handleOut);
+}
+
 // Cache for loaded image textures to avoid repeated loading
 const textureCache = new Map<string, PIXI.Texture>();
 
@@ -412,6 +546,9 @@ export function renderShape(
       break;
     case 'multipolygon':
       renderMultiPolygon(graphics, shape, style, scale);
+      break;
+    case 'path':
+      renderPath(graphics, shape, style, scale);
       break;
     case 'image':
       // Image shapes are handled differently - they use sprites not graphics

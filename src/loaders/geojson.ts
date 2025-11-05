@@ -78,7 +78,7 @@ export function exportJson(annotations: Annotation[]): GeoJSONFeatureCollection 
  * Convert a single annotation to a GeoJSON feature
  */
 function annotationToGeoJSONFeature(annotation: Annotation): GeoJSONFeature | null {
-  const { id, shape, properties, maskPolarity } = annotation;
+  const { id, shape, properties } = annotation;
 
   let geometry: GeoJSONFeature['geometry'] | null = null;
 
@@ -172,10 +172,7 @@ function annotationToGeoJSONFeature(annotation: Annotation): GeoJSONFeature | nu
     };
   }
 
-  // Add mask polarity if present
-  if (maskPolarity) {
-    geoProperties.maskPolarity = maskPolarity;
-  }
+  // Properties are already included in geoProperties above
 
   // Add circle radius if it's a circle shape
   if (shape.type === 'circle') {

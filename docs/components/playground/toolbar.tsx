@@ -16,6 +16,7 @@ import {
   Scissors,
   Merge,
   Image,
+  Spline,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnnotator, useViewer, useHistory, useSelection, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
@@ -28,6 +29,7 @@ export type ToolType =
   | "point"
   | "rectangle"
   | "polygon"
+  | "curve"
   | "cell-detect"
   | "push"
   | "split";
@@ -158,7 +160,10 @@ export function AnnotationToolbar({
       (ann) => ann.shape.type === "point"
     );
     const maskAnnotations = allAnnotations.filter(
-      (ann) => ann.shape.type === "polygon" || ann.shape.type === "multipolygon"
+      (ann) =>
+        ann.shape.type === "polygon" ||
+        ann.shape.type === "multipolygon" ||
+        ann.shape.type === "path"
     );
 
     if (maskAnnotations.length === 0) {
@@ -198,8 +203,8 @@ export function AnnotationToolbar({
         }
       });
 
-      // Assign maskPolarity based on contained points (positive wins if both)
-      const currentPolarity = mask.maskPolarity;
+      // Assign classification based on contained points (positive wins if both)
+      const currentPolarity = mask.classification;
       let newPolarity: "positive" | "negative" | undefined = currentPolarity;
 
       if (hasPositive) {
@@ -212,7 +217,7 @@ export function AnnotationToolbar({
       if (newPolarity !== currentPolarity) {
         annotator.updateAnnotation(mask.id, {
           ...mask,
-          maskPolarity: newPolarity,
+          classification: newPolarity,
         });
         assignedCount++;
       }
@@ -273,6 +278,18 @@ export function AnnotationToolbar({
           title="Draw polygons (double-click to finish)"
         >
           <Pentagon className="w-4 h-4" />
+        </Button>
+        <Button
+          variant={tool === "curve" ? "default" : "ghost"}
+          size="icon"
+          onClick={() => onToolChange("curve")}
+          className={cn(
+            "w-9 h-9",
+            tool === "curve" && "bg-blue-600 hover:bg-blue-700"
+          )}
+          title="Draw smooth curves (freehand)"
+        >
+          <Spline className="w-4 h-4" />
         </Button>
         <Button
           variant={tool === "push" ? "default" : "ghost"}

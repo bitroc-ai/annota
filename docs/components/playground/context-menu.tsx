@@ -29,9 +29,9 @@ export function AnnotationContextMenu() {
 
     const updated: Annotation = {
       ...menuState.annotation,
-      maskPolarity: "positive",
       properties: {
         ...menuState.annotation.properties,
+        classification: "positive",
         layer: "positive-masks",
       },
     };
@@ -46,9 +46,9 @@ export function AnnotationContextMenu() {
 
     const updated: Annotation = {
       ...menuState.annotation,
-      maskPolarity: "negative",
       properties: {
         ...menuState.annotation.properties,
+        classification: "negative",
         layer: "negative-masks",
       },
     };
@@ -118,19 +118,20 @@ export function AnnotationContextMenu() {
   const isMaskAnnotation =
     menuState.annotation &&
     (menuState.annotation.shape.type === "polygon" ||
-      menuState.annotation.shape.type === "multipolygon");
+      menuState.annotation.shape.type === "multipolygon" ||
+      menuState.annotation.shape.type === "path");
 
   const isPointAnnotation =
     menuState.annotation && menuState.annotation.shape.type === "point";
 
   // Check current state for masks
   const isCurrentlyPositiveMask = !!(
-    menuState.annotation?.maskPolarity === "positive" ||
-    (isMaskAnnotation && !menuState.annotation?.maskPolarity)
+    menuState.annotation?.properties?.classification === "positive" ||
+    (isMaskAnnotation && !menuState.annotation?.properties?.classification)
   );
 
   const isCurrentlyNegativeMask = !!(
-    menuState.annotation?.maskPolarity === "negative"
+    menuState.annotation?.properties?.classification === "negative"
   );
 
   // Check current state for points
