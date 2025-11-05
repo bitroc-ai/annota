@@ -204,22 +204,22 @@ export function AnnotationToolbar({
       });
 
       // Assign classification based on contained points (positive wins if both)
-      const currentPolarity = mask.properties?.classification;
-      let newPolarity: "positive" | "negative" | undefined = currentPolarity;
+      const currentClassification = mask.properties?.classification;
+      let newClassification: "positive" | "negative" | undefined = currentClassification;
 
       if (hasPositive) {
-        newPolarity = "positive";
+        newClassification = "positive";
       } else if (hasNegative) {
-        newPolarity = "negative";
+        newClassification = "negative";
       }
 
-      // Update the mask if polarity changed
-      if (newPolarity !== currentPolarity) {
+      // Update the mask if classification changed
+      if (newClassification !== currentClassification) {
         annotator.updateAnnotation(mask.id, {
           ...mask,
           properties: {
             ...mask.properties,
-            classification: newPolarity,
+            classification: newClassification,
           },
         });
         assignedCount++;
