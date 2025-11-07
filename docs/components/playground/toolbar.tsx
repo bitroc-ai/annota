@@ -2,7 +2,6 @@ import {
   Hand,
   CircleDot,
   Wand,
-  Mouse,
   Eraser,
   ZoomIn,
   ZoomOut,
@@ -294,6 +293,7 @@ export function AnnotationToolbar({
         >
           <Spline className="w-4 h-4" />
         </Button>
+        {/* Push tool disabled - will be redesigned as Magnet tool
         <Button
           variant={tool === "push" ? "default" : "ghost"}
           size="icon"
@@ -306,6 +306,7 @@ export function AnnotationToolbar({
         >
           <Mouse className="w-4 h-4" />
         </Button>
+        */}
         <Button
           variant={tool === "cell-detect" ? "default" : "ghost"}
           size="icon"
