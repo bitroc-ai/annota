@@ -16,7 +16,6 @@ export class CurveTool extends BaseTool {
   private points: Point[] = [];
   private currentAnnotationId: string | null = null;
   private isDrawing = false;
-  private smoothing: 'bezier' | 'catmull-rom' | 'none' = 'catmull-rom';
 
   constructor(options: ToolHandlerOptions = {}) {
     super('curve', {
@@ -51,19 +50,15 @@ export class CurveTool extends BaseTool {
     this.points = [point];
     this.currentAnnotationId = `curve-${Date.now()}`;
 
-    // Create initial annotation
+    // Create initial annotation (using polygon type for save/load symmetry)
     const annotation: Annotation = {
       id: this.currentAnnotationId,
       shape: {
-        type: 'path',
+        type: 'polygon',
         points: [{ x: point.x, y: point.y }],
-        closed: false,
-        smoothing: this.smoothing,
         bounds: calculateBounds({
-          type: 'path',
+          type: 'polygon',
           points: [{ x: point.x, y: point.y }],
-          closed: false,
-          smoothing: this.smoothing,
           bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
         }),
       },
@@ -124,7 +119,7 @@ export class CurveTool extends BaseTool {
       const simplifiedPoints = this.simplifyPath(this.points);
       const controlPoints = this.convertToControlPoints(simplifiedPoints);
 
-      // Update to final closed curve
+      // Update to final closed polygon (maintains symmetry with save/load)
       if (this.currentAnnotationId) {
         const annotation = this.annotator.state.store.get(this.currentAnnotationId);
         if (annotation) {
@@ -132,15 +127,11 @@ export class CurveTool extends BaseTool {
           this.annotator.updateAnnotation(this.currentAnnotationId, {
             ...annotation,
             shape: {
-              type: 'path',
+              type: 'polygon',
               points: controlPoints,
-              closed: true,
-              smoothing: this.smoothing,
               bounds: calculateBounds({
-                type: 'path',
+                type: 'polygon',
                 points: controlPoints,
-                closed: true,
-                smoothing: this.smoothing,
                 bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
               }),
             },
@@ -176,15 +167,11 @@ export class CurveTool extends BaseTool {
     this.annotator.updateAnnotation(this.currentAnnotationId, {
       ...existing,
       shape: {
-        type: 'path',
+        type: 'polygon',
         points: controlPoints,
-        closed: false,
-        smoothing: this.smoothing,
         bounds: calculateBounds({
-          type: 'path',
+          type: 'polygon',
           points: controlPoints,
-          closed: false,
-          smoothing: this.smoothing,
           bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
         }),
       },
