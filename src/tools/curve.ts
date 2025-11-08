@@ -43,6 +43,9 @@ export class CurveTool extends BaseTool {
         }
         return;
       }
+    } else {
+      // If already drawing, cancel the previous drawing first
+      this.cancelDrawing();
     }
 
     // Start drawing
@@ -107,13 +110,14 @@ export class CurveTool extends BaseTool {
    * Handle canvas release - finish drawing
    */
   onCanvasRelease = (evt: OpenSeadragon.ViewerEvent): void => {
-    if (!this.enabled || !this.viewer || !this.annotator || !this.isDrawing) return;
+    if (!this.enabled || !this.viewer || !this.annotator) return;
+
+    // If not drawing, ignore the release
+    if (!this.isDrawing) return;
 
     if (this.points.length < 3) {
-      // Not enough points - cancel
-      if (this.currentAnnotationId) {
-        this.annotator.state.store.delete(this.currentAnnotationId);
-      }
+      // Not enough points - cancel and clean up
+      this.cancelDrawing();
     } else {
       // Simplify and smooth the path
       const simplifiedPoints = this.simplifyPath(this.points);
@@ -137,20 +141,37 @@ export class CurveTool extends BaseTool {
             },
             properties: cleanProperties,
           });
+          this.selectAnnotation(this.currentAnnotationId);
         }
-        this.selectAnnotation(this.currentAnnotationId);
       }
-    }
 
-    // Reset state
-    this.points = [];
-    this.isDrawing = false;
-    this.currentAnnotationId = null;
+      // Reset state
+      this.resetState();
+    }
 
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;
     }
   };
+
+  /**
+   * Cancel current drawing and clean up
+   */
+  private cancelDrawing(): void {
+    if (this.currentAnnotationId && this.annotator) {
+      this.annotator.state.store.delete(this.currentAnnotationId);
+    }
+    this.resetState();
+  }
+
+  /**
+   * Reset tool state
+   */
+  private resetState(): void {
+    this.points = [];
+    this.isDrawing = false;
+    this.currentAnnotationId = null;
+  }
 
   /**
    * Update the curve annotation with current points
@@ -255,11 +276,8 @@ export class CurveTool extends BaseTool {
     document.removeEventListener('keydown', this.onKeyDown);
 
     // Cancel any in-progress drawing
-    if (this.isDrawing && this.currentAnnotationId && this.annotator) {
-      this.annotator.state.store.delete(this.currentAnnotationId);
-      this.points = [];
-      this.isDrawing = false;
-      this.currentAnnotationId = null;
+    if (this.isDrawing) {
+      this.cancelDrawing();
     }
 
     super.destroy();
@@ -270,12 +288,8 @@ export class CurveTool extends BaseTool {
    */
   private onKeyDown = (evt: KeyboardEvent): void => {
     if (evt.key === 'Escape' && this.isDrawing) {
-      if (this.currentAnnotationId && this.annotator) {
-        this.annotator.state.store.delete(this.currentAnnotationId);
-      }
-      this.points = [];
-      this.isDrawing = false;
-      this.currentAnnotationId = null;
+      this.cancelDrawing();
+      evt.preventDefault();
     }
   };
 }
