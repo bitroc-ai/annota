@@ -31,24 +31,20 @@ export class CurveTool extends BaseTool {
   onCanvasPress = (evt: OpenSeadragon.ViewerEvent): void => {
     if (!this.enabled || !this.viewer || !this.annotator) return;
 
+    // Prevent default action to avoid selecting/moving existing annotations
+    if (this.options.preventDefaultAction) {
+      (evt as any).preventDefaultAction = true;
+    }
+
     const { originalEvent } = evt as any;
     const point = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
 
-    // If not drawing, check if we're clicking on an existing annotation
-    if (!this.isDrawing) {
-      const hitAnnotation = this.checkAnnotationHit(point);
-      if (hitAnnotation) {
-        if (this.options.preventDefaultAction) {
-          (evt as any).preventDefaultAction = true;
-        }
-        return;
-      }
-    } else {
-      // If already drawing, cancel the previous drawing first
+    // If already drawing, cancel the previous drawing first
+    if (this.isDrawing) {
       this.cancelDrawing();
     }
 
-    // Start drawing
+    // Start drawing (always start, ignore existing annotations)
     this.isDrawing = true;
     this.points = [point];
     this.currentAnnotationId = `curve-${Date.now()}`;
@@ -74,10 +70,6 @@ export class CurveTool extends BaseTool {
     };
 
     this.annotator.state.store.add(annotation);
-
-    if (this.options.preventDefaultAction) {
-      (evt as any).preventDefaultAction = true;
-    }
   };
 
   /**
@@ -85,6 +77,11 @@ export class CurveTool extends BaseTool {
    */
   onCanvasDrag = (evt: OpenSeadragon.ViewerEvent): void => {
     if (!this.enabled || !this.viewer || !this.annotator || !this.isDrawing) return;
+
+    // Prevent default action to avoid selecting/moving existing annotations
+    if (this.options.preventDefaultAction) {
+      (evt as any).preventDefaultAction = true;
+    }
 
     const { originalEvent } = evt as any;
     const point = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
@@ -99,10 +96,6 @@ export class CurveTool extends BaseTool {
       // At least 2 pixels apart
       this.points.push(point);
       this.updateCurve();
-    }
-
-    if (this.options.preventDefaultAction) {
-      (evt as any).preventDefaultAction = true;
     }
   };
 
