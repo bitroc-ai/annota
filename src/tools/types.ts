@@ -125,3 +125,16 @@ export interface MoveToolOptions extends ToolHandlerOptions {
   /** Whether to move all selected annotations or just one */
   moveAllSelected?: boolean;
 }
+
+/**
+ * Options for the curve tool
+ */
+export interface CurveToolOptions extends ToolHandlerOptions {
+  /**
+   * Smoothing tolerance for path simplification (Douglas-Peucker algorithm)
+   * Lower values (0.5-2) = more vertices, follows drawn path closely
+   * Higher values (3-10) = fewer vertices, smoother result
+   * Default: 2
+   */
+  smoothingTolerance?: number;
+}

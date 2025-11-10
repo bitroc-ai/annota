@@ -145,6 +145,13 @@ export {
   SplitTool,
 } from "./tools";
 
+export type {
+  CurveToolOptions,
+  PushToolOptions,
+  ContourDetectOptions,
+  MoveToolOptions,
+} from "./tools/types";
+
 // ============================================
 // Loaders
 // ============================================

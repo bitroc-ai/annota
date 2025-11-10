@@ -6,7 +6,7 @@ import type OpenSeadragon from 'openseadragon';
 import type { Annotation, Point, ControlPoint } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';
-import type { ToolHandlerOptions } from './types';
+import type { CurveToolOptions } from './types';
 
 /**
  * Tool for drawing smooth closed curve annotations
@@ -16,13 +16,15 @@ export class CurveTool extends BaseTool {
   private points: Point[] = [];
   private currentAnnotationId: string | null = null;
   private isDrawing = false;
+  private smoothingTolerance: number;
 
-  constructor(options: ToolHandlerOptions = {}) {
+  constructor(options: CurveToolOptions = {}) {
     super('curve', {
       preventDefaultAction: true,
       checkAnnotationHits: false,
       ...options,
     });
+    this.smoothingTolerance = options.smoothingTolerance ?? 2;
   }
 
   /**
@@ -113,8 +115,8 @@ export class CurveTool extends BaseTool {
       // Not enough points - cancel and clean up
       this.cancelDrawing();
     } else {
-      // Simplify and smooth the path
-      const simplifiedPoints = this.simplifyPath(this.points);
+      // Simplify and smooth the path using configured tolerance
+      const simplifiedPoints = this.simplifyPath(this.points, this.smoothingTolerance);
       const controlPoints = this.convertToControlPoints(simplifiedPoints);
 
       // Update to final closed polygon (maintains symmetry with save/load)
