@@ -132,6 +132,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 
 For publishing releases, see [PUBLISHING.md](PUBLISHING.md).
 
+### Local Development with Documentation Site
+
+When developing the library and testing changes in the documentation site locally:
+
+```bash
+# In the docs directory
+cd docs
+pnpm link ../
+```
+
+This creates a direct symlink from your local library source to the docs project. Any changes you make to the library will be available in the docs after rebuilding the library with `pnpm build` or `pnpm dev`.
+
+**To switch back to the npm version:**
+
+```bash
+cd docs
+pnpm install --force
+```
+
+**Note:** The docs project uses the npm version (`^0.7.9`) in production deployments. The symlink setup is only for local development.
+
 ## License
 
 MIT

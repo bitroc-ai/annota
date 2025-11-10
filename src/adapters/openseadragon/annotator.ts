@@ -65,6 +65,7 @@ export interface OpenSeadragonAnnotatorState {
   history: HistoryManager;
   hover: { current: string | undefined };
   editing: { current: string | undefined; mode: 'vertices' | undefined };
+  toolDrawing: { active: boolean }; // Flag for tools to signal they're drawing
 }
 
 /**
@@ -147,6 +148,7 @@ export async function createOpenSeadragonAnnotator(
   const history = options.historyManager || createHistoryManager(options.historyOptions);
   const hover: { current: string | undefined } = { current: undefined };
   const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
+  const toolDrawing: { active: boolean } = { active: false };
 
   // Event emitter state
   const eventHandlers: Map<AnnotatorEvent, Set<AnnotatorEventHandler>> = new Map([
@@ -319,12 +321,22 @@ export async function createOpenSeadragonAnnotator(
   } | undefined;
 
   const onCanvasPress = (evt: OpenSeadragon.CanvasPressEvent) => {
+    // If a tool is currently drawing, let it handle all events exclusively
+    if (toolDrawing.active) {
+      return;
+    }
+
     const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
     if (!imagePoint) return;
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
     const visibilityFilter = createVisibilityFilter(options.filter);
     const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
+
+    // If we hit an in-progress annotation, let the tool handle it exclusively
+    if (hit?.properties?._inProgress) {
+      return;
+    }
 
     // Save press state for drag/release handling
     pressState = {
@@ -335,11 +347,6 @@ export async function createOpenSeadragonAnnotator(
     };
 
     if (hit) {
-      // Don't block clicks on in-progress annotations (being drawn by tools)
-      if (hit.properties?._inProgress) {
-        pressState = undefined;
-        return;
-      }
 
       // Pressed on annotation - handle selection
       const originalEvent = evt.originalEvent as MouseEvent;
@@ -363,6 +370,11 @@ export async function createOpenSeadragonAnnotator(
   };
 
   const onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent) => {
+    // If a tool already handled this event, skip
+    if ((evt as any).preventDefaultAction) {
+      return;
+    }
+
     if (!pressState) return;
 
     const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
@@ -418,6 +430,13 @@ export async function createOpenSeadragonAnnotator(
   };
 
   const onCanvasRelease = (evt: OpenSeadragon.CanvasReleaseEvent) => {
+    // If a tool already handled this event, skip
+    if ((evt as any).preventDefaultAction) {
+      // Clean up pressState if it exists
+      pressState = undefined;
+      return;
+    }
+
     if (!pressState) return;
 
     // Calculate movement distance
@@ -472,7 +491,7 @@ export async function createOpenSeadragonAnnotator(
 
   return {
     viewer,
-    state: { store, layerManager, history, hover, selection, editing },
+    state: { store, layerManager, history, hover, selection, editing, toolDrawing },
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {

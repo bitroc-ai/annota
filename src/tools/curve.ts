@@ -29,12 +29,13 @@ export class CurveTool extends BaseTool {
    * Handle canvas press - start drawing
    */
   onCanvasPress = (evt: OpenSeadragon.ViewerEvent): void => {
-    if (!this.enabled || !this.viewer || !this.annotator) return;
-
-    // Prevent default action to avoid selecting/moving existing annotations
+    // Set preventDefaultAction FIRST, before any other checks
+    // This ensures annotator skips its selection logic even if tool is disabled
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;
     }
+
+    if (!this.enabled || !this.viewer || !this.annotator) return;
 
     const { originalEvent } = evt as any;
     const point = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
@@ -260,6 +261,10 @@ export class CurveTool extends BaseTool {
   init(viewer: OpenSeadragon.Viewer, annotator: any): void {
     super.init(viewer, annotator);
     document.addEventListener('keydown', this.onKeyDown);
+    // Set flag to tell annotator this tool wants exclusive control
+    if (this.annotator) {
+      this.annotator.state.toolDrawing.active = true;
+    }
   }
 
   /**
@@ -271,6 +276,11 @@ export class CurveTool extends BaseTool {
     // Cancel any in-progress drawing
     if (this.isDrawing) {
       this.cancelDrawing();
+    }
+
+    // Clear flag so annotator can handle events again
+    if (this.annotator) {
+      this.annotator.state.toolDrawing.active = false;
     }
 
     super.destroy();
