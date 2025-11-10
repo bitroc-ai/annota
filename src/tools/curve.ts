@@ -47,6 +47,12 @@ export class CurveTool extends BaseTool {
       this.cancelDrawing();
     }
 
+    // Clear any existing selection before starting to draw
+    // This prevents previously drawn curves from being moved when drawing a new one
+    if (this.annotator.state.selection.hasSelection()) {
+      this.annotator.state.selection.clear();
+    }
+
     // Start drawing (always start, ignore existing annotations)
     this.isDrawing = true;
     this.points = [point];
