@@ -17,6 +17,7 @@ interface ToolManagerProps {
   tool: ToolType;
   threshold: number;
   pushRadius: number;
+  smoothingTolerance: number;
   activeLayerId?: string;
 }
 
@@ -25,6 +26,7 @@ export function ToolManager({
   tool,
   threshold,
   pushRadius,
+  smoothingTolerance,
   activeLayerId,
 }: ToolManagerProps) {
   // Create tool instances with active layer
@@ -64,13 +66,14 @@ export function ToolManager({
   const curveTool = useMemo(
     () =>
       new CurveTool({
+        smoothingTolerance,
         annotationProperties: {
           layer: activeLayerId,
           category: 'positive',
           tags: [],
         },
       }),
-    [activeLayerId]
+    [activeLayerId, smoothingTolerance]
   );
   const pushTool = useMemo(() => new PushTool({ pushRadius }), [pushRadius]);
   const contourTool = useMemo(

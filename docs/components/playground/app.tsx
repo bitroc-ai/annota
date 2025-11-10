@@ -286,6 +286,7 @@ export function PlaygroundApp() {
   const [tool, setTool] = useState<ToolType>("pan");
   const [threshold, setThreshold] = useState(8);
   const [pushRadius, setPushRadius] = useState(30);
+  const [smoothingTolerance, setSmoothingTolerance] = useState(2);
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
   const [imageVisible, setImageVisible] = useState(true);
 
@@ -403,6 +404,7 @@ export function PlaygroundApp() {
               tool={tool}
               threshold={threshold}
               pushRadius={pushRadius}
+              smoothingTolerance={smoothingTolerance}
               activeLayerId={activeLayerId}
             />
             <AnnotationEditor viewer={viewer} />
@@ -444,6 +446,8 @@ export function PlaygroundApp() {
               onThresholdChange={setThreshold}
               pushRadius={pushRadius}
               onPushRadiusChange={setPushRadius}
+              smoothingTolerance={smoothingTolerance}
+              onSmoothingToleranceChange={setSmoothingTolerance}
             />
           </div>
 
