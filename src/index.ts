@@ -145,6 +145,9 @@ export {
   SplitTool,
 } from "./tools";
 
+export { SamTool } from "./tools/sam";
+export type { SamToolOptions } from "./tools/sam";
+
 export type {
   CurveToolOptions,
   PushToolOptions,
@@ -182,3 +185,22 @@ export {
   canSplitAnnotation,
   toPolygonCoordinates,
 } from "./core/operations";
+
+// ============================================
+// ML/AI Models
+// ============================================
+
+export { SamOnnxModel } from "./ml/sam-onnx";
+export type {
+  SamOnnxConfig,
+  SamPredictInput,
+  SamPredictOutput,
+} from "./ml/sam-onnx";
+
+export {
+  loadNpyEmbedding,
+  loadNpyEmbeddingCached,
+  createDummyEmbedding,
+  loadRawEmbedding,
+  embeddingCache,
+} from "./ml/embedding-utils";

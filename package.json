@@ -49,6 +49,8 @@
   },
   "dependencies": {
     "jsfive": "^0.4.0",
+    "npyjs": "^1.0.4",
+    "onnxruntime-web": "^1.23.2",
     "pako": "^2.1.0",
     "pixi.js": "^8.14.0",
     "polygon-clipping": "^0.15.7",

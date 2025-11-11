@@ -1,0 +1,572 @@
+---
+title: SAM (Segment Anything Model) Tool
+description: Browser-based interactive segmentation using Meta's SAM via ONNX Runtime Web
+---
+
+# SAM (Segment Anything Model) Tool
+
+The SAM tool brings Meta AI's powerful Segment Anything Model directly into your browser, enabling instant object segmentation without requiring any backend infrastructure.
+
+## Overview
+
+**Key Features:**
+- ✅ **Zero latency** - Runs entirely in browser using WebAssembly
+- ✅ **No backend required** - Pure client-side inference
+- ✅ **Privacy-first** - Images never leave the device
+- ✅ **Offline support** - Works without internet after model download
+- ✅ **Cost-effective** - No GPU server costs
+
+**How it works:**
+1. User clicks on an object in the image
+2. SAM decoder runs inference in the browser (~100-300ms)
+3. Mask is generated and converted to polygon
+4. Annotation is automatically created
+
+## Quick Start
+
+```tsx
+import { SamTool, createDummyEmbedding } from 'annota';
+
+// Create SAM tool with precomputed embedding
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  embedding: precomputedEmbedding,  // [1, 256, 64, 64] tensor
+  imageWidth: 1024,
+  imageHeight: 1024,
+  annotationProperties: {
+    classification: 'positive',
+  }
+});
+
+// Initialize the model
+await samTool.initializeModel();
+
+// Activate the tool
+annotator.setTool(samTool);
+```
+
+## Installation & Setup
+
+### 1. Dependencies
+
+SAM support is built-in to Annota, no additional installation needed.
+
+### 2. Download SAM Models
+
+Download the pre-exported ONNX decoder model:
+
+```bash
+# SAM ViT-H decoder (~10MB)
+wget https://github.com/facebookresearch/segment-anything/releases/download/onnx/sam_vit_h_decoder.onnx
+
+# SAM ViT-B decoder (~4MB, faster but less accurate)
+wget https://github.com/facebookresearch/segment-anything/releases/download/onnx/sam_vit_b_decoder.onnx
+```
+
+Place the model in your `public/models/` directory.
+
+### 3. Generate Image Embeddings
+
+You need to precompute image embeddings using Python:
+
+```python
+import torch
+import numpy as np
+from segment_anything import sam_model_registry, SamPredictor
+
+# Load SAM model
+sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
+predictor = SamPredictor(sam)
+
+# Load your image
+from PIL import Image
+image = np.array(Image.open("image.jpg"))
+
+# Generate embedding
+predictor.set_image(image)
+embedding = predictor.get_image_embedding().cpu().numpy()
+
+# Save as .npy file
+np.save("embeddings/image_001.npy", embedding)
+```
+
+## Usage
+
+### Basic Usage with Precomputed Embeddings
+
+```tsx
+import { SamTool, loadNpyEmbedding } from 'annota';
+
+function MyAnnotator() {
+  const [samTool, setSamTool] = useState<SamTool | null>(null);
+
+  useEffect(() => {
+    async function initSamTool() {
+      // Load precomputed embedding
+      const embedding = await loadNpyEmbedding('/embeddings/image_001.npy');
+
+      // Create SAM tool
+      const tool = new SamTool({
+        decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+        embedding,
+        imageWidth: 2048,
+        imageHeight: 1536,
+      });
+
+      // Initialize model (downloads and loads ONNX model)
+      await tool.initializeModel();
+
+      setSamTool(tool);
+    }
+
+    initSamTool();
+  }, []);
+
+  return (
+    <AnnotaProvider>
+      <AnnotaViewer imageUrl="/images/slide_001.jpg" />
+      <Annotator />
+
+      <button onClick={() => annotator.setTool(samTool)}>
+        Activate SAM Tool
+      </button>
+    </AnnotaProvider>
+  );
+}
+```
+
+### Switching Images
+
+When switching between images, update the embedding:
+
+```tsx
+async function handleImageChange(newImageUrl: string) {
+  const embedding = await loadNpyEmbedding(`/embeddings/${imageId}.npy`);
+
+  samTool.setEmbedding(embedding, imageWidth, imageHeight);
+}
+```
+
+### With Custom Styling
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  embedding,
+  imageWidth: 1024,
+  imageHeight: 1024,
+  annotationProperties: {
+    classification: 'tumor',
+    properties: {
+      confidence: 0.95,
+      source: 'sam-onnx',
+    },
+    style: {
+      strokeColor: '#ff0000',
+      fillColor: '#ff0000',
+      fillOpacity: 0.3,
+    },
+  },
+});
+```
+
+### With Callbacks
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  embedding,
+  imageWidth: 1024,
+  imageHeight: 1024,
+
+  // Called when prediction starts
+  onPredictionStart: () => {
+    console.log('Generating segmentation...');
+    setLoading(true);
+  },
+
+  // Called when prediction completes
+  onPredictionComplete: (iouScore) => {
+    console.log('Prediction complete, IoU:', iouScore);
+    setLoading(false);
+  },
+
+  // Called when annotation is created
+  onAnnotationCreated: (annotation) => {
+    console.log('Created annotation:', annotation.id);
+  },
+
+  // Called on errors
+  onError: (error) => {
+    console.error('SAM error:', error);
+    alert(`Segmentation failed: ${error.message}`);
+  },
+});
+```
+
+## API Reference
+
+### SamTool
+
+```tsx
+interface SamToolOptions {
+  // Model configuration
+  decoderModelUrl: string;
+  embedding: ort.Tensor;
+  imageWidth: number;
+  imageHeight: number;
+
+  // UI options
+  showHoverPreview?: boolean;  // Default: true (not yet implemented)
+  previewOpacity?: number;      // Default: 0.5
+
+  // Annotation options
+  annotationProperties?: Partial<Annotation>;
+
+  // Callbacks
+  onAnnotationCreated?: (annotation: Annotation) => void;
+  onPredictionStart?: () => void;
+  onPredictionComplete?: (iouScore: number) => void;
+  onError?: (error: Error) => void;
+}
+```
+
+**Methods:**
+- `initializeModel()`: Initialize ONNX model (must be called before use)
+- `isModelInitialized()`: Check if model is ready
+- `setEmbedding(embedding, width, height)`: Update embedding for new image
+- `destroy()`: Clean up resources
+
+### Embedding Utilities
+
+#### loadNpyEmbedding
+
+Load embedding from `.npy` file:
+
+```tsx
+const embedding = await loadNpyEmbedding('/embeddings/image.npy');
+```
+
+#### loadNpyEmbeddingCached
+
+Load with automatic caching:
+
+```tsx
+const embedding = await loadNpyEmbeddingCached('/embeddings/image.npy');
+// Second call returns from cache instantly
+```
+
+#### createDummyEmbedding
+
+For testing without real embeddings:
+
+```tsx
+const dummyEmbedding = createDummyEmbedding();
+// Warning: produces random/poor segmentation results
+```
+
+#### embeddingCache
+
+Manage the embedding cache:
+
+```tsx
+import { embeddingCache } from 'annota';
+
+// Clear cache
+embeddingCache.clear();
+
+// Check cache size
+console.log(embeddingCache.getSize());
+
+// Remove specific embedding
+embeddingCache.delete('/embeddings/old_image.npy');
+```
+
+## Performance
+
+**Phase 1 (Current Implementation):**
+- Model download: ~10MB one-time (decoder only)
+- Initialization: ~1-2 seconds
+- Per-click inference: ~100-300ms (WebAssembly)
+- Memory usage: ~500MB
+- Requires: Precomputed `.npy` embeddings
+
+**Expected Performance:**
+- Chrome/Edge: 100-150ms per click
+- Firefox: 150-250ms per click
+- Safari: 200-300ms per click
+
+## Browser Compatibility
+
+**Minimum Requirements:**
+- WebAssembly support
+- ES2020 features
+- ~1GB available RAM
+
+**Recommended:**
+- Chrome/Edge 90+
+- Firefox 89+
+- Safari 15+
+
+## Limitations (Phase 1)
+
+Current implementation focuses on decoder-only inference with precomputed embeddings:
+
+1. **Requires precomputed embeddings** - Cannot encode images on-the-fly
+2. **Single point prompts** - Multi-point refinement not yet supported
+3. **No box prompts** - Click-only interface
+4. **No hover preview** - Preview on hover not yet implemented
+
+Future versions will add:
+- Real-time image encoding (full SAM model)
+- Multi-point positive/negative prompts
+- Bounding box prompts
+- Iterative mask refinement
+- Hover preview
+
+## Exporting SAM Models to ONNX
+
+If you need to export your own SAM models:
+
+```python
+import torch
+from segment_anything import sam_model_registry
+from segment_anything.utils.onnx import SamONNXModel
+
+# Load SAM checkpoint
+sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
+
+# Create ONNX wrapper (decoder only)
+onnx_model = SamONNXModel(sam, return_single_mask=True)
+
+# Define dummy inputs
+embed_dim = sam.prompt_encoder.embed_dim
+embed_size = sam.prompt_encoder.image_embedding_size
+
+dummy_inputs = {
+    "image_embeddings": torch.randn(1, embed_dim, *embed_size),
+    "point_coords": torch.randint(0, 1024, (1, 5, 2), dtype=torch.float),
+    "point_labels": torch.randint(0, 4, (1, 5), dtype=torch.float),
+    "mask_input": torch.randn(1, 1, 256, 256),
+    "has_mask_input": torch.tensor([1], dtype=torch.float),
+    "orig_im_size": torch.tensor([1536, 2048], dtype=torch.float),
+}
+
+# Export
+torch.onnx.export(
+    onnx_model,
+    tuple(dummy_inputs.values()),
+    "sam_vit_h_decoder.onnx",
+    export_params=True,
+    opset_version=17,
+    input_names=list(dummy_inputs.keys()),
+    output_names=["masks", "iou_predictions", "low_res_masks"],
+)
+```
+
+## Troubleshooting
+
+### Model Download Fails
+
+```tsx
+onError: (error) => {
+  if (error.message.includes('Failed to fetch')) {
+    console.error('Check model URL and CORS headers');
+  }
+}
+```
+
+### Out of Memory
+
+Use the smaller ViT-B model or close other browser tabs.
+
+### Slow Performance
+
+- Check browser console for warnings
+- Ensure SIMD is enabled
+- Try the smaller ViT-B model
+- Use WebGPU execution provider (experimental)
+
+### Invalid Embedding Shape
+
+Ensure your `.npy` file has shape `[1, 256, 64, 64]`:
+
+```python
+print(embedding.shape)  # Should be (1, 256, 64, 64)
+```
+
+### Poor Segmentation Quality
+
+- Use the larger ViT-H model for better accuracy
+- Ensure embeddings are generated from the correct image
+- Check that image dimensions match
+
+## Examples
+
+### Complete Integration Example
+
+```tsx
+import { useState, useEffect } from 'react';
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  SamTool,
+  loadNpyEmbeddingCached,
+  useAnnotator,
+} from 'annota';
+
+interface Image {
+  id: string;
+  url: string;
+  embeddingUrl: string;
+  width: number;
+  height: number;
+}
+
+function AnnotationApp() {
+  const [currentImage, setCurrentImage] = useState<Image>({
+    id: '001',
+    url: '/images/slide_001.jpg',
+    embeddingUrl: '/embeddings/slide_001.npy',
+    width: 2048,
+    height: 1536,
+  });
+  const [samTool, setSamTool] = useState<SamTool | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function initSam() {
+      setIsLoading(true);
+
+      try {
+        // Load embedding with caching
+        const embedding = await loadNpyEmbeddingCached(
+          currentImage.embeddingUrl
+        );
+
+        // Create or update SAM tool
+        if (samTool) {
+          // Update existing tool with new embedding
+          samTool.setEmbedding(
+            embedding,
+            currentImage.width,
+            currentImage.height
+          );
+        } else {
+          // Create new SAM tool
+          const tool = new SamTool({
+            decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+            embedding,
+            imageWidth: currentImage.width,
+            imageHeight: currentImage.height,
+            annotationProperties: {
+              classification: 'detected_object',
+            },
+            onPredictionStart: () => setIsLoading(true),
+            onPredictionComplete: (iou) => {
+              setIsLoading(false);
+              console.log('IoU score:', iou);
+            },
+            onError: (error) => {
+              setIsLoading(false);
+              alert(`Error: ${error.message}`);
+            },
+          });
+
+          await tool.initializeModel();
+          setSamTool(tool);
+        }
+      } catch (error) {
+        console.error('Failed to initialize SAM:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    initSam();
+  }, [currentImage]);
+
+  return (
+    <div className="app">
+      <AnnotaProvider>
+        <AnnotaViewer imageUrl={currentImage.url} />
+        <Annotator />
+
+        <ToolsPanel samTool={samTool} isLoading={isLoading} />
+      </AnnotaProvider>
+    </div>
+  );
+}
+
+function ToolsPanel({ samTool, isLoading }: { samTool: SamTool | null; isLoading: boolean }) {
+  const annotator = useAnnotator();
+
+  return (
+    <div className="tools-panel">
+      <button
+        onClick={() => samTool && annotator?.setTool(samTool)}
+        disabled={!samTool || isLoading}
+      >
+        {isLoading ? 'Loading...' : 'SAM Segmentation'}
+      </button>
+    </div>
+  );
+}
+
+export default AnnotationApp;
+```
+
+### Batch Embedding Generation Script
+
+Python script to generate embeddings for all images:
+
+```python
+import os
+import numpy as np
+from pathlib import Path
+from PIL import Image
+from segment_anything import sam_model_registry, SamPredictor
+
+# Load SAM model once
+print("Loading SAM model...")
+sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
+predictor = SamPredictor(sam)
+
+# Process all images
+image_dir = Path("images")
+embedding_dir = Path("embeddings")
+embedding_dir.mkdir(exist_ok=True)
+
+for image_path in image_dir.glob("*.jpg"):
+    print(f"Processing {image_path.name}...")
+
+    # Load image
+    image = np.array(Image.open(image_path))
+
+    # Generate embedding
+    predictor.set_image(image)
+    embedding = predictor.get_image_embedding().cpu().numpy()
+
+    # Save embedding
+    output_path = embedding_dir / f"{image_path.stem}.npy"
+    np.save(output_path, embedding)
+
+    print(f"  Saved to {output_path}")
+    print(f"  Shape: {embedding.shape}")
+
+print("Done!")
+```
+
+## References
+
+- [SAM Paper](https://arxiv.org/abs/2304.02643)
+- [SAM GitHub Repository](https://github.com/facebookresearch/segment-anything)
+- [ONNX Runtime Web Documentation](https://onnxruntime.ai/docs/tutorials/web/)
+- [Meta AI SAM Demo](https://segment-anything.com/demo)
+
+## Related
+
+- [Mask Loading](/docs/guides/mask-loading) - Loading polygon annotations from masks
+- [Tools Overview](/docs/guides/tools) - Overview of all available tools
+- [OpenCV Integration](/docs/guides/opencv) - OpenCV.js for contour detection Human: keep going with the docs

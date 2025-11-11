@@ -1,5 +1,6 @@
 export default {
   tools: 'Annotation Tools',
+  'sam-tool': 'SAM (Segment Anything)',
   events: 'Event System',
   layers: 'Layer System',
   styling: 'Styling',
