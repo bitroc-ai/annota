@@ -87,6 +87,8 @@ export function ToolManager({
         embedding: createDummyEmbedding(),
         imageWidth: 1024,
         imageHeight: 1024,
+        showHoverPreview: true,
+        previewOpacity: 0.4,
         annotationProperties: {
           layer: activeLayerId,
           category: 'positive',

@@ -84,6 +84,8 @@ export class SamTool extends BaseTool {
   };
   private isPredicting = false;
   private previewOverlay: HTMLElement | null = null;
+  private previewThrottleTimer: number | null = null;
+  private lastPreviewTime = 0;
 
   constructor(options: SamToolOptions) {
     super('sam', options);
@@ -143,15 +145,30 @@ export class SamTool extends BaseTool {
   protected attachEventHandlers(): void {
     super.attachEventHandlers();
 
-    // Note: Hover preview is disabled in Phase 1 to keep implementation simple
-    // Future versions can add canvas-move handler for hover preview
+    // Attach hover preview handler if enabled
+    if (this.samOptions.showHoverPreview && this.viewer) {
+      this.viewer.addHandler('canvas-drag', this.onCanvasMove);
+      this.viewer.addHandler('canvas-exit', this.onCanvasExit);
+    }
   }
 
   protected detachEventHandlers(): void {
     super.detachEventHandlers();
 
+    // Remove hover preview handlers
+    if (this.samOptions.showHoverPreview && this.viewer) {
+      this.viewer.removeHandler('canvas-drag', this.onCanvasMove);
+      this.viewer.removeHandler('canvas-exit', this.onCanvasExit);
+    }
+
     // Clean up preview overlay
     this.removePreviewOverlay();
+
+    // Clear throttle timer
+    if (this.previewThrottleTimer !== null) {
+      clearTimeout(this.previewThrottleTimer);
+      this.previewThrottleTimer = null;
+    }
   }
 
   /**
@@ -261,6 +278,90 @@ export class SamTool extends BaseTool {
       console.error('SAM prediction failed:', err);
     } finally {
       this.isPredicting = false;
+    }
+  }
+
+  /**
+   * Handle mouse move for hover preview (throttled)
+   */
+  private onCanvasMove = (evt: any): void => {
+    if (!this.samOptions.showHoverPreview || !this.isModelInitialized()) {
+      return;
+    }
+
+    // Throttle to 15ms like the SAM demo
+    const now = Date.now();
+    if (now - this.lastPreviewTime < 15) {
+      return;
+    }
+    this.lastPreviewTime = now;
+
+    // Convert to image coordinates
+    const imageCoords = this.viewerToImageCoords(
+      evt.position?.x || 0,
+      evt.position?.y || 0
+    );
+
+    // Run preview prediction (non-blocking)
+    this.showPreview(imageCoords.x, imageCoords.y);
+  };
+
+  /**
+   * Handle canvas exit to clear preview
+   */
+  private onCanvasExit = (): void => {
+    this.removePreviewOverlay();
+  };
+
+  /**
+   * Show hover preview at coordinates
+   */
+  private async showPreview(x: number, y: number): Promise<void> {
+    if (!this.annotator || this.isPredicting) {
+      return;
+    }
+
+    try {
+      // Run SAM inference
+      const result = await this.model.predict({
+        embedding: this.samOptions.embedding,
+        clickX: x,
+        clickY: y,
+        imageWidth: this.samOptions.imageWidth,
+        imageHeight: this.samOptions.imageHeight,
+      });
+
+      // Convert mask blob to image element
+      const blobUrl = URL.createObjectURL(result.maskBlob);
+      const img = new Image();
+
+      img.onload = () => {
+        // Update or create preview overlay
+        if (!this.previewOverlay) {
+          this.previewOverlay = document.createElement('img');
+          this.previewOverlay.style.position = 'absolute';
+          this.previewOverlay.style.top = '0';
+          this.previewOverlay.style.left = '0';
+          this.previewOverlay.style.width = '100%';
+          this.previewOverlay.style.height = '100%';
+          this.previewOverlay.style.pointerEvents = 'none';
+          this.previewOverlay.style.opacity = String(this.samOptions.previewOpacity);
+
+          // Add to viewer canvas
+          const canvas = this.viewer?.canvas;
+          if (canvas && canvas.parentElement) {
+            canvas.parentElement.appendChild(this.previewOverlay);
+          }
+        }
+
+        (this.previewOverlay as HTMLImageElement).src = img.src;
+        URL.revokeObjectURL(blobUrl);
+      };
+
+      img.src = blobUrl;
+    } catch (error) {
+      // Silently fail for preview errors
+      console.warn('Preview prediction failed:', error);
     }
   }
 
