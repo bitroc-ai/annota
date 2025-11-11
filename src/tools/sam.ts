@@ -162,6 +162,14 @@ export class SamTool extends BaseTool {
       return;
     }
 
+    // Check if model is initialized
+    if (!this.isModelInitialized()) {
+      const err = new Error('Model not initialized. Call initialize() first.');
+      this.samOptions.onError?.(err);
+      console.error('SAM prediction failed:', err.message);
+      return;
+    }
+
     // Prevent default OpenSeadragon behavior
     if (this.options.preventDefaultAction && evt.preventDefaultAction !== undefined) {
       evt.preventDefaultAction = true;

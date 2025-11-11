@@ -16,6 +16,7 @@ import {
   Merge,
   Image,
   Spline,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAnnotator, useViewer, useHistory, useSelection, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
@@ -37,6 +38,7 @@ interface AnnotationToolbarProps {
   tool: ToolType;
   onToolChange: (tool: ToolType) => void;
   viewer?: any;
+  samInitialized?: boolean;
   layerPanel: React.ReactElement;
 }
 
@@ -52,6 +54,7 @@ export function AnnotationToolbar({
   tool,
   onToolChange,
   viewer,
+  samInitialized = false,
   layerPanel,
 }: AnnotationToolbarProps) {
   const annotator = useAnnotator();
@@ -311,13 +314,18 @@ export function AnnotationToolbar({
           variant={tool === "sam" ? "default" : "ghost"}
           size="icon"
           onClick={() => onToolChange("sam")}
+          disabled={!samInitialized}
           className={cn(
             "w-9 h-9",
             tool === "sam" && "bg-purple-600 hover:bg-purple-700"
           )}
-          title="SAM Segmentation (click on objects)"
+          title={samInitialized ? "SAM Segmentation (click on objects)" : "SAM Initializing..."}
         >
-          <Scan className="w-4 h-4" />
+          {samInitialized ? (
+            <Scan className="w-4 h-4" />
+          ) : (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          )}
         </Button>        <Button
           variant={tool === "split" ? "default" : "ghost"}
           size="icon"

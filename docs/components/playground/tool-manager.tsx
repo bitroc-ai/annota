@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useTool,
   usePushToolCursor,
@@ -20,6 +20,7 @@ interface ToolManagerProps {
   pushRadius: number;
   smoothingTolerance: number;
   activeLayerId?: string;
+  onSamInitialized?: (initialized: boolean) => void;
 }
 
 export function ToolManager({
@@ -29,7 +30,9 @@ export function ToolManager({
   pushRadius,
   smoothingTolerance,
   activeLayerId,
+  onSamInitialized,
 }: ToolManagerProps) {
+  const [samInitialized, setSamInitialized] = useState(false);
   // Create tool instances with active layer
   const pointTool = useMemo(
     () =>
@@ -96,10 +99,22 @@ export function ToolManager({
 
   // Initialize SAM model on mount
   useEffect(() => {
-    samTool.initializeModel().catch(err => {
-      console.error('Failed to initialize SAM model:', err);
-    });
-  }, [samTool]);
+    console.log('Initializing SAM model...');
+    setSamInitialized(false);
+    onSamInitialized?.(false);
+
+    samTool.initializeModel()
+      .then(() => {
+        console.log('SAM model initialized successfully');
+        setSamInitialized(true);
+        onSamInitialized?.(true);
+      })
+      .catch(err => {
+        console.error('Failed to initialize SAM model:', err);
+        setSamInitialized(false);
+        onSamInitialized?.(false);
+      });
+  }, [samTool, onSamInitialized]);
 
   // Update dynamic properties
   useEffect(() => {

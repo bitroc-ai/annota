@@ -289,6 +289,7 @@ export function PlaygroundApp() {
   const [smoothingTolerance, setSmoothingTolerance] = useState(2);
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
   const [imageVisible, setImageVisible] = useState(true);
+  const [samInitialized, setSamInitialized] = useState(false);
 
   const currentImage = DEMO_IMAGES[currentImageIndex];
 
@@ -406,6 +407,7 @@ export function PlaygroundApp() {
               pushRadius={pushRadius}
               smoothingTolerance={smoothingTolerance}
               activeLayerId={activeLayerId}
+              onSamInitialized={setSamInitialized}
             />
             <AnnotationEditor viewer={viewer} />
             <AnnotationContextMenu />
@@ -417,6 +419,7 @@ export function PlaygroundApp() {
               tool={tool}
               onToolChange={setTool}
               viewer={viewer}
+              samInitialized={samInitialized}
               layerPanel={
                 <LayerPanel
                   trigger={
