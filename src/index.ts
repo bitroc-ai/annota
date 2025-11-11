@@ -168,9 +168,9 @@ export {
   annotationsToPgm,
   annotationToPgm,
 } from "./loaders/pgm";
-export type { PgmLoaderOptions } from "./loaders/pgm";
 
 export { loadMaskPolygons, exportMasksToPng } from "./loaders/masks";
+export type { MaskLoaderOptions } from "./loaders/masks";
 
 export { exportJson, downloadJson } from "./loaders/geojson";
 

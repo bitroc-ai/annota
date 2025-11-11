@@ -4,10 +4,24 @@
  */
 
 import type { Annotation } from '../core/types';
-import { loadPgmFile, type PgmLoaderOptions } from './pgm';
+import { loadPgmFile } from './pgm';
 import UPNG from 'upng-js';
 import { initOpenCV } from '../extensions/opencv';
 import pako from 'pako';
+
+/**
+ * Options for loading mask polygon annotations
+ */
+export interface MaskLoaderOptions {
+  /** Base style to apply to all annotations */
+  color?: string;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  /** Layer to assign annotations to (default: 'masks') */
+  layer?: string;
+  /** Mask type - auto-detects if not specified */
+  maskType?: 'auto' | 'binary' | 'instance8' | 'instance16';
+}
 
 /**
  * Load mask image (PNG or PGM) from URL and extract polygon contours
@@ -15,7 +29,7 @@ import pako from 'pako';
  */
 export async function loadMaskPolygons(
   url: string,
-  options: PgmLoaderOptions = {}
+  options: MaskLoaderOptions = {}
 ): Promise<Annotation[]> {
 
   const response = await fetch(url);
@@ -34,8 +48,8 @@ export async function loadMaskPolygons(
   let annotations: Annotation[];
 
   if (isPNG) {
-    // Handle PNG mask
-    annotations = await loadPngMask(arrayBuffer);
+    // Handle PNG mask with type detection
+    annotations = await loadMask(arrayBuffer, options.maskType);
   } else {
     // Handle PGM mask
     annotations = await loadPgmFile(arrayBuffer);
@@ -68,10 +82,215 @@ export async function loadMaskPolygons(
 }
 
 /**
+ * Load 8-bit PNG mask (binary or instance mask)
+ * Handles both binary masks (255=fg, 0=bg) and 8-bit instance masks
+ */
+async function loadMask8bit(
+  arrayBuffer: ArrayBuffer,
+  maskType: 'binary' | 'instance8'
+): Promise<Annotation[]> {
+  try {
+    // Decode 8-bit PNG using UPNG.js
+    const img = UPNG.decode(arrayBuffer);
+    const data = new Uint8Array(img.data);
+
+    // Initialize OpenCV if needed
+    try {
+      await initOpenCV();
+    } catch (error) {
+      console.error('[MaskLoader] Failed to initialize OpenCV:', error);
+      console.error('[MaskLoader] Mask loading requires OpenCV.js. Please check your network connection.');
+      return [];
+    }
+
+    if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
+      console.error('[MaskLoader] OpenCV not available or not fully initialized');
+      return [];
+    }
+
+    const cv = (window as any).cv;
+    const annotations: Annotation[] = [];
+    const { calculateBounds } = await import('../core/types');
+
+    if (maskType === 'binary') {
+      // Binary mask: single region with 255=foreground, 0=background
+      const binaryData = new Uint8Array(img.width * img.height);
+      for (let i = 0; i < binaryData.length; i++) {
+        const pixelIndex = i * 4;
+        binaryData[i] = data[pixelIndex] > 128 ? 255 : 0;
+      }
+
+      // Create OpenCV Mat
+      const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
+      gray.data.set(binaryData);
+
+      // Apply binary threshold
+      const binary = new cv.Mat();
+      cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
+
+      // Find contours
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+      // Process all contours
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
+
+        if (area < 100) continue;
+
+        const approx = new cv.Mat();
+        const perimeter = cv.arcLength(contour, true);
+        const epsilon = 0.005 * perimeter;
+        cv.approxPolyDP(contour, approx, epsilon, true);
+
+        const points: import('../core/types').Point[] = [];
+        for (let j = 0; j < approx.data32S.length; j += 2) {
+          points.push({
+            x: approx.data32S[j],
+            y: approx.data32S[j + 1],
+          });
+        }
+        approx.delete();
+
+        if (points.length >= 3) {
+          annotations.push({
+            id: `mask-binary-${i}`,
+            shape: {
+              type: 'polygon',
+              points,
+              bounds: calculateBounds({
+                type: 'polygon',
+                points,
+                bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+              }),
+            },
+            properties: {
+              source: 'png-mask',
+              type: 'region',
+              area,
+              layer: 'masks',
+            },
+            style: {
+              fill: '#FFFF00',
+              fillOpacity: 0.3,
+              stroke: '#FFFF00',
+              strokeWidth: 2,
+            },
+          });
+        }
+      }
+
+      gray.delete();
+      binary.delete();
+      contours.delete();
+      hierarchy.delete();
+    } else {
+      // Instance mask: multiple instances with unique 8-bit IDs
+      const instanceIds = new Set<number>();
+      for (let i = 0; i < data.length; i += 4) {
+        const value = data[i];
+        if (value > 0) {
+          instanceIds.add(value);
+        }
+      }
+
+      // Process each instance
+      for (const instanceId of instanceIds) {
+        const binaryData = new Uint8Array(img.width * img.height);
+        let pixelCount = 0;
+
+        for (let i = 0; i < binaryData.length; i++) {
+          const pixelIndex = i * 4;
+          if (data[pixelIndex] === instanceId) {
+            binaryData[i] = 255;
+            pixelCount++;
+          } else {
+            binaryData[i] = 0;
+          }
+        }
+
+        if (pixelCount < 100) continue;
+
+        const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
+        gray.data.set(binaryData);
+
+        const binary = new cv.Mat();
+        cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
+
+        const contours = new cv.MatVector();
+        const hierarchy = new cv.Mat();
+        cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+        for (let i = 0; i < contours.size(); i++) {
+          const contour = contours.get(i);
+          const area = cv.contourArea(contour);
+
+          if (area < 100) continue;
+
+          const approx = new cv.Mat();
+          const perimeter = cv.arcLength(contour, true);
+          const epsilon = 0.005 * perimeter;
+          cv.approxPolyDP(contour, approx, epsilon, true);
+
+          const points: import('../core/types').Point[] = [];
+          for (let j = 0; j < approx.data32S.length; j += 2) {
+            points.push({
+              x: approx.data32S[j],
+              y: approx.data32S[j + 1],
+            });
+          }
+          approx.delete();
+
+          if (points.length >= 3) {
+            annotations.push({
+              id: `mask-${instanceId}-${i}`,
+              shape: {
+                type: 'polygon',
+                points,
+                bounds: calculateBounds({
+                  type: 'polygon',
+                  points,
+                  bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+                }),
+              },
+              properties: {
+                source: 'png-mask',
+                type: 'region',
+                instanceId,
+                area,
+                layer: 'masks',
+              },
+              style: {
+                fill: '#FFFF00',
+                fillOpacity: 0.3,
+                stroke: '#FFFF00',
+                strokeWidth: 2,
+              },
+            });
+          }
+        }
+
+        gray.delete();
+        binary.delete();
+        contours.delete();
+        hierarchy.delete();
+      }
+    }
+
+    return annotations;
+  } catch (error) {
+    console.error('[MaskLoader] Error decoding 8-bit PNG:', error);
+    return [];
+  }
+}
+
+/**
  * Load 16-bit grayscale PNG mask
  * Since canvas normalizes 16-bit to 8-bit, we use UPNG.js to decode properly
  */
-async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
+async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
 
   try {
     // Decode 16-bit PNG using UPNG.js
@@ -225,10 +444,50 @@ async function loadPngMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]>
 
 /**
  * Load PNG mask and extract polygon contours
- * Assumes 16-bit grayscale PNG with instance IDs as pixel values
+ * Auto-detects mask type (binary, 8-bit instance, or 16-bit instance)
  */
-async function loadPngMask(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
-  return loadPngMask16bit(arrayBuffer);
+async function loadMask(
+  arrayBuffer: ArrayBuffer,
+  maskType: MaskLoaderOptions['maskType'] = 'auto'
+): Promise<Annotation[]> {
+  // Decode PNG to determine bit depth
+  const img = UPNG.decode(arrayBuffer);
+  const bitDepth = img.depth;
+
+  // Determine mask type
+  let actualType: 'binary' | 'instance8' | 'instance16';
+
+  if (maskType === 'auto') {
+    if (bitDepth === 16) {
+      actualType = 'instance16';
+    } else if (bitDepth === 8 || bitDepth === 1) {
+      // Check if it's binary or instance mask by sampling pixel values
+      const data = new Uint8Array(img.data);
+      const uniqueValues = new Set<number>();
+
+      // Sample first 1000 pixels
+      const sampleSize = Math.min(1000, data.length / 4);
+      for (let i = 0; i < sampleSize; i++) {
+        const pixelIndex = i * 4;
+        uniqueValues.add(data[pixelIndex]);
+        if (uniqueValues.size > 2) break;
+      }
+
+      // Binary mask only has 0 and 255 (or 0 and 1)
+      actualType = uniqueValues.size <= 2 ? 'binary' : 'instance8';
+    } else {
+      throw new Error(`Unsupported PNG bit depth: ${bitDepth}`);
+    }
+  } else {
+    actualType = maskType;
+  }
+
+  // Load based on detected/specified type
+  if (actualType === 'instance16') {
+    return loadMask16bit(arrayBuffer);
+  } else {
+    return loadMask8bit(arrayBuffer, actualType);
+  }
 }
 
 /**

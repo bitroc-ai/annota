@@ -5,6 +5,7 @@
 
 import type { Point, PolygonShape, Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
+import type { MaskLoaderOptions } from './masks';
 
 /**
  * PGM File Header
@@ -51,24 +52,12 @@ function parsePgmHeader(data: string | ArrayBuffer): PGMHeader {
 }
 
 /**
- * Options for loading PGM polygon annotations
- */
-export interface PgmLoaderOptions {
-  /** Base style to apply to all annotations */
-  color?: string;
-  fillOpacity?: number;
-  strokeWidth?: number;
-  /** Layer to assign annotations to (default: 'masks') */
-  layer?: string;
-}
-
-/**
  * Load PGM file from URL and extract polygon contours
  * Fetches the file and converts to polygon annotations
  */
 export async function loadPgmPolygons(
   url: string,
-  options: PgmLoaderOptions = {}
+  options: MaskLoaderOptions = {}
 ): Promise<Annotation[]> {
   const response = await fetch(url);
   if (!response.ok) {
