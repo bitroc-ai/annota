@@ -1,7 +1,7 @@
 import {
   Hand,
   CircleDot,
-  Wand,
+  Scan,
   Eraser,
   ZoomIn,
   ZoomOut,
@@ -29,7 +29,7 @@ export type ToolType =
   | "rectangle"
   | "polygon"
   | "curve"
-  | "cell-detect"
+  | "sam"
   | "push"
   | "split";
 
@@ -308,18 +308,17 @@ export function AnnotationToolbar({
         </Button>
         */}
         <Button
-          variant={tool === "cell-detect" ? "default" : "ghost"}
+          variant={tool === "sam" ? "default" : "ghost"}
           size="icon"
-          onClick={() => onToolChange("cell-detect")}
+          onClick={() => onToolChange("sam")}
           className={cn(
             "w-9 h-9",
-            tool === "cell-detect" && "bg-purple-600 hover:bg-purple-700"
+            tool === "sam" && "bg-purple-600 hover:bg-purple-700"
           )}
-          title="Detect edge"
+          title="SAM Segmentation (click on objects)"
         >
-          <Wand className="w-4 h-4" />
-        </Button>
-        <Button
+          <Scan className="w-4 h-4" />
+        </Button>        <Button
           variant={tool === "split" ? "default" : "ghost"}
           size="icon"
           onClick={() => onToolChange("split")}

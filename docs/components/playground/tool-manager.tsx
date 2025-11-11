@@ -7,8 +7,9 @@ import {
   PolygonTool,
   CurveTool,
   PushTool,
-  ContourTool,
+  SamTool,
   SplitTool,
+  createDummyEmbedding,
 } from 'annota';
 import type { ToolType } from './toolbar';
 
@@ -76,10 +77,13 @@ export function ToolManager({
     [activeLayerId, smoothingTolerance]
   );
   const pushTool = useMemo(() => new PushTool({ pushRadius }), [pushRadius]);
-  const contourTool = useMemo(
+  const samTool = useMemo(
     () =>
-      new ContourTool({
-        threshold,
+      new SamTool({
+        decoderModelUrl: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0/dist/sam_vit_b_decoder.onnx',
+        embedding: createDummyEmbedding(),
+        imageWidth: 1024,
+        imageHeight: 1024,
         annotationProperties: {
           layer: activeLayerId,
           category: 'positive',
@@ -90,14 +94,17 @@ export function ToolManager({
   );
   const splitTool = useMemo(() => new SplitTool(), []);
 
+  // Initialize SAM model on mount
+  useEffect(() => {
+    samTool.initializeModel().catch(err => {
+      console.error('Failed to initialize SAM model:', err);
+    });
+  }, [samTool]);
+
   // Update dynamic properties
   useEffect(() => {
     pushTool.setPushRadius(pushRadius);
   }, [pushTool, pushRadius]);
-
-  useEffect(() => {
-    contourTool?.setThreshold(threshold);
-  }, [contourTool, threshold]);
 
   // Enable tools based on selection (disabled when viewer is null)
   useTool({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
@@ -107,8 +114,8 @@ export function ToolManager({
   useTool({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
   useTool({
     viewer,
-    handler: contourTool,
-    enabled: tool === 'cell-detect' && !!contourTool && !!viewer,
+    handler: samTool,
+    enabled: tool === 'sam' && !!samTool && !!viewer,
   });
   useTool({ viewer, handler: splitTool, enabled: tool === 'split' && !!viewer });
 
