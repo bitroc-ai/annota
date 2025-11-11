@@ -80,7 +80,7 @@ export function ToolManager({
   const samTool = useMemo(
     () =>
       new SamTool({
-        decoderModelUrl: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0/dist/sam_vit_b_decoder.onnx',
+        decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
         embedding: createDummyEmbedding(),
         imageWidth: 1024,
         imageHeight: 1024,
