@@ -63,9 +63,129 @@ wget https://github.com/facebookresearch/segment-anything/releases/download/onnx
 wget https://github.com/facebookresearch/segment-anything/releases/download/onnx/sam_vit_b_decoder.onnx
 ```
 
-Place the model in your `public/models/` directory.
+### 3. Model File Location
 
-### 3. Generate Image Embeddings
+**Option A: Static Hosting (Recommended for Development)**
+
+Place models in your application's public directory:
+
+```
+your-app/
+├── public/
+│   ├── models/
+│   │   ├── sam_vit_h_decoder.onnx
+│   │   └── sam_vit_b_decoder.onnx
+│   └── embeddings/
+│       ├── image_001.npy
+│       ├── image_002.npy
+│       └── ...
+├── src/
+└── package.json
+```
+
+Then reference with absolute paths:
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  embedding: await loadNpyEmbedding('/embeddings/image_001.npy'),
+  // ...
+});
+```
+
+**Option B: CDN Hosting (Recommended for Production)**
+
+Host models on a CDN for better performance and caching:
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: 'https://cdn.yourapp.com/models/sam_vit_h_decoder.onnx',
+  embedding: await loadNpyEmbedding('https://cdn.yourapp.com/embeddings/image_001.npy'),
+  // ...
+});
+```
+
+Popular CDN options:
+- **Cloudflare R2** - Zero egress fees, great for large files
+- **AWS S3 + CloudFront** - Highly scalable
+- **Vercel Edge Network** - If using Vercel for hosting
+- **Google Cloud Storage** - Good global distribution
+
+**Option C: Self-Hosted Object Storage**
+
+For sensitive data or compliance requirements:
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: 'https://storage.yourapp.com/models/sam_vit_h_decoder.onnx',
+  embedding: await loadNpyEmbedding('https://storage.yourapp.com/embeddings/image_001.npy'),
+  // ...
+});
+```
+
+**Important CORS Configuration**
+
+If hosting on a different domain, ensure CORS headers are set:
+
+```
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, HEAD
+Access-Control-Allow-Headers: Range
+```
+
+For S3/CloudFront:
+
+```json
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": ["*"],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedHeaders": ["*"],
+      "MaxAgeSeconds": 3600
+    }
+  ]
+}
+```
+
+### 4. File Structure Best Practices
+
+**Recommended Directory Layout:**
+
+```
+static-assets/
+├── models/              # ONNX models (rarely change)
+│   ├── sam_vit_h_decoder.onnx
+│   └── sam_vit_b_decoder.onnx
+├── embeddings/          # Image embeddings (change per dataset)
+│   ├── dataset1/
+│   │   ├── img001.npy
+│   │   └── img002.npy
+│   └── dataset2/
+│       └── ...
+└── images/              # Source images
+    └── ...
+```
+
+**Caching Recommendations:**
+
+- **Models**: Long cache (1 year) - these rarely change
+  ```
+  Cache-Control: public, max-age=31536000, immutable
+  ```
+
+- **Embeddings**: Medium cache (1 week) - may update with new data
+  ```
+  Cache-Control: public, max-age=604800
+  ```
+
+- **Use versioned URLs** when updating models:
+  ```tsx
+  decoderModelUrl: '/models/sam_vit_h_decoder_v1.onnx'
+  // Update to v2 when model changes
+  ```
+
+### 5. Generate Image Embeddings
 
 You need to precompute image embeddings using Python:
 
@@ -400,6 +520,77 @@ print(embedding.shape)  # Should be (1, 256, 64, 64)
 - Use the larger ViT-H model for better accuracy
 - Ensure embeddings are generated from the correct image
 - Check that image dimensions match
+
+## Deployment Scenarios
+
+### Development Setup (Local Files)
+
+For local development, place files in `public/` directory:
+
+```tsx
+// vite.config.ts or next.config.js handles /public automatically
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  embedding: await loadNpyEmbedding('/embeddings/slide_001.npy'),
+  imageWidth: 2048,
+  imageHeight: 1536,
+});
+```
+
+### Production Setup (CDN)
+
+Use environment variables for flexible deployment:
+
+```tsx
+// .env.production
+VITE_MODELS_CDN=https://cdn.yourapp.com
+VITE_EMBEDDINGS_CDN=https://cdn.yourapp.com
+
+// App code
+const samTool = new SamTool({
+  decoderModelUrl: `${import.meta.env.VITE_MODELS_CDN}/models/sam_vit_h_decoder.onnx`,
+  embedding: await loadNpyEmbedding(
+    `${import.meta.env.VITE_EMBEDDINGS_CDN}/embeddings/${imageId}.npy`
+  ),
+  imageWidth: image.width,
+  imageHeight: image.height,
+});
+```
+
+### Hybrid Setup (Model on CDN, Embeddings Local)
+
+Large models on CDN, smaller embeddings bundled with app:
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: 'https://cdn.yourapp.com/models/sam_vit_h_decoder.onnx',
+  embedding: await loadNpyEmbedding('/embeddings/local_slide.npy'),
+  imageWidth: 2048,
+  imageHeight: 1536,
+});
+```
+
+### Dynamic Model Loading
+
+Load different models based on use case:
+
+```tsx
+function getSamModelUrl(accuracy: 'high' | 'balanced' | 'fast') {
+  const models = {
+    high: '/models/sam_vit_h_decoder.onnx',    // ~10MB, best quality
+    balanced: '/models/sam_vit_l_decoder.onnx', // ~6MB
+    fast: '/models/sam_vit_b_decoder.onnx',     // ~4MB, fastest
+  };
+  return models[accuracy];
+}
+
+const samTool = new SamTool({
+  decoderModelUrl: getSamModelUrl('balanced'),
+  embedding,
+  imageWidth,
+  imageHeight,
+});
+```
 
 ## Examples
 
