@@ -32,9 +32,6 @@ export interface SamToolOptions extends ToolHandlerOptions {
   /** Opacity for hover preview (default: 0.5) */
   previewOpacity?: number;
 
-  /** Default properties to apply to created annotations */
-  annotationProperties?: Partial<Annotation>;
-
   /** Callback when annotation is created */
   onAnnotationCreated?: (annotation: Annotation) => void;
 

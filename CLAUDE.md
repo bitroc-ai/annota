@@ -39,6 +39,9 @@ pnpm start:docs           # Start docs dev server
 
 ### Publishing
 ```bash
+# IMPORTANT: Before creating version tags, always verify docs build passes
+pnpm build:docs           # Builds library + docs, validates TypeScript
+
 # Create version and tag (see PUBLISHING.md for full workflow)
 pnpm version patch        # 0.2.0 → 0.2.1
 git push origin main --follow-tags

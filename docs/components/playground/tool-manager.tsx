@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from "react";
 import {
   useTool,
   usePushToolCursor,
@@ -10,8 +10,8 @@ import {
   SamTool,
   SplitTool,
   createDummyEmbedding,
-} from 'annota';
-import type { ToolType } from './toolbar';
+} from "annota";
+import type { ToolType } from "./toolbar";
 
 interface ToolManagerProps {
   viewer: any;
@@ -26,20 +26,18 @@ interface ToolManagerProps {
 export function ToolManager({
   viewer,
   tool,
-  threshold,
   pushRadius,
   smoothingTolerance,
   activeLayerId,
   onSamInitialized,
 }: ToolManagerProps) {
-  const [samInitialized, setSamInitialized] = useState(false);
   // Create tool instances with active layer
   const pointTool = useMemo(
     () =>
       new PointTool({
         annotationProperties: {
           layer: activeLayerId,
-          category: 'positive',
+          category: "positive",
           tags: [],
         },
       }),
@@ -50,7 +48,7 @@ export function ToolManager({
       new RectangleTool({
         annotationProperties: {
           layer: activeLayerId,
-          category: 'positive',
+          category: "positive",
           tags: [],
         },
       }),
@@ -61,7 +59,7 @@ export function ToolManager({
       new PolygonTool({
         annotationProperties: {
           layer: activeLayerId,
-          category: 'positive',
+          category: "positive",
           tags: [],
         },
       }),
@@ -73,7 +71,7 @@ export function ToolManager({
         smoothingTolerance,
         annotationProperties: {
           layer: activeLayerId,
-          category: 'positive',
+          category: "positive",
           tags: [],
         },
       }),
@@ -83,7 +81,7 @@ export function ToolManager({
   const samTool = useMemo(
     () =>
       new SamTool({
-        decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
+        decoderModelUrl: "/models/sam_onnx_quantized_example.onnx",
         embedding: createDummyEmbedding(),
         imageWidth: 1024,
         imageHeight: 1024,
@@ -91,7 +89,7 @@ export function ToolManager({
         previewOpacity: 0.4,
         annotationProperties: {
           layer: activeLayerId,
-          category: 'positive',
+          category: "positive",
           tags: [],
         },
       }),
@@ -101,19 +99,17 @@ export function ToolManager({
 
   // Initialize SAM model on mount
   useEffect(() => {
-    console.log('Initializing SAM model...');
-    setSamInitialized(false);
+    console.log("Initializing SAM model...");
     onSamInitialized?.(false);
 
-    samTool.initializeModel()
+    samTool
+      .initializeModel()
       .then(() => {
-        console.log('SAM model initialized successfully');
-        setSamInitialized(true);
+        console.log("SAM model initialized successfully");
         onSamInitialized?.(true);
       })
-      .catch(err => {
-        console.error('Failed to initialize SAM model:', err);
-        setSamInitialized(false);
+      .catch((err) => {
+        console.error("Failed to initialize SAM model:", err);
         onSamInitialized?.(false);
       });
   }, [samTool, onSamInitialized]);
@@ -124,36 +120,60 @@ export function ToolManager({
   }, [pushTool, pushRadius]);
 
   // Enable tools based on selection (disabled when viewer is null)
-  useTool({ viewer, handler: pointTool, enabled: tool === 'point' && !!viewer });
-  useTool({ viewer, handler: rectangleTool, enabled: tool === 'rectangle' && !!viewer });
-  useTool({ viewer, handler: polygonTool, enabled: tool === 'polygon' && !!viewer });
-  useTool({ viewer, handler: curveTool, enabled: tool === 'curve' && !!viewer });
-  useTool({ viewer, handler: pushTool, enabled: tool === 'push' && !!viewer });
+  useTool({
+    viewer,
+    handler: pointTool,
+    enabled: tool === "point" && !!viewer,
+  });
+  useTool({
+    viewer,
+    handler: rectangleTool,
+    enabled: tool === "rectangle" && !!viewer,
+  });
+  useTool({
+    viewer,
+    handler: polygonTool,
+    enabled: tool === "polygon" && !!viewer,
+  });
+  useTool({
+    viewer,
+    handler: curveTool,
+    enabled: tool === "curve" && !!viewer,
+  });
+  useTool({ viewer, handler: pushTool, enabled: tool === "push" && !!viewer });
   useTool({
     viewer,
     handler: samTool,
-    enabled: tool === 'sam' && !!samTool && !!viewer,
+    enabled: tool === "sam" && !!samTool && !!viewer,
   });
-  useTool({ viewer, handler: splitTool, enabled: tool === 'split' && !!viewer });
+  useTool({
+    viewer,
+    handler: splitTool,
+    enabled: tool === "split" && !!viewer,
+  });
 
   // Render push cursor (disabled when viewer is null)
-  const { cursorPos, radiusInPixels } = usePushToolCursor(viewer, pushTool, tool === 'push' && !!viewer);
+  const { cursorPos, radiusInPixels } = usePushToolCursor(
+    viewer,
+    pushTool,
+    tool === "push" && !!viewer
+  );
 
   return (
     <>
       {cursorPos && (
         <div
           style={{
-            position: 'fixed',
+            position: "fixed",
             left: `${cursorPos.x}px`,
             top: `${cursorPos.y}px`,
             width: `${radiusInPixels * 2}px`,
             height: `${radiusInPixels * 2}px`,
-            borderRadius: '50%',
-            border: '2px solid #00ff00',
-            backgroundColor: 'rgba(0, 255, 0, 0.1)',
-            transform: 'translate(-50%, -50%)',
-            pointerEvents: 'none',
+            borderRadius: "50%",
+            border: "2px solid #00ff00",
+            backgroundColor: "rgba(0, 255, 0, 0.1)",
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "none",
             zIndex: 10,
           }}
         />

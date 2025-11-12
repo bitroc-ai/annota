@@ -47,11 +47,11 @@ export function ToolSettings({
     );
   }
 
-  if (tool === 'cell-detect') {
+  if (tool === 'sam') {
     return (
       <Card className="bg-white/95 dark:bg-slate-950/95 backdrop-blur">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Cell Detection</CardTitle>
+          <CardTitle className="text-sm">SAM Segmentation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <label className="text-xs text-slate-600 dark:text-slate-400">
