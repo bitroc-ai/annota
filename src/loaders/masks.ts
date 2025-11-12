@@ -98,13 +98,12 @@ async function loadMask8bit(
     try {
       await initOpenCV();
     } catch (error) {
-      console.error('[MaskLoader] Failed to initialize OpenCV:', error);
-      console.error('[MaskLoader] Mask loading requires OpenCV.js. Please check your network connection.');
+      // OpenCV initialization failed - return empty array
       return [];
     }
 
     if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
-      console.error('[MaskLoader] OpenCV not available or not fully initialized');
+      // OpenCV not available - return empty array
       return [];
     }
 
@@ -281,7 +280,7 @@ async function loadMask8bit(
 
     return annotations;
   } catch (error) {
-    console.error('[MaskLoader] Error decoding 8-bit PNG:', error);
+    // Don't log errors - calling code can decide how to handle missing files
     return [];
   }
 }
@@ -319,14 +318,13 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
     try {
       await initOpenCV();
     } catch (error) {
-      console.error('[MaskLoader] Failed to initialize OpenCV:', error);
-      console.error('[MaskLoader] Mask loading requires OpenCV.js. Please check your network connection.');
+      // OpenCV initialization failed - return empty array
       return [];
     }
 
     // Use OpenCV to extract contours
     if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
-      console.error('[MaskLoader] OpenCV not available or not fully initialized');
+      // OpenCV not available - return empty array
       return [];
     }
 
@@ -437,7 +435,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
 
     return annotations;
   } catch (error) {
-    console.error('[MaskLoader] Error decoding 16-bit PNG:', error);
+    // Don't log errors - calling code can decide how to handle missing files
     return [];
   }
 }

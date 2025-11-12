@@ -96,7 +96,7 @@ export async function loadH5Coordinates(
 
     return annotations;
   } catch (error) {
-    console.error('[loadH5Coordinates] Error loading H5 file:', error);
+    // Don't log errors - calling code can decide how to handle missing files
     throw error;
   }
 }

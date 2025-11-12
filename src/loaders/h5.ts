@@ -133,7 +133,7 @@ export async function loadH5Masks(
 
     return annotations;
   } catch (error) {
-    console.error('Failed to load H5 masks:', error);
+    // Don't log errors - calling code can decide how to handle missing files
     throw error;
   }
 }

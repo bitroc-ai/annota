@@ -6,6 +6,7 @@
  */
 
 import type * as ort from 'onnxruntime-web';
+import OpenSeadragon from 'openseadragon';
 import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 import { SamOnnxModel } from '../ml/sam-onnx';
@@ -47,23 +48,6 @@ export interface SamToolOptions extends ToolHandlerOptions {
 
 /**
  * SAM tool for interactive segmentation
- *
- * @example
- * ```typescript
- * const samTool = new SamTool({
- *   decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
- *   embedding: precomputedEmbedding,
- *   imageWidth: 1024,
- *   imageHeight: 1024,
- *   annotationProperties: {
- *     classification: 'positive',
- *     properties: { source: 'sam-onnx' }
- *   }
- * });
- *
- * await samTool.initializeModel();
- * annotator.setTool(samTool);
- * ```
  */
 export class SamTool extends BaseTool {
   private model: SamOnnxModel;
@@ -80,7 +64,8 @@ export class SamTool extends BaseTool {
     onError?: (error: Error) => void;
   };
   private isPredicting = false;
-  private previewOverlay: HTMLElement | null = null;
+  private previewCanvas: HTMLCanvasElement | null = null;
+  private previewSeq = 0;
   private lastPreviewTime = 0;
   private hoverHandler: ((evt: MouseEvent) => void) | null = null;
 
@@ -144,54 +129,26 @@ export class SamTool extends BaseTool {
 
     // Attach hover preview handler if enabled
     if (this.samOptions.showHoverPreview && this.viewer) {
-      console.log('SAM attachEventHandlers - attaching to container element');
-
-      // Attach to the viewer's container element
       const container = this.viewer.element;
-      console.log('SAM container element:', container);
       if (container) {
         this.hoverHandler = (evt: MouseEvent) => {
-          console.log('SAM mousemove event fired! clientX:', evt.clientX, 'clientY:', evt.clientY);
-
-          // Convert mouse event to OSD coordinates
           const rect = container.getBoundingClientRect();
-          console.log('SAM container rect:', rect);
-
           const pixelX = evt.clientX - rect.left;
           const pixelY = evt.clientY - rect.top;
-          console.log('SAM pixel coords:', pixelX, pixelY);
-
           const viewportPoint = this.viewer!.viewport.pointFromPixel(
-            new (window as any).OpenSeadragon.Point(pixelX, pixelY)
+            new OpenSeadragon.Point(pixelX, pixelY)
           );
-          console.log('SAM viewport point:', viewportPoint);
-
           const imagePoint = this.viewer!.viewport.viewportToImageCoordinates(viewportPoint);
-          console.log('SAM image point:', imagePoint);
-
-          this.onCanvasHover({
-            position: { x: viewportPoint.x, y: viewportPoint.y },
-            imageCoords: imagePoint
-          });
+          this.onCanvasHover(imagePoint.x, imagePoint.y);
         };
-
         container.addEventListener('mousemove', this.hoverHandler);
-        console.log('SAM mousemove handler attached to container, element tag:', container.tagName, 'id:', container.id, 'class:', container.className);
-      } else {
-        console.log('SAM container is null!');
       }
-    } else {
-      console.log('SAM attachEventHandlers - not attaching:', {
-        showHoverPreview: this.samOptions.showHoverPreview,
-        hasViewer: !!this.viewer
-      });
     }
   }
 
   protected detachEventHandlers(): void {
     super.detachEventHandlers();
 
-    // Remove hover handler
     if (this.hoverHandler && this.viewer) {
       const container = this.viewer.element;
       if (container) {
@@ -200,8 +157,7 @@ export class SamTool extends BaseTool {
       }
     }
 
-    // Clean up preview overlay
-    this.removePreviewOverlay();
+    this.removePreview();
   }
 
   /**
@@ -212,33 +168,37 @@ export class SamTool extends BaseTool {
       return;
     }
 
-    // Check if model is initialized
     if (!this.isModelInitialized()) {
       const err = new Error('Model not initialized. Call initialize() first.');
       this.samOptions.onError?.(err);
-      console.error('SAM prediction failed:', err.message);
       return;
     }
 
-    // Prevent default OpenSeadragon behavior
     if (this.options.preventDefaultAction && evt.preventDefaultAction !== undefined) {
       evt.preventDefaultAction = true;
     }
 
-    // Convert to image coordinates
-    const imageCoords = this.viewerToImageCoords(
-      evt.position?.x || 0,
-      evt.position?.y || 0
-    );
+    // Convert event position to image coordinates
+    let imageCoords: { x: number; y: number };
+    if (evt.position) {
+      const vpPoint = evt.position as OpenSeadragon.Point;
+      const imgPoint = this.viewer.viewport.viewportToImageCoordinates(vpPoint);
+      imageCoords = { x: imgPoint.x, y: imgPoint.y };
+    } else if (evt.originalEvent) {
+      imageCoords = this.viewerToImageCoords(
+        evt.originalEvent.offsetX || 0,
+        evt.originalEvent.offsetY || 0
+      );
+    } else {
+      imageCoords = { x: 0, y: 0 };
+    }
 
     // Check if clicking on existing annotation
     const hitAnnotation = this.checkAnnotationHit(imageCoords);
     if (hitAnnotation) {
-      // Don't create new annotation, let user interact with existing one
       return;
     }
 
-    // Run SAM prediction
     await this.predictAndCreateAnnotation(imageCoords.x, imageCoords.y);
   }
 
@@ -257,7 +217,6 @@ export class SamTool extends BaseTool {
     this.samOptions.onPredictionStart?.();
 
     try {
-      // Run SAM inference
       const result = await this.model.predict({
         embedding: this.samOptions.embedding,
         clickX,
@@ -272,19 +231,16 @@ export class SamTool extends BaseTool {
       const blobUrl = URL.createObjectURL(result.maskBlob);
 
       try {
-        // Use existing mask loader to create polygon annotations
         const annotations = await loadMaskPolygons(blobUrl, {
           maskType: 'binary',
         });
 
         if (annotations.length > 0) {
-          // Apply custom properties if provided
           const annotation = annotations[0];
           if (this.samOptions.annotationProperties) {
             Object.assign(annotation, this.samOptions.annotationProperties);
           }
 
-          // Add metadata about SAM prediction
           annotation.properties = {
             ...annotation.properties,
             source: 'sam-onnx',
@@ -292,17 +248,11 @@ export class SamTool extends BaseTool {
             clickPoint: { x: clickX, y: clickY },
           };
 
-          // Add to annotator
           this.annotator.state.store.add(annotation);
-
-          // Select the new annotation
           this.selectAnnotation(annotation.id);
-
-          // Trigger callback
           this.samOptions.onAnnotationCreated?.(annotation);
         }
       } finally {
-        // Clean up blob URL
         URL.revokeObjectURL(blobUrl);
       }
     } catch (error) {
@@ -317,49 +267,39 @@ export class SamTool extends BaseTool {
   /**
    * Handle canvas hover for preview (throttled)
    */
-  private onCanvasHover(evt: any): void {
-    console.log('SAM onCanvasHover triggered');
-
+  private onCanvasHover(x: number, y: number): void {
     if (!this.samOptions.showHoverPreview || !this.isModelInitialized()) {
-      console.log('SAM preview disabled or model not initialized', {
-        showHoverPreview: this.samOptions.showHoverPreview,
-        modelInitialized: this.isModelInitialized()
-      });
       return;
     }
 
-    // Throttle to 15ms like the SAM demo
+    // Check if mouse is within image bounds
+    if (x < 0 || y < 0 || x >= this.samOptions.imageWidth || y >= this.samOptions.imageHeight) {
+      // Mouse is outside image - remove preview
+      this.removePreview();
+      return;
+    }
+
+    // Throttle to 50ms
     const now = Date.now();
-    if (now - this.lastPreviewTime < 15) {
+    if (now - this.lastPreviewTime < 50) {
       return;
     }
     this.lastPreviewTime = now;
 
-    // Use image coordinates directly from the event
-    const imageCoords = evt.imageCoords || { x: 0, y: 0 };
-
-    console.log('SAM preview at image coords:', imageCoords.x, imageCoords.y);
-
-    // Run preview prediction (non-blocking)
-    this.showPreview(imageCoords.x, imageCoords.y);
+    this.showPreview(x, y);
   }
 
   /**
    * Show hover preview at coordinates
    */
   private async showPreview(x: number, y: number): Promise<void> {
-    if (!this.annotator || this.isPredicting) {
-      console.log('SAM showPreview blocked:', {
-        hasAnnotator: !!this.annotator,
-        isPredicting: this.isPredicting
-      });
+    if (!this.viewer || this.isPredicting) {
       return;
     }
 
-    console.log('SAM running preview prediction...');
+    const seq = ++this.previewSeq;
 
     try {
-      // Run SAM inference
       const result = await this.model.predict({
         embedding: this.samOptions.embedding,
         clickX: x,
@@ -368,52 +308,71 @@ export class SamTool extends BaseTool {
         imageHeight: this.samOptions.imageHeight,
       });
 
-      console.log('SAM preview prediction complete, iouScore:', result.iouScore);
+      // If a newer preview started, drop this one
+      if (seq !== this.previewSeq) return;
 
-      // Convert mask blob to image element
-      const blobUrl = URL.createObjectURL(result.maskBlob);
-      const img = new Image();
+      // Extract best mask from tensor
+      const maskData = result.maskTensor.data as Float32Array;
+      const dims = result.maskTensor.dims;
 
-      img.onload = () => {
-        console.log('SAM preview image loaded');
-        // Update or create preview overlay
-        if (!this.previewOverlay) {
-          console.log('Creating SAM preview overlay');
-          this.previewOverlay = document.createElement('img');
-          this.previewOverlay.style.position = 'absolute';
-          this.previewOverlay.style.top = '0';
-          this.previewOverlay.style.left = '0';
-          this.previewOverlay.style.width = '100%';
-          this.previewOverlay.style.height = '100%';
-          this.previewOverlay.style.pointerEvents = 'none';
-          this.previewOverlay.style.opacity = String(this.samOptions.previewOpacity);
+      // Get actual mask dimensions from tensor: [batch, channels, height, width]
+      const maskHeight = dims[2];
+      const maskWidth = dims[3];
+      const maskSize = maskHeight * maskWidth;
 
-          // Add to viewer canvas
-          const canvas = this.viewer?.canvas;
-          if (canvas && canvas.parentElement) {
-            console.log('Appending preview overlay to canvas parent');
-            canvas.parentElement.appendChild(this.previewOverlay);
-          }
+      // Get best mask slice based on IoU-selected index
+      const bestMaskIndex = result.bestMaskIndex;
+      const maskStart = bestMaskIndex * maskSize;
+      const bestMaskData = maskData.slice(maskStart, maskStart + maskSize);
+
+      // Create canvas with actual mask dimensions
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = maskWidth;
+      maskCanvas.height = maskHeight;
+      const ctx = maskCanvas.getContext('2d');
+      if (!ctx) return;
+
+      const imageData = ctx.createImageData(maskWidth, maskHeight);
+      for (let i = 0; i < maskSize; i++) {
+        const on = bestMaskData[i] > 0.0;
+        const p = i * 4;
+        if (on) {
+          imageData.data[p] = 0;       // R
+          imageData.data[p + 1] = 114; // G
+          imageData.data[p + 2] = 189; // B
+          imageData.data[p + 3] = 255; // A
         }
+      }
+      ctx.putImageData(imageData, 0, 0);
 
-        (this.previewOverlay as HTMLImageElement).src = img.src;
-        URL.revokeObjectURL(blobUrl);
-      };
+      // SAM outputs masks at the original image resolution (after we pass orig_im_size)
+      // Update or create overlay
+      this.removePreview();
+      this.previewCanvas = maskCanvas;
+      this.previewCanvas.style.opacity = String(this.samOptions.previewOpacity);
 
-      img.src = blobUrl;
+      const imageRect = new OpenSeadragon.Rect(0, 0, this.samOptions.imageWidth, this.samOptions.imageHeight);
+      const vpRect = this.viewer.viewport.imageToViewportRectangle(imageRect);
+
+      this.viewer.addOverlay({
+        element: this.previewCanvas,
+        location: vpRect,
+        placement: OpenSeadragon.Placement.TOP_LEFT,
+      });
     } catch (error) {
       // Silently fail for preview errors
-      console.warn('Preview prediction failed:', error);
     }
   }
 
   /**
    * Remove preview overlay
    */
-  private removePreviewOverlay(): void {
-    if (this.previewOverlay && this.previewOverlay.parentNode) {
-      this.previewOverlay.parentNode.removeChild(this.previewOverlay);
-      this.previewOverlay = null;
+  private removePreview(): void {
+    if (this.previewCanvas && this.viewer) {
+      try {
+        this.viewer.removeOverlay(this.previewCanvas);
+      } catch {}
+      this.previewCanvas = null;
     }
   }
 
@@ -423,6 +382,6 @@ export class SamTool extends BaseTool {
   override destroy(): void {
     super.destroy();
     this.model.dispose();
-    this.removePreviewOverlay();
+    this.removePreview();
   }
 }

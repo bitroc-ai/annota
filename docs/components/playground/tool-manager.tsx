@@ -10,13 +10,13 @@ import {
   SamTool,
   SplitTool,
   createDummyEmbedding,
+  loadNpyEmbedding,
 } from "annota";
 import type { ToolType } from "./toolbar";
 
 interface ToolManagerProps {
   viewer: any;
   tool: ToolType;
-  threshold: number;
   pushRadius: number;
   smoothingTolerance: number;
   activeLayerId?: string;
@@ -81,8 +81,11 @@ export function ToolManager({
   const samTool = useMemo(
     () =>
       new SamTool({
-        decoderModelUrl: "/models/sam_onnx_quantized_example.onnx",
+        decoderModelUrl: "/models/sam_onnx_quantized_vit_b.onnx",
+        // Start with a dummy embedding; we'll replace it if a matching .npy
+        // embedding is available for the current image.
         embedding: createDummyEmbedding(),
+        // Will be corrected to actual image size below.
         imageWidth: 1024,
         imageHeight: 1024,
         showHoverPreview: true,
@@ -146,6 +149,81 @@ export function ToolManager({
     handler: samTool,
     enabled: tool === "sam" && !!samTool && !!viewer,
   });
+
+  // Replace dummy embedding with a real .npy embedding if available
+  // and update the tool with the actual image dimensions.
+  // Listen to OpenSeadragon's 'open' event to reload embeddings when images change
+  useEffect(() => {
+    if (!viewer || !samTool) return;
+
+    const handleImageOpen = () => {
+      const item: any = viewer.world?.getItemAt?.(0);
+      if (!item?.source?.url) {
+        return;
+      }
+
+      const currentSrc = item.source.url;
+      const dims = item?.source?.dimensions;
+      const width = dims?.x ?? 1024;
+      const height = dims?.y ?? 1024;
+
+      // Always set correct dimensions (even if we keep the dummy for now)
+      try {
+        // @ts-ignore internal access to reuse existing tensor
+        samTool.setEmbedding((samTool as any).samOptions.embedding, width, height);
+      } catch {}
+
+      const stem = (currentSrc.split("/").pop() || "").replace(/\.[^.]+$/, "");
+      const npyUrlBase = `/playground/embeddings/test/${stem}.npy`;
+      const npyUrl = `${npyUrlBase}?v=${Date.now()}`; // cache-bust to avoid stale loads
+
+      const token = Symbol("embedding-load");
+      (window as any).__annotaEmbeddingToken = token;
+
+      (async () => {
+        try {
+          const embedding = await loadNpyEmbedding(npyUrl);
+          if ((window as any).__annotaEmbeddingToken !== token) {
+            return; // effect re-ran; drop stale
+          }
+          samTool.setEmbedding(embedding, width, height);
+
+          // Optional runtime verification: compare image dims and SHA256 if sidecar exists
+          const sidecar = npyUrlBase.replace(/\.npy$/, ".json");
+          try {
+            const r = await fetch(sidecar);
+            if (r.ok) {
+              const meta = await r.json();
+              if (meta && (meta.width !== width || meta.height !== height)) {
+                console.warn("[ToolManager] Embedding/image dimension mismatch:", meta, { width, height });
+              }
+              const imgResp = await fetch(item?.source?.url);
+              if (imgResp.ok) {
+                const buf = await imgResp.arrayBuffer();
+                const digest = await crypto.subtle.digest("SHA-256", buf);
+                const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join("");
+                if (meta?.sha256 && hex !== meta.sha256) {
+                  console.warn("[ToolManager] Embedding/image SHA mismatch:", hex.slice(0,12), "!=", String(meta.sha256).slice(0,12));
+                }
+              }
+            }
+          } catch {}
+        } catch (e) {
+          // No embedding found - continue using dummy
+        }
+      })();
+    };
+
+    // Listen to OSD's 'open' event which fires when a new image is loaded
+    viewer.addHandler('open', handleImageOpen);
+
+    // Also run once on mount to load the initial image's embedding
+    handleImageOpen();
+
+    return () => {
+      viewer.removeHandler('open', handleImageOpen);
+    };
+  }, [viewer, samTool]);
   useTool({
     viewer,
     handler: splitTool,

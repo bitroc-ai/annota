@@ -21,17 +21,9 @@ import npyjs from 'npyjs';
  */
 export async function loadNpyEmbedding(url: string): Promise<ort.Tensor> {
   try {
-    // Fetch the .npy file
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch embedding: ${response.statusText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-
-    // Parse .npy format
+    // Let npyjs handle fetching + parsing directly (robust to content-type, gzip)
     const npyLoader = new npyjs();
-    const npyData: any = await npyLoader.load(arrayBuffer);
+    const npyData: any = await npyLoader.load(url);
     const data = npyData.data as Float32Array;
     const shape = npyData.shape as number[];
 
@@ -48,19 +40,18 @@ export async function loadNpyEmbedding(url: string): Promise<ort.Tensor> {
       );
     }
 
-    // Validate data type
-    if (npyData.dtype !== '<f4' && npyData.dtype !== 'float32') {
-      throw new Error(
-        `Invalid embedding dtype: expected float32, got ${npyData.dtype}`
-      );
+    // Validate data type (accept common float32 codes from npyjs)
+    const dt = String(npyData.dtype).toLowerCase();
+    const okDtypes = new Set(['float32', '<f4', '>f4', 'f4']);
+    if (!okDtypes.has(dt)) {
+      throw new Error(`Invalid embedding dtype: expected float32, got ${npyData.dtype}`);
     }
 
     // Create ONNX tensor
     return new ort.Tensor('float32', data, shape);
   } catch (error) {
-    throw new Error(
-      `Failed to load .npy embedding from ${url}: ${error instanceof Error ? error.message : String(error)}`
-    );
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to load .npy embedding from ${url}: ${msg}`);
   }
 }
 

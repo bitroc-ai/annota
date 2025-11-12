@@ -28,7 +28,13 @@ import { AnnotationContextMenu } from "@/components/playground/context-menu";
 import { Layers } from "lucide-react";
 import type { ToolType } from "@/components/playground/toolbar";
 
-const DEMO_IMAGES = ["0.png", "1.png", "2.png", "3.png", "4.png"];
+const DEMO_IMAGES = [
+  "0.png",
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.png",
+];
 
 /**
  * Load H5 annotations for a specific category
@@ -113,6 +119,7 @@ function DemoContent({ currentImage }: { currentImage: string }) {
   // - Negative Points (zIndex: 2)
   // - Positive Masks (zIndex: 3)
   // - Negative Masks (zIndex: 4)
+  // - SAM Preview (zIndex: 5)
   // - Default (zIndex: 0, built-in)
   useEffect(() => {
     if (!annotator) return;
@@ -191,6 +198,17 @@ function DemoContent({ currentImage }: { currentImage: string }) {
             ann.shape.type === "path";
           return isMaskShape && ann.properties?.classification === "negative";
         },
+      });
+    }
+
+    // Create layer for SAM hover preview (managed by tool)
+    if (!annotator.getLayer("sam-preview")) {
+      annotator.createLayer("sam-preview", {
+        name: "SAM Preview",
+        visible: true,
+        locked: true,
+        opacity: 0.4,
+        zIndex: 5,
       });
     }
   }, [annotator]);
@@ -284,7 +302,6 @@ export function PlaygroundApp() {
   const [viewer, setViewer] = useState<any>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [tool, setTool] = useState<ToolType>("pan");
-  const [threshold, setThreshold] = useState(8);
   const [pushRadius, setPushRadius] = useState(30);
   const [smoothingTolerance, setSmoothingTolerance] = useState(2);
   const [activeLayerId, setActiveLayerId] = useState<string>("default");
@@ -403,7 +420,6 @@ export function PlaygroundApp() {
             <ToolManager
               viewer={viewer}
               tool={tool}
-              threshold={threshold}
               pushRadius={pushRadius}
               smoothingTolerance={smoothingTolerance}
               activeLayerId={activeLayerId}
@@ -445,8 +461,6 @@ export function PlaygroundApp() {
           <div className="absolute top-4 left-20">
             <ToolSettings
               tool={tool}
-              threshold={threshold}
-              onThresholdChange={setThreshold}
               pushRadius={pushRadius}
               onPushRadiusChange={setPushRadius}
               smoothingTolerance={smoothingTolerance}
