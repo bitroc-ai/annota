@@ -10,7 +10,9 @@
     "build": "tsup src/index.ts --format cjs,esm --dts",
     "build:docs": "pnpm build && cd docs && pnpm install --no-frozen-lockfile && pnpm build",
     "start:docs": "cd docs && pnpm start",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev": "pnpm run dev:lib & pnpm run dev:docs",
+    "dev:lib": "pnpm build --watch",
+    "dev:docs": "cd docs && pnpm dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui"

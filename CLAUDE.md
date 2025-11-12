@@ -10,31 +10,31 @@ Annota is a high-performance React annotation framework for large-scale images, 
 
 ### Development
 ```bash
+# RECOMMENDED: Run library + docs with hot reload
+pnpm dev                  # Runs library in watch mode + docs dev server (port 6006)
+                         # Changes to src/ automatically rebuild and reload docs
+
+# Individual commands
+pnpm dev:lib             # Build library in watch mode only
+pnpm dev:docs            # Start docs dev server only
+
 # Type checking (use this instead of pnpm build during development)
 pnpm typecheck
 
 # Run tests
-pnpm test                  # Interactive watch mode
-pnpm test run             # Run once
-vitest run                # Alternative
+pnpm test                # Interactive watch mode
+pnpm test run            # Run once
+vitest run               # Alternative
 
 # Build library (WARNING: breaks dev server - use tsc --noEmit instead)
-pnpm build                # Only build when necessary
-
-# Watch mode for development
-pnpm dev                  # Builds library in watch mode
+pnpm build               # Only build when necessary
 ```
 
 ### Documentation Site
 ```bash
-# Documentation commands (run from root)
-cd docs && pnpm dev       # Start dev server (port 6006)
-cd docs && pnpm build     # Build static site
-cd docs && pnpm start     # Serve built site (uses npx serve@latest out)
-
-# Alternative: run from root
-pnpm build:docs           # Build both library and docs
-pnpm start:docs           # Start docs dev server
+# Build commands
+pnpm build:docs          # Build both library and docs (for deployment)
+pnpm start:docs          # Serve built static site
 ```
 
 ### Publishing
