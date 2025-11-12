@@ -84,8 +84,8 @@ export class SamTool extends BaseTool {
   };
   private isPredicting = false;
   private previewOverlay: HTMLElement | null = null;
-  private previewThrottleTimer: number | null = null;
   private lastPreviewTime = 0;
+  private hoverHandler: ((evt: MouseEvent) => void) | null = null;
 
   constructor(options: SamToolOptions) {
     super('sam', options);
@@ -147,28 +147,64 @@ export class SamTool extends BaseTool {
 
     // Attach hover preview handler if enabled
     if (this.samOptions.showHoverPreview && this.viewer) {
-      this.viewer.addHandler('canvas-drag', this.onCanvasMove);
-      this.viewer.addHandler('canvas-exit', this.onCanvasExit);
+      console.log('SAM attachEventHandlers - attaching to container element');
+
+      // Attach to the viewer's container element
+      const container = this.viewer.element;
+      console.log('SAM container element:', container);
+      if (container) {
+        this.hoverHandler = (evt: MouseEvent) => {
+          console.log('SAM mousemove event fired! clientX:', evt.clientX, 'clientY:', evt.clientY);
+
+          // Convert mouse event to OSD coordinates
+          const rect = container.getBoundingClientRect();
+          console.log('SAM container rect:', rect);
+
+          const pixelX = evt.clientX - rect.left;
+          const pixelY = evt.clientY - rect.top;
+          console.log('SAM pixel coords:', pixelX, pixelY);
+
+          const viewportPoint = this.viewer!.viewport.pointFromPixel(
+            new (window as any).OpenSeadragon.Point(pixelX, pixelY)
+          );
+          console.log('SAM viewport point:', viewportPoint);
+
+          const imagePoint = this.viewer!.viewport.viewportToImageCoordinates(viewportPoint);
+          console.log('SAM image point:', imagePoint);
+
+          this.onCanvasHover({
+            position: { x: viewportPoint.x, y: viewportPoint.y },
+            imageCoords: imagePoint
+          });
+        };
+
+        container.addEventListener('mousemove', this.hoverHandler);
+        console.log('SAM mousemove handler attached to container, element tag:', container.tagName, 'id:', container.id, 'class:', container.className);
+      } else {
+        console.log('SAM container is null!');
+      }
+    } else {
+      console.log('SAM attachEventHandlers - not attaching:', {
+        showHoverPreview: this.samOptions.showHoverPreview,
+        hasViewer: !!this.viewer
+      });
     }
   }
 
   protected detachEventHandlers(): void {
     super.detachEventHandlers();
 
-    // Remove hover preview handlers
-    if (this.samOptions.showHoverPreview && this.viewer) {
-      this.viewer.removeHandler('canvas-drag', this.onCanvasMove);
-      this.viewer.removeHandler('canvas-exit', this.onCanvasExit);
+    // Remove hover handler
+    if (this.hoverHandler && this.viewer) {
+      const container = this.viewer.element;
+      if (container) {
+        container.removeEventListener('mousemove', this.hoverHandler);
+        this.hoverHandler = null;
+      }
     }
 
     // Clean up preview overlay
     this.removePreviewOverlay();
-
-    // Clear throttle timer
-    if (this.previewThrottleTimer !== null) {
-      clearTimeout(this.previewThrottleTimer);
-      this.previewThrottleTimer = null;
-    }
   }
 
   /**
@@ -282,10 +318,16 @@ export class SamTool extends BaseTool {
   }
 
   /**
-   * Handle mouse move for hover preview (throttled)
+   * Handle canvas hover for preview (throttled)
    */
-  private onCanvasMove = (evt: any): void => {
+  private onCanvasHover(evt: any): void {
+    console.log('SAM onCanvasHover triggered');
+
     if (!this.samOptions.showHoverPreview || !this.isModelInitialized()) {
+      console.log('SAM preview disabled or model not initialized', {
+        showHoverPreview: this.samOptions.showHoverPreview,
+        modelInitialized: this.isModelInitialized()
+      });
       return;
     }
 
@@ -296,30 +338,28 @@ export class SamTool extends BaseTool {
     }
     this.lastPreviewTime = now;
 
-    // Convert to image coordinates
-    const imageCoords = this.viewerToImageCoords(
-      evt.position?.x || 0,
-      evt.position?.y || 0
-    );
+    // Use image coordinates directly from the event
+    const imageCoords = evt.imageCoords || { x: 0, y: 0 };
+
+    console.log('SAM preview at image coords:', imageCoords.x, imageCoords.y);
 
     // Run preview prediction (non-blocking)
     this.showPreview(imageCoords.x, imageCoords.y);
-  };
-
-  /**
-   * Handle canvas exit to clear preview
-   */
-  private onCanvasExit = (): void => {
-    this.removePreviewOverlay();
-  };
+  }
 
   /**
    * Show hover preview at coordinates
    */
   private async showPreview(x: number, y: number): Promise<void> {
     if (!this.annotator || this.isPredicting) {
+      console.log('SAM showPreview blocked:', {
+        hasAnnotator: !!this.annotator,
+        isPredicting: this.isPredicting
+      });
       return;
     }
+
+    console.log('SAM running preview prediction...');
 
     try {
       // Run SAM inference
@@ -331,13 +371,17 @@ export class SamTool extends BaseTool {
         imageHeight: this.samOptions.imageHeight,
       });
 
+      console.log('SAM preview prediction complete, iouScore:', result.iouScore);
+
       // Convert mask blob to image element
       const blobUrl = URL.createObjectURL(result.maskBlob);
       const img = new Image();
 
       img.onload = () => {
+        console.log('SAM preview image loaded');
         // Update or create preview overlay
         if (!this.previewOverlay) {
+          console.log('Creating SAM preview overlay');
           this.previewOverlay = document.createElement('img');
           this.previewOverlay.style.position = 'absolute';
           this.previewOverlay.style.top = '0';
@@ -350,6 +394,7 @@ export class SamTool extends BaseTool {
           // Add to viewer canvas
           const canvas = this.viewer?.canvas;
           if (canvas && canvas.parentElement) {
+            console.log('Appending preview overlay to canvas parent');
             canvas.parentElement.appendChild(this.previewOverlay);
           }
         }

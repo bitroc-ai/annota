@@ -15,8 +15,8 @@ importers:
         specifier: ^0.3.0
         version: 0.3.0(react@19.2.0)
       annota:
-        specifier: ^0.8.0
-        version: 0.8.0(openseadragon@5.0.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: file:..
+        version: file:..(openseadragon@5.0.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       lucide-react:
         specifier: ^0.460.0
         version: 0.460.0(react@19.2.0)
@@ -1125,8 +1125,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  annota@0.8.0:
-    resolution: {integrity: sha512-cZDqyeJ3bKmoyifzHTK2ATqWT+EGV9Bs2hEvOiPE6qrc39K4JhsbXXs1+D8bvDGWznYqDVMUQnFCOcfcMBx3Kg==}
+  annota@file:..:
+    resolution: {directory: .., type: directory}
     peerDependencies:
       openseadragon: ^4.0.0 || ^5.0.0
       react: ^18.0.0 || ^19.0.0
@@ -3725,7 +3725,7 @@ snapshots:
 
   acorn@8.15.0: {}
 
-  annota@0.8.0(openseadragon@5.0.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  annota@file:..(openseadragon@5.0.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       jsfive: 0.4.0
       npyjs: 1.0.4
