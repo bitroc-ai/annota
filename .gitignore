@@ -37,3 +37,8 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Large model checkpoints (do not commit)
+# SAM PyTorch checkpoints used only for offline embedding generation
+# Keep ONNX decoder files under version control; ignore only .pth
+**/*.pth

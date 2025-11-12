@@ -1,4 +1,4 @@
-import nextra from 'nextra';
+import nextra from "nextra";
 
 const withNextra = nextra({
   defaultShowCopyCode: true,
@@ -9,10 +9,11 @@ const withNextra = nextra({
 });
 
 export default withNextra({
+  devIndicators: false,
   reactStrictMode: true,
-  output: 'export',
+  output: "export",
   trailingSlash: true,
-  outputFileTracingRoot: require('path').join(__dirname, '..'),
+  outputFileTracingRoot: require("path").join(__dirname, ".."),
   images: {
     unoptimized: true,
   },
@@ -20,6 +21,6 @@ export default withNextra({
     ignoreDuringBuilds: true,
   },
   experimental: {
-    optimizePackageImports: ['nextra-theme-docs'],
+    optimizePackageImports: ["nextra-theme-docs"],
   },
 });

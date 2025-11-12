@@ -3,8 +3,6 @@ import type { ToolType } from './toolbar';
 
 interface ToolSettingsProps {
   tool: ToolType;
-  threshold: number;
-  onThresholdChange: (value: number) => void;
   pushRadius: number;
   onPushRadiusChange: (value: number) => void;
   smoothingTolerance: number;
@@ -13,8 +11,6 @@ interface ToolSettingsProps {
 
 export function ToolSettings({
   tool,
-  threshold,
-  onThresholdChange,
   pushRadius,
   onPushRadiusChange,
   smoothingTolerance,
@@ -54,17 +50,9 @@ export function ToolSettings({
           <CardTitle className="text-sm">SAM Segmentation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <label className="text-xs text-slate-600 dark:text-slate-400">
-            Threshold: {threshold}
-            <input
-              type="range"
-              min="1"
-              max="50"
-              value={threshold}
-              onChange={e => onThresholdChange(Number(e.target.value))}
-              className="w-full mt-1 h-1 bg-slate-300 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
-            />
-          </label>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Hover over objects to preview segmentation, click to create annotation.
+          </p>
         </CardContent>
       </Card>
     );

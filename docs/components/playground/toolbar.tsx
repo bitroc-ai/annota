@@ -1,7 +1,7 @@
 import {
   Hand,
   CircleDot,
-  Scan,
+  Wand2,
   Eraser,
   ZoomIn,
   ZoomOut,
@@ -15,11 +15,20 @@ import {
   Scissors,
   Merge,
   Image,
-  Spline,
+  LineSquiggle,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAnnotator, useViewer, useHistory, useSelection, containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
+import {
+  useAnnotator,
+  useViewer,
+  useHistory,
+  useSelection,
+  containsPoint,
+  downloadJson,
+  exportJson,
+  canMergeAnnotations,
+} from "annota";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -70,33 +79,33 @@ export function AnnotationToolbar({
 
     // Create a 64x64 sample image annotation with a gradient
     // Generate a simple gradient as base64 PNG
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 64;
     canvas.height = 64;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Create gradient (red to transparent)
     const gradient = ctx.createLinearGradient(0, 0, 64, 64);
-    gradient.addColorStop(0, 'rgba(255, 100, 100, 0.7)');
-    gradient.addColorStop(1, 'rgba(100, 100, 255, 0.3)');
+    gradient.addColorStop(0, "rgba(255, 100, 100, 0.7)");
+    gradient.addColorStop(1, "rgba(100, 100, 255, 0.3)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 64, 64);
 
     // Add some text
-    ctx.fillStyle = 'white';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Analysis', 32, 28);
-    ctx.fillText('Result', 32, 42);
+    ctx.fillStyle = "white";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Analysis", 32, 28);
+    ctx.fillText("Result", 32, 42);
 
-    const imageData = canvas.toDataURL('image/png');
+    const imageData = canvas.toDataURL("image/png");
 
     // Create image annotation (64x64 to match canvas size)
     const annotation = {
       id: `image-${Date.now()}`,
       shape: {
-        type: 'image' as const,
+        type: "image" as const,
         x: imageCenter.x - 32,
         y: imageCenter.y - 32,
         width: 64,
@@ -111,15 +120,15 @@ export function AnnotationToolbar({
         },
       },
       properties: {
-        type: 'analysis_result',
-        analysisType: 'sample',
+        type: "analysis_result",
+        analysisType: "sample",
         timestamp: Date.now(),
-        note: 'This is a sample image annotation showing how analysis results can be overlaid on the slide',
+        note: "This is a sample image annotation showing how analysis results can be overlaid on the slide",
       },
     };
 
     annotator.state.store.add(annotation);
-    toast.success('Added sample image annotation at viewport center');
+    toast.success("Added sample image annotation at viewport center");
   };
 
   const handleMerge = () => {
@@ -133,8 +142,8 @@ export function AnnotationToolbar({
 
     // Get selected annotations
     const annotations = selectedIds
-      .map(id => annotator.state.store.get(id))
-      .filter(ann => ann !== undefined);
+      .map((id) => annotator.state.store.get(id))
+      .filter((ann) => ann !== undefined);
 
     // Check if can merge
     if (!canMergeAnnotations(annotations as any[])) {
@@ -207,7 +216,8 @@ export function AnnotationToolbar({
 
       // Assign classification based on contained points (positive wins if both)
       const currentClassification = mask.properties?.classification;
-      let newClassification: "positive" | "negative" | undefined = currentClassification;
+      let newClassification: "positive" | "negative" | undefined =
+        currentClassification;
 
       if (hasPositive) {
         newClassification = "positive";
@@ -294,7 +304,7 @@ export function AnnotationToolbar({
           )}
           title="Draw smooth curves (freehand)"
         >
-          <Spline className="w-4 h-4" />
+          <LineSquiggle className="w-4 h-4" />
         </Button>
         {/* Push tool disabled - will be redesigned as Magnet tool
         <Button
@@ -319,14 +329,19 @@ export function AnnotationToolbar({
             "w-9 h-9",
             tool === "sam" && "bg-purple-600 hover:bg-purple-700"
           )}
-          title={samInitialized ? "SAM Segmentation (click on objects)" : "SAM Initializing..."}
+          title={
+            samInitialized
+              ? "SAM Segmentation (click on objects)"
+              : "SAM Initializing..."
+          }
         >
           {samInitialized ? (
-            <Scan className="w-4 h-4" />
+            <Wand2 className="w-4 h-4" />
           ) : (
             <Loader2 className="w-4 h-4 animate-spin" />
           )}
-        </Button>        <Button
+        </Button>{" "}
+        <Button
           variant={tool === "split" ? "default" : "ghost"}
           size="icon"
           onClick={() => onToolChange("split")}
@@ -338,10 +353,8 @@ export function AnnotationToolbar({
         >
           <Scissors className="w-4 h-4" />
         </Button>
-
         {/* Divider */}
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
-
         {/* Annotation Operations */}
         <Button
           variant="ghost"
@@ -372,10 +385,8 @@ export function AnnotationToolbar({
         >
           <Sparkles className="w-4 h-4 text-purple-500" />
         </Button>
-
         {/* Divider */}
         <div className="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
-
         {/* Layer Panel */}
         {layerPanel}
       </div>
