@@ -1,0 +1,8 @@
+{
+  "image": "0.png",
+  "width": 640,
+  "height": 640,
+  "sha256": "33d1e6bdc70bcca548b016bf977920a8bc70fab04087a2e01a392b9780e9d188",
+  "model_type": "vit_b",
+  "checkpoint": "sam_vit_b_01ec64.pth"
+}
