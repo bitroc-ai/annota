@@ -68,6 +68,7 @@ export class SamTool extends BaseTool {
   private previewSeq = 0;
   private lastPreviewTime = 0;
   private hoverHandler: ((evt: MouseEvent) => void) | null = null;
+  private lastPreviewResult: { maskBlob: Blob; x: number; y: number; iouScore: number } | null = null;
 
   constructor(options: SamToolOptions) {
     super('sam', options);
@@ -217,18 +218,37 @@ export class SamTool extends BaseTool {
     this.samOptions.onPredictionStart?.();
 
     try {
-      const result = await this.model.predict({
-        embedding: this.samOptions.embedding,
-        clickX,
-        clickY,
-        imageWidth: this.samOptions.imageWidth,
-        imageHeight: this.samOptions.imageHeight,
-      });
+      // Check if we can reuse the cached preview result
+      // Use a tolerance of 5 pixels to account for slight mouse movement
+      const tolerance = 5;
+      const canReusePreview = this.lastPreviewResult &&
+        Math.abs(this.lastPreviewResult.x - clickX) < tolerance &&
+        Math.abs(this.lastPreviewResult.y - clickY) < tolerance;
 
-      this.samOptions.onPredictionComplete?.(result.iouScore);
+      let maskBlob: Blob;
+      let iouScore: number;
+
+      if (canReusePreview && this.lastPreviewResult) {
+        // Reuse cached preview result
+        maskBlob = this.lastPreviewResult.maskBlob;
+        iouScore = this.lastPreviewResult.iouScore;
+      } else {
+        // Run new prediction
+        const result = await this.model.predict({
+          embedding: this.samOptions.embedding,
+          clickX,
+          clickY,
+          imageWidth: this.samOptions.imageWidth,
+          imageHeight: this.samOptions.imageHeight,
+        });
+        maskBlob = result.maskBlob;
+        iouScore = result.iouScore;
+      }
+
+      this.samOptions.onPredictionComplete?.(iouScore);
 
       // Convert mask blob to URL
-      const blobUrl = URL.createObjectURL(result.maskBlob);
+      const blobUrl = URL.createObjectURL(maskBlob);
 
       try {
         const annotations = await loadMaskPolygons(blobUrl, {
@@ -244,7 +264,7 @@ export class SamTool extends BaseTool {
           annotation.properties = {
             ...annotation.properties,
             source: 'sam-onnx',
-            iouScore: result.iouScore,
+            iouScore: iouScore,
             clickPoint: { x: clickX, y: clickY },
           };
 
@@ -346,6 +366,14 @@ export class SamTool extends BaseTool {
       ctx.putImageData(imageData, 0, 0);
 
       // SAM outputs masks at the original image resolution (after we pass orig_im_size)
+      // Cache the result for click-to-create
+      this.lastPreviewResult = {
+        maskBlob: result.maskBlob,
+        x,
+        y,
+        iouScore: result.iouScore,
+      };
+
       // Update or create overlay
       this.removePreview();
       this.previewCanvas = maskCanvas;
@@ -374,6 +402,7 @@ export class SamTool extends BaseTool {
       } catch {}
       this.previewCanvas = null;
     }
+    this.lastPreviewResult = null;
   }
 
   /**
