@@ -15,12 +15,16 @@ The SAM tool brings Meta AI's powerful Segment Anything Model directly into your
 - ✅ **Privacy-first** - Images never leave the device
 - ✅ **Offline support** - Works without internet after model download
 - ✅ **Cost-effective** - No GPU server costs
+- ✅ **Real-time preview** - Hover to see segmentation before clicking
+- ✅ **Smart caching** - Reuses preview mask when clicking to avoid redundant inference
 
 **How it works:**
-1. User clicks on an object in the image
-2. SAM decoder runs inference in the browser (~100-300ms)
-3. Mask is generated and converted to polygon
-4. Annotation is automatically created
+1. User hovers over an object - blue preview overlay appears
+2. User clicks on the preview to create annotation
+3. Cached mask is converted to polygon (~instant)
+4. Annotation is automatically created and selected
+
+If clicking without hovering, SAM decoder runs inference (~100-300ms) then creates the annotation.
 
 ## Quick Start
 
@@ -88,6 +92,43 @@ np.save("embeddings/image_001.npy", embedding)
 
 After embeddings are generated, everything runs in TypeScript with no Python required.
 
+## Hover Preview & Click-to-Create
+
+The SAM tool features a real-time hover preview that dramatically improves user experience:
+
+**Preview Behavior:**
+- Hover over any object → blue overlay appears showing predicted segmentation
+- Preview updates in real-time as you move the mouse (throttled to 50ms)
+- Move mouse outside image bounds → preview disappears
+
+**Click-to-Create:**
+- Click on the preview → instantly creates polygon annotation
+- The cached preview mask is reused (no redundant inference)
+- Clicking within 5 pixels of the last preview position uses the cache
+- Annotation matches the preview shape exactly
+
+**Customization:**
+
+```tsx
+const samTool = new SamTool({
+  decoderModelUrl: '/models/sam_decoder.onnx',
+  embedding,
+  imageWidth: 1024,
+  imageHeight: 1024,
+
+  // Disable hover preview
+  showHoverPreview: false,
+
+  // Adjust preview transparency
+  previewOpacity: 0.3,  // 0.0 = invisible, 1.0 = opaque
+});
+```
+
+**Performance Notes:**
+- Preview caching eliminates ~100-300ms inference delay on click
+- Only the largest contour is converted to polygon (prevents fragment annotations)
+- Preview runs at 20 FPS (50ms throttle) for smooth interaction
+
 ## API Reference
 
 ### SamTool
@@ -99,6 +140,10 @@ interface SamToolOptions {
   embedding: ort.Tensor;
   imageWidth: number;
   imageHeight: number;
+
+  // Preview options
+  showHoverPreview?: boolean;      // Show preview on hover (default: true)
+  previewOpacity?: number;          // Preview overlay opacity (default: 0.5)
 
   // Annotation options
   annotationProperties?: Partial<Annotation>;
@@ -151,6 +196,14 @@ The SAM encoder model is ~350MB (too large for browser) and computationally expe
 Each embedding is ~4MB (`[1, 256, 64, 64]` float32 tensor).
 - 100 images: ~400 MB
 - 1000 images: ~4 GB
+
+### Does the preview affect performance?
+
+No. The preview runs inference on-demand while hovering, but the result is cached. When you click, the cached mask is instantly reused, making annotation creation feel instant (~0ms inference vs ~100-300ms without cache).
+
+### Can I disable the hover preview?
+
+Yes, set `showHoverPreview: false` in the SamTool options. The tool will still work - clicking will trigger inference and create annotations, just without the preview.
 
 ## Related
 
