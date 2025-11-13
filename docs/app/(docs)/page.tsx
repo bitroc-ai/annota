@@ -168,19 +168,20 @@ export default function HomePage() {
               >
                 {`// npm install annota openseadragon react react-dom
 
-import { AnnotaProvider, Annotator, AnnotationEditor } from 'annota';
+import { AnnotaProvider, Annotator, AnnotaViewer, AnnotationEditor } from 'annota';
 
 function App() {
   const [viewer, setViewer] = useState();
 
   return (
     <AnnotaProvider>
-      <Annotator
-        viewer={viewer}
+      <AnnotaViewer
+        options={{ tileSources: "/image.dzi" }}
         onViewerReady={setViewer}
-        tileSources="/image.dzi"
       />
-      <AnnotationEditor viewer={viewer} />
+      <Annotator viewer={viewer}>
+        <AnnotationEditor viewer={viewer} />
+      </Annotator>
     </AnnotaProvider>
   );
 }`}
