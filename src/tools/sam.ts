@@ -179,28 +179,28 @@ export class SamTool extends BaseTool {
       evt.preventDefaultAction = true;
     }
 
-    // Convert event position to image coordinates
-    let imageCoords: { x: number; y: number };
-    if (evt.position) {
-      const vpPoint = evt.position as OpenSeadragon.Point;
-      const imgPoint = this.viewer.viewport.viewportToImageCoordinates(vpPoint);
-      imageCoords = { x: imgPoint.x, y: imgPoint.y };
-    } else if (evt.originalEvent) {
-      imageCoords = this.viewerToImageCoords(
-        evt.originalEvent.offsetX || 0,
-        evt.originalEvent.offsetY || 0
-      );
-    } else {
-      imageCoords = { x: 0, y: 0 };
-    }
+    // Use the same coordinate conversion as hover handler to get SAM embedding coordinates
+    // This ensures click and hover use the same coordinate system
+    const container = this.viewer.element;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const pixelX = evt.originalEvent.clientX - rect.left;
+    const pixelY = evt.originalEvent.clientY - rect.top;
+    const viewportPoint = this.viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(pixelX, pixelY)
+    );
+    const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+    const samCoords = { x: imagePoint.x, y: imagePoint.y };
 
     // Check if clicking on existing annotation
-    const hitAnnotation = this.checkAnnotationHit(imageCoords);
+    // Note: We use SAM coords here too since annotations are stored in SAM space
+    const hitAnnotation = this.checkAnnotationHit(samCoords);
     if (hitAnnotation) {
       return;
     }
 
-    await this.predictAndCreateAnnotation(imageCoords.x, imageCoords.y);
+    await this.predictAndCreateAnnotation(samCoords.x, samCoords.y);
   }
 
   /**
@@ -257,6 +257,7 @@ export class SamTool extends BaseTool {
 
         if (annotations.length > 0) {
           const annotation = annotations[0];
+
           if (this.samOptions.annotationProperties) {
             Object.assign(annotation, this.samOptions.annotationProperties);
           }
@@ -294,8 +295,9 @@ export class SamTool extends BaseTool {
 
     // Check if mouse is within image bounds
     if (x < 0 || y < 0 || x >= this.samOptions.imageWidth || y >= this.samOptions.imageHeight) {
-      // Mouse is outside image - remove preview
+      // Mouse is outside image - remove preview and clear cache
       this.removePreview();
+      this.lastPreviewResult = null;
       return;
     }
 
@@ -402,7 +404,8 @@ export class SamTool extends BaseTool {
       } catch {}
       this.previewCanvas = null;
     }
-    this.lastPreviewResult = null;
+    // Note: We don't clear lastPreviewResult here because we want to cache
+    // the preview for click-to-create. It will be cleared when mouse leaves the image.
   }
 
   /**

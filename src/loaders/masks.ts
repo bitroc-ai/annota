@@ -114,9 +114,14 @@ async function loadMask8bit(
     if (maskType === 'binary') {
       // Binary mask: single region with 255=foreground, 0=background
       const binaryData = new Uint8Array(img.width * img.height);
+      let whitePixels = 0;
+      let blackPixels = 0;
       for (let i = 0; i < binaryData.length; i++) {
         const pixelIndex = i * 4;
-        binaryData[i] = data[pixelIndex] > 128 ? 255 : 0;
+        const value = data[pixelIndex] > 128 ? 255 : 0;
+        binaryData[i] = value;
+        if (value === 255) whitePixels++;
+        else blackPixels++;
       }
 
       // Create OpenCV Mat
@@ -127,13 +132,33 @@ async function loadMask8bit(
       const binary = new cv.Mat();
       cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
 
+      // Add 1-pixel black border to prevent foreground from touching edges
+      // This ensures RETR_EXTERNAL finds the object contour, not the image border
+      const bordered = new cv.Mat();
+      const black = new cv.Scalar(0, 0, 0, 255);
+      cv.copyMakeBorder(binary, bordered, 1, 1, 1, 1, cv.BORDER_CONSTANT, black);
+
       // Find contours
       const contours = new cv.MatVector();
       const hierarchy = new cv.Mat();
-      cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+      cv.findContours(bordered, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-      // Process all contours
+      // Find the largest contour (which should be the main object)
+      let largestContourIdx = -1;
+      let largestArea = 0;
       for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
+        if (area > largestArea) {
+          largestArea = area;
+          largestContourIdx = i;
+        }
+      }
+
+      // Process only the largest contour
+      for (let i = 0; i < contours.size(); i++) {
+        if (i !== largestContourIdx) continue;
+
         const contour = contours.get(i);
         const area = cv.contourArea(contour);
 
@@ -146,24 +171,26 @@ async function loadMask8bit(
 
         const points: import('../core/types').Point[] = [];
         for (let j = 0; j < approx.data32S.length; j += 2) {
+          // Subtract 1 from coordinates to account for the border offset
           points.push({
-            x: approx.data32S[j],
-            y: approx.data32S[j + 1],
+            x: approx.data32S[j] - 1,
+            y: approx.data32S[j + 1] - 1,
           });
         }
         approx.delete();
 
         if (points.length >= 3) {
+          const bounds = calculateBounds({
+            type: 'polygon',
+            points,
+            bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+          });
           annotations.push({
-            id: `mask-binary-${i}`,
+            id: `mask-binary-${Date.now()}-${i}`,
             shape: {
               type: 'polygon',
               points,
-              bounds: calculateBounds({
-                type: 'polygon',
-                points,
-                bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
-              }),
+              bounds,
             },
             properties: {
               source: 'png-mask',
@@ -183,6 +210,7 @@ async function loadMask8bit(
 
       gray.delete();
       binary.delete();
+      bordered.delete();
       contours.delete();
       hierarchy.delete();
     } else {

@@ -319,10 +319,19 @@ export class SamOnnxModel {
     }
 
     // Threshold at 0.0 (SAM convention)
+    // SAM outputs positive values (> 0.0) for the object/foreground
+    // We convert to white=foreground (255), black=background (0) for standard mask convention
     const binaryMask = new Uint8Array(bestMaskData.length);
+    let whiteCount = 0;
+    let blackCount = 0;
     for (let i = 0; i < bestMaskData.length; i++) {
-      binaryMask[i] = bestMaskData[i] > 0.0 ? 255 : 0;
+      const isObject = bestMaskData[i] > 0.0;
+      // SAM positive → white (255), SAM negative → black (0)
+      binaryMask[i] = isObject ? 255 : 0;
+      if (isObject) whiteCount++;
+      else blackCount++;
     }
+
 
     // Create canvas and render binary mask
     const canvas = document.createElement('canvas');
