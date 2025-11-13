@@ -36,7 +36,7 @@ const embedding = await loadNpyEmbedding('/embeddings/image_001.npy');
 
 // Create SAM tool
 const samTool = new SamTool({
-  decoderModelUrl: '/models/sam_vit_h_decoder.onnx',
+  decoderModelUrl: '/models/sam_onnx_quantized_vit_b.onnx',
   embedding,
   imageWidth: 1024,
   imageHeight: 1024,
@@ -54,14 +54,43 @@ annotator.setTool(samTool);
 
 ## Installation
 
-SAM support is built-in to Annota. Download the ONNX decoder model:
+SAM support is built-in to Annota. Download the required models:
+
+### ONNX Decoder Models (for browser inference)
+
+Download one of the quantized decoder models (~4.5MB each):
 
 ```bash
-# SAM ViT-B decoder (~4MB, recommended for web)
-wget https://github.com/facebookresearch/segment-anything/releases/download/onnx/sam_vit_b_decoder.onnx
+# ViT-B decoder (recommended for web - good balance of speed and quality)
+wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_onnx_quantized_vit_b.onnx
+
+# ViT-H decoder (higher quality, same size due to quantization)
+wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_onnx_quantized_vit_h.onnx
 ```
 
 Place in your `public/models/` directory.
+
+### Python Encoder Models (for generating embeddings)
+
+Download the corresponding PyTorch checkpoint for embedding generation:
+
+```bash
+# ViT-B encoder (~358MB - recommended)
+wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_vit_b_01ec64.pth
+
+# ViT-H encoder (~2.4GB - highest quality)
+wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_vit_h_4b8939.pth
+```
+
+**Model Pairing:**
+- Use `sam_vit_b_01ec64.pth` (Python) with `sam_onnx_quantized_vit_b.onnx` (browser)
+- Use `sam_vit_h_4b8939.pth` (Python) with `sam_onnx_quantized_vit_h.onnx` (browser)
+
+**Note:** The encoder models are only needed once to generate embeddings. After embeddings are created, you only need the ONNX decoder for browser inference.
+
+**Alternative Sources:**
+- Official Meta repository: [github.com/facebookresearch/segment-anything](https://github.com/facebookresearch/segment-anything)
+- All models are also mirrored on our OSS bucket for faster downloads in Asia-Pacific regions
 
 ## Generating Embeddings
 
@@ -73,8 +102,9 @@ import numpy as np
 from segment_anything import sam_model_registry, SamPredictor
 
 # Load SAM model (one-time setup)
-sam = sam_model_registry["vit_h"](checkpoint="sam_vit_h_4b8939.pth")
-sam.to(device='cuda')
+# Use "vit_b" for sam_vit_b_01ec64.pth or "vit_h" for sam_vit_h_4b8939.pth
+sam = sam_model_registry["vit_b"](checkpoint="sam_vit_b_01ec64.pth")
+sam.to(device='cuda')  # or 'cpu' if no GPU
 predictor = SamPredictor(sam)
 
 # Load your image
@@ -88,6 +118,14 @@ embedding = predictor.get_image_embedding().cpu().numpy()
 
 # Save as .npy file
 np.save("embeddings/image_001.npy", embedding)
+```
+
+**Tip:** Use the provided script for batch processing:
+
+```bash
+bash scripts/gen_sam_embeddings.sh -m vit_b \
+  -i docs/public/playground/images/test \
+  -o docs/public/playground/embeddings/test
 ```
 
 After embeddings are generated, everything runs in TypeScript with no Python required.
@@ -111,7 +149,7 @@ The SAM tool features a real-time hover preview that dramatically improves user 
 
 ```tsx
 const samTool = new SamTool({
-  decoderModelUrl: '/models/sam_decoder.onnx',
+  decoderModelUrl: '/models/sam_onnx_quantized_vit_b.onnx',
   embedding,
   imageWidth: 1024,
   imageHeight: 1024,
