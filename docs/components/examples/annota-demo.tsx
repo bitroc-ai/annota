@@ -502,7 +502,7 @@ export function AnnotaDemo({
         </Annotator>
 
         {/* Hint for segment tool */}
-        {activeTool === "segment" && (
+        {activeTool === "segment" && viewer && (
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-40 px-4 py-2 bg-slate-900/90 dark:bg-slate-800/90 text-white text-sm rounded-lg shadow-lg backdrop-blur-sm border border-slate-700">
             <div className="flex items-center gap-2">
               <MousePointerClick className="w-6 h-6" />

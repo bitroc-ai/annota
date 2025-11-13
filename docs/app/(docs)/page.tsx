@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import {
   Code2,
@@ -26,8 +27,27 @@ const AnnotaDemo = dynamic(
     import("@/components/examples").then((mod) => ({
       default: mod.AnnotaDemo,
     })),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-[640px] h-[640px] bg-slate-100 dark:bg-slate-800">
+        <img
+          src="/playground/images/test/0.png"
+          alt="Loading preview"
+          className="w-full h-full object-cover"
+        />
+      </div>
+    ),
+  }
 );
+
+function HeroDemo() {
+  return (
+    <BrowserWindow>
+      <AnnotaDemo size={640} />
+    </BrowserWindow>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -76,9 +96,7 @@ export default function HomePage() {
 
             {/* Right: Demo */}
             <div className="flex flex-col items-center lg:items-end">
-              <BrowserWindow>
-                <AnnotaDemo size={640} />
-              </BrowserWindow>
+              <HeroDemo />
             </div>
           </div>
         </div>
