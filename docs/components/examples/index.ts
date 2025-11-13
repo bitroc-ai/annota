@@ -12,3 +12,4 @@ export type { ExampleType, ExampleViewerProps } from "./example-viewer";
 export { RectangleExample } from "./rectangle";
 export { PolygonExample } from "./polygon";
 export { PointsExample } from "./points";
+export { AnnotaDemo } from "./annota-demo";
