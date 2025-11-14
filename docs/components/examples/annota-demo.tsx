@@ -31,10 +31,13 @@ import {
   createDummyEmbedding,
   type Annotation,
 } from "annota";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AnnotaDemoProps {
-  /** Size of the square viewer in pixels (default: 640) */
-  size?: number;
   /** Image URL to display (default: test image) */
   imageUrl?: string;
   /** Embedding URL for intelligent segmentation (optional) */
@@ -201,14 +204,15 @@ function AnnotaDemoViewer({
   viewer,
   embeddingUrl,
   activeTool,
+  onSegmentToolReady,
 }: {
   viewer: any;
   embeddingUrl?: string;
   activeTool: ToolType;
+  onSegmentToolReady?: (ready: boolean) => void;
 }) {
   const annotator = useAnnotator();
   const [segmentTool, setSegmentTool] = useState<SamTool | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const modelReadyRef = useRef(false);
 
   // Initialize intelligent segmentation tool
@@ -239,7 +243,7 @@ function AnnotaDemoViewer({
 
         if (!modelReadyRef.current) {
           modelReadyRef.current = true;
-          setIsLoading(false);
+          onSegmentToolReady?.(true);
         }
 
         // Load real embedding if available
@@ -257,12 +261,12 @@ function AnnotaDemoViewer({
         }
       } catch (error) {
         console.error("Failed to initialize segmentation tool:", error);
-        setIsLoading(false);
+        onSegmentToolReady?.(false);
       }
     };
 
     initSegmentTool();
-  }, [viewer, embeddingUrl]);
+  }, [viewer, embeddingUrl, onSegmentToolReady]);
 
   // Initialize basic annotation tools (memoized to prevent recreation on every render)
   const pointTool = useMemo(() => new PointTool(), []);
@@ -322,16 +326,6 @@ function AnnotaDemoViewer({
 
   return (
     <>
-      {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-          <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent mb-2"></div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Loading intelligent segmentation...
-            </p>
-          </div>
-        </div>
-      )}
       <AnnotationEditor viewer={viewer} />
       <DemoContextMenu />
     </>
@@ -422,12 +416,12 @@ function DemoContextMenu() {
  * Includes pan, point, rectangle, and intelligent segmentation tools.
  */
 export function AnnotaDemo({
-  size = 640,
   imageUrl = "/playground/images/test/0.png",
   embeddingUrl = "/playground/embeddings/test/0.npy",
 }: AnnotaDemoProps) {
   const [viewer, setViewer] = useState<any>(null);
   const [activeTool, setActiveTool] = useState<ToolType>("pan");
+  const [isSegmentToolReady, setIsSegmentToolReady] = useState(false);
 
   const tools = [
     { id: "pan" as ToolType, label: "Pan and zoom", icon: Hand },
@@ -446,28 +440,40 @@ export function AnnotaDemo({
   ];
 
   return (
-    <div
-      className="relative"
-      style={{ width: `${size}px`, height: `${size}px` }}
-    >
+    <div className="relative w-full h-full">
       <AnnotaProvider>
         {/* Toolbar */}
         <div className="absolute top-4 left-4 z-40 flex gap-1 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-1">
           {tools.map((tool) => {
             const Icon = tool.icon;
+            const isDisabled = tool.id === "segment" && !isSegmentToolReady;
             return (
-              <button
-                key={tool.id}
-                onClick={() => setActiveTool(tool.id)}
-                className={`w-9 h-9 flex items-center justify-center rounded-md transition-all ${
-                  activeTool === tool.id
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
-                title={tool.label}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
+              <Tooltip key={tool.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setActiveTool(tool.id)}
+                    disabled={isDisabled}
+                    className={`w-9 h-9 flex items-center justify-center rounded-md transition-all ${
+                      activeTool === tool.id
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : isDisabled
+                        ? "text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-50"
+                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <Icon
+                      className={`w-4 h-4 ${
+                        tool.id === "segment" && !isDisabled && activeTool !== tool.id
+                          ? "text-purple-600 dark:text-purple-400"
+                          : ""
+                      }`}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {isDisabled ? "Loading segmentation model..." : tool.label}
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -498,6 +504,7 @@ export function AnnotaDemo({
             viewer={viewer}
             embeddingUrl={embeddingUrl}
             activeTool={activeTool}
+            onSegmentToolReady={setIsSegmentToolReady}
           />
         </Annotator>
 

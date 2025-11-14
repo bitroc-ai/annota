@@ -20,7 +20,7 @@ export function BrowserWindow({
 }: BrowserWindowProps) {
   return (
     <div
-      className={`rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl bg-white dark:bg-slate-900 ${className}`}
+      className={`rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-2xl ${className}`}
     >
       {/* Window Header */}
       <div className="bg-slate-100 dark:bg-slate-800 px-4 py-3 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
@@ -41,7 +41,7 @@ export function BrowserWindow({
       </div>
 
       {/* Window Content */}
-      <div className="relative">{children}</div>
+      <div className="relative overflow-hidden">{children}</div>
     </div>
   );
 }

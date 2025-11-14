@@ -30,7 +30,7 @@ const AnnotaDemo = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-[640px] h-[640px] bg-slate-100 dark:bg-slate-800">
+      <div className="w-full h-full bg-slate-100 dark:bg-slate-800">
         <img
           src="/playground/images/test/0.png"
           alt="Loading preview"
@@ -43,9 +43,13 @@ const AnnotaDemo = dynamic(
 
 function HeroDemo() {
   return (
-    <BrowserWindow>
-      <AnnotaDemo size={640} />
-    </BrowserWindow>
+    <div className="w-full min-w-[640px] lg:w-[640px] flex justify-center lg:justify-end">
+      <BrowserWindow>
+        <div className="w-[640px] h-[640px]">
+          <AnnotaDemo />
+        </div>
+      </BrowserWindow>
+    </div>
   );
 }
 
@@ -59,9 +63,9 @@ export default function HomePage() {
         </div>
 
         <div className="relative z-10 container mx-auto px-6 py-16">
-          <div className="flex gap-12 items-center max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row gap-12 items-center max-w-7xl mx-auto">
             {/* Left: Text Content */}
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1 text-center lg:text-left">
               <div>
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tight">
                   Annota
@@ -77,7 +81,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <Link
                   href="/docs"
                   className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-sm"
@@ -95,7 +99,7 @@ export default function HomePage() {
             </div>
 
             {/* Right: Demo */}
-            <div className="flex flex-col items-center lg:items-end">
+            <div className="flex flex-col items-center lg:items-end flex-shrink-0">
               <HeroDemo />
             </div>
           </div>
