@@ -386,6 +386,11 @@ export async function createOpenSeadragonAnnotator(
 
     if (!pressState) return;
 
+    // Drag-to-move: if we pressed on an annotation, prevent OSD panning synchronously
+    if (pressState.annotationId && pressState.originalAnnotation) {
+      (evt as any).preventDefaultAction = true;
+    }
+
     if (dragRafId) return;
     dragRafId = requestAnimationFrame(() => {
       dragRafId = null;
@@ -395,8 +400,6 @@ export async function createOpenSeadragonAnnotator(
 
       // Drag-to-move: if we pressed on an annotation, move it
       if (pressState?.annotationId && pressState?.originalAnnotation) {
-        (evt as any).preventDefaultAction = true;
-
         // Calculate delta from ORIGINAL press position (not mutating pressState!)
         const dx = imagePoint.x - pressState.imagePos.x;
         const dy = imagePoint.y - pressState.imagePos.y;
