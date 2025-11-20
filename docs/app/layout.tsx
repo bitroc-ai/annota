@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Annota - High-Performance Annotation Framework",
   description: "A high-performance annotation framework for whole slide imaging and digital pathology applications",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 /**

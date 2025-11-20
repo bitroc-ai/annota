@@ -25,7 +25,7 @@ const navbar = (
     logo={
       <>
         <img
-          src="/logo.png"
+          src="/logo.svg"
           alt="Annota"
           height="24"
           width="128"
