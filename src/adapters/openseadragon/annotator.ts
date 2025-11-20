@@ -294,20 +294,27 @@ export async function createOpenSeadragonAnnotator(
     };
   };
 
-  // Hover detection
+  // Hover detection - Throttled
+  let pointerMoveRafId: number | null = null;
   const onPointerMove = (event: PointerEvent) => {
-    const imagePoint = pointerEventToImage(viewer, event);
-    if (!imagePoint) return;
+    if (pointerMoveRafId) return;
 
-    const hitTolerance = 5 / viewer.viewport.getZoom();
-    const visibilityFilter = createVisibilityFilter(options.filter);
-    const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
+    pointerMoveRafId = requestAnimationFrame(() => {
+      pointerMoveRafId = null;
+      
+      const imagePoint = pointerEventToImage(viewer, event);
+      if (!imagePoint) return;
 
-    const hitId: string | undefined = hit ? hit.id : undefined;
-    if (hitId !== hover.current) {
-      hover.current = hitId;
-      stage.setHovered(hitId);
-    }
+      const hitTolerance = 5 / viewer.viewport.getZoom();
+      const visibilityFilter = createVisibilityFilter(options.filter);
+      const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
+
+      const hitId: string | undefined = hit ? hit.id : undefined;
+      if (hitId !== hover.current) {
+        hover.current = hitId;
+        stage.setHovered(hitId);
+      }
+    });
   };
 
   canvas.addEventListener('pointermove', onPointerMove);
@@ -369,6 +376,8 @@ export async function createOpenSeadragonAnnotator(
     // which signals drag-to-select mode
   };
 
+  // Throttled drag handler
+  let dragRafId: number | null = null;
   const onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent) => {
     // If a tool already handled this event, skip
     if ((evt as any).preventDefaultAction) {
@@ -377,56 +386,63 @@ export async function createOpenSeadragonAnnotator(
 
     if (!pressState) return;
 
-    const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
-    if (!imagePoint) return;
+    if (dragRafId) return;
+    dragRafId = requestAnimationFrame(() => {
+      dragRafId = null;
 
-    // Drag-to-move: if we pressed on an annotation, move it
-    if (pressState.annotationId && pressState.originalAnnotation) {
-      (evt as any).preventDefaultAction = true;
+      const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
+      if (!imagePoint) return;
 
-      // Calculate delta from ORIGINAL press position (not mutating pressState!)
-      const dx = imagePoint.x - pressState.imagePos.x;
-      const dy = imagePoint.y - pressState.imagePos.y;
+      // Drag-to-move: if we pressed on an annotation, move it
+      if (pressState?.annotationId && pressState?.originalAnnotation) {
+        (evt as any).preventDefaultAction = true;
 
-      // Translate from original annotation shape
-      const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
+        // Calculate delta from ORIGINAL press position (not mutating pressState!)
+        const dx = imagePoint.x - pressState.imagePos.x;
+        const dy = imagePoint.y - pressState.imagePos.y;
 
-      // Update annotation in store
-      store.update(pressState.annotationId, {
-        ...pressState.originalAnnotation,
-        shape: translatedShape
-      });
+        // Translate from original annotation shape
+        const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
 
-      return;
-    }
+        // Update annotation in store
+        store.update(pressState.annotationId, {
+          ...pressState.originalAnnotation,
+          shape: translatedShape
+        });
 
-    // Drag-to-select: if we pressed on empty space (no annotationId)
-    const dx = evt.position.x - pressState.viewportPos.x;
-    const dy = evt.position.y - pressState.viewportPos.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    // Only start selecting if dragged more than 10px
-    if (dist > 10) {
-      // Calculate selection rectangle from press start to current position
-      const minX = Math.min(pressState.imagePos.x, imagePoint.x);
-      const minY = Math.min(pressState.imagePos.y, imagePoint.y);
-      const maxX = Math.max(pressState.imagePos.x, imagePoint.x);
-      const maxY = Math.max(pressState.imagePos.y, imagePoint.y);
-
-      const visibilityFilter = createVisibilityFilter(options.filter);
-      const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, visibilityFilter);
-
-      const originalEvent = evt.originalEvent as MouseEvent;
-      const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
-
-      if (isMultiSelectKey) {
-        selection.add(intersecting.map(ann => ann.id));
-      } else {
-        selection.select(intersecting.map(ann => ann.id));
+        return;
       }
 
-      viewer.forceRedraw();
-    }
+      // Drag-to-select: if we pressed on empty space (no annotationId)
+      if (pressState) {
+        const dx = evt.position.x - pressState.viewportPos.x;
+        const dy = evt.position.y - pressState.viewportPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Only start selecting if dragged more than 10px
+        if (dist > 10) {
+          // Calculate selection rectangle from press start to current position
+          const minX = Math.min(pressState.imagePos.x, imagePoint.x);
+          const minY = Math.min(pressState.imagePos.y, imagePoint.y);
+          const maxX = Math.max(pressState.imagePos.x, imagePoint.x);
+          const maxY = Math.max(pressState.imagePos.y, imagePoint.y);
+
+          const visibilityFilter = createVisibilityFilter(options.filter);
+          const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, visibilityFilter);
+
+          const originalEvent = evt.originalEvent as MouseEvent;
+          const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
+
+          if (isMultiSelectKey) {
+            selection.add(intersecting.map(ann => ann.id));
+          } else {
+            selection.select(intersecting.map(ann => ann.id));
+          }
+
+          viewer.forceRedraw();
+        }
+      }
+    });
   };
 
   const onCanvasRelease = (evt: OpenSeadragon.CanvasReleaseEvent) => {

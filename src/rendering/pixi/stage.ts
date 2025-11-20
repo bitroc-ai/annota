@@ -491,10 +491,33 @@ export class PixiStage {
    * Handle layer visibility/opacity changes
    */
   private handleLayerChange(): void {
-    // Re-render all annotations to update visibility and opacity
-    this.annotationMap.forEach((_entry, id) => {
-      this.renderAnnotation(id);
+    // Optimized: Only update visibility and alpha of existing graphics
+    // instead of full re-render
+    this.annotationMap.forEach((entry) => {
+      const { annotation, graphics, sprite } = entry;
+      
+      // Check layer visibility
+      const layerVisible = !this.layerManager || isAnnotationVisible(annotation, this.layerManager);
+      
+      // Update visibility
+      // Note: We also need to check if it's culled by viewport (handled in performRedraw)
+      // But for immediate feedback, we can set it here if we know it's currently rendered
+      if (graphics.visible !== layerVisible && layerVisible === false) {
+         graphics.visible = false;
+         if (sprite) sprite.visible = false;
+      }
+
+      // Update opacity if visible
+      if (layerVisible && this.layerManager) {
+        // Update graphics alpha/style without full re-render if possible
+        // For now, we'll just trigger a re-render of this specific annotation
+        // which is still better than clearing everything
+        this.renderAnnotation(annotation.id);
+      }
     });
+    
+    // Trigger a redraw to handle culling and other state updates
+    this.redraw();
   }
 
   /**

@@ -45,6 +45,12 @@ export const Viewer = forwardRef<OpenSeadragon.Viewer | undefined, ViewerProps>(
         preload: true,
         timeout: 120000,
         preserveImageSizeOnResize: true,
+        // Performance optimizations for large WSIs
+        smoothTileEdgesMinZoom: Infinity, // Disable edge smoothing for better performance
+        constrainDuringPan: true, // Prevent panning too far away
+        visibilityRatio: 1.0, // Ensure image stays in view
+        minZoomImageRatio: 0.8, // Constrain zoom levels
+        maxZoomPixelRatio: 10, // Constrain zoom levels
         gestureSettingsMouse: {
           clickToZoom: false,
           dblClickToZoom: false,
