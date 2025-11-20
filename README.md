@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="Annota Logo" width="100" />
+  <img src="https://github.com/bitroc-ai/annota/blob/main/docs/public/logo.svg" alt="Annota Logo" width="100" />
 </p>
 
 <h1 align="center">Annota</h1>
