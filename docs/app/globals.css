@@ -6,11 +6,13 @@
 :root {
   --nextra-content-width: 100vw !important;
   --nextra-sidebar-width: 320px !important;
-  --nextra-bg: 255 255 255; /* Light mode background: white */
+  --nextra-bg: 255 255 255;
+  /* Light mode background: white */
 }
 
 .dark {
-  --nextra-bg: 17 24 39; /* Dark mode background: dark gray (#111827) */
+  --nextra-bg: 17 24 39;
+  /* Dark mode background: dark gray (#111827) */
 }
 
 /* Simplified sidebar width override */
@@ -51,9 +53,17 @@ html {
 
 /* Gradient text animation */
 @keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .animate-gradient {
@@ -131,3 +141,34 @@ a.inline-flex {
   @apply px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400;
 }
 
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* slate-300 */
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+  /* slate-600 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+  /* slate-500 */
+}
