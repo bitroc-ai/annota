@@ -78,6 +78,9 @@ export interface SamPredictOutput {
   /** Binary mask as PNG blob */
   maskBlob: Blob;
 
+  /** Basic stats about the best mask */
+  maskStats: MaskStats;
+
   /** Raw mask tensor [1, num_masks, 256, 256] */
   maskTensor: ort.Tensor;
 
@@ -92,6 +95,26 @@ export interface SamPredictOutput {
 
   /** Low resolution mask tensor (for iterative refinement) */
   lowResMask: ort.Tensor;
+}
+
+export interface MaskStats {
+  width: number;
+  height: number;
+  numMasks: number;
+  whiteCount: number;
+  blackCount: number;
+  foregroundRatio: number;
+  isEmpty: boolean;
+  isTiny: boolean;
+  iouBestIndex: number;
+  iouBestScore: number;
+  perMaskCoverages?: Array<{
+    index: number;
+    foregroundRatio: number;
+    whiteCount: number;
+    blackCount: number;
+    iou: number;
+  }>;
 }
 
 /**
@@ -178,6 +201,8 @@ export class SamOnnxModel {
       previousMask,
     } = input;
 
+    const logPrefix = '[SAM/智能分割]';
+
     // SAM expects inputs in a 1024-sized space with UNIFORM scaling
     // (longest side scaled to 1024, aspect ratio preserved)
     const modelScale = 1024;
@@ -246,6 +271,18 @@ export class SamOnnxModel {
       orig_im_size: origImSize,
     };
 
+    console.debug(
+      `${logPrefix} predict start`,
+      {
+        click: { x: clickX, y: clickY },
+        positivePoints: positivePoints.length,
+        negativePoints: negativePoints.length,
+        hasPreviousMask: Boolean(previousMask),
+        image: { width: imageWidth, height: imageHeight, scale: samScale.toFixed(4) },
+        executionProviders: this.config.executionProviders,
+      }
+    );
+
     const results = await this.session.run(feeds);
 
     // Extract outputs
@@ -264,11 +301,22 @@ export class SamOnnxModel {
       }
     }
 
+    console.debug(
+      `${logPrefix} inference result`,
+      {
+        masksDims: maskTensor.dims,
+        iouPredictions: Array.from(iouData).map(v => Number(v.toFixed(4))),
+        bestMaskIndex,
+        bestIou: Number(bestIou.toFixed(4)),
+      }
+    );
+
     // Convert mask tensor to PNG blob (extracts best mask based on IoU)
-    const maskBlob = await this.tensorToPngBlob(maskTensor, iouPredictions);
+    const { blob: maskBlob, stats: maskStats } = await this.tensorToPngBlob(maskTensor, iouPredictions);
 
     return {
       maskBlob,
+      maskStats,
       maskTensor,
       iouScore: bestIou,
       iouPredictions,
@@ -281,7 +329,8 @@ export class SamOnnxModel {
    * Convert mask tensor to PNG blob
    * Extracts the best mask from multi-mask output based on IoU scores
    */
-  private async tensorToPngBlob(tensor: ort.Tensor, iouPredictions: ort.Tensor): Promise<Blob> {
+  private async tensorToPngBlob(tensor: ort.Tensor, iouPredictions: ort.Tensor): Promise<{ blob: Blob; stats: MaskStats }> {
+    const logPrefix = '[SAM/智能分割]';
     const maskData = tensor.data as Float32Array;
 
     // SAM decoder outputs multiple candidate masks [batch, num_masks, height, width]
@@ -292,23 +341,51 @@ export class SamOnnxModel {
     const height = dims[2];
     const width = dims[3];
     const maskSize = height * width;
+    const iouData = iouPredictions.data as Float32Array;
 
     let bestMaskData: Float32Array;
+    let bestMaskIndex = 0;
+    let bestMaskIou = 0;
+    const perMaskCoverages: MaskStats['perMaskCoverages'] = [];
+
+    // Compute coverage for each candidate mask
+    for (let i = 0; i < numMasks; i++) {
+      const maskStart = i * maskSize;
+      const maskEnd = maskStart + maskSize;
+      let whiteCount = 0;
+      for (let j = maskStart; j < maskEnd; j++) {
+        if (maskData[j] > 0.0) whiteCount++;
+      }
+      const ratio = whiteCount / maskSize;
+      perMaskCoverages.push({
+        index: i,
+        foregroundRatio: ratio,
+        whiteCount,
+        blackCount: maskSize - whiteCount,
+        iou: iouData?.[i] ?? 0,
+      });
+    }
+    console.debug(
+      `${logPrefix} per-mask coverage`,
+      perMaskCoverages.map(stat => ({
+        index: stat.index,
+        fg: Number(stat.foregroundRatio.toFixed(4)),
+        iou: Number(stat.iou.toFixed(4)),
+      }))
+    );
 
     if (numMasks > 1) {
       // Find best mask index (highest IoU)
-      const iouData = iouPredictions.data as Float32Array;
-      let bestIdx = 0;
-      let bestIou = iouData[0];
+      bestMaskIou = iouData[0];
       for (let i = 1; i < numMasks; i++) {
-        if (iouData[i] > bestIou) {
-          bestIou = iouData[i];
-          bestIdx = i;
+        if (iouData[i] > bestMaskIou) {
+          bestMaskIou = iouData[i];
+          bestMaskIndex = i;
         }
       }
 
       // Extract best mask slice from flattened tensor
-      const maskStart = bestIdx * maskSize;
+      const maskStart = bestMaskIndex * maskSize;
       const maskEnd = maskStart + maskSize;
       bestMaskData = maskData.slice(maskStart, maskEnd) as Float32Array;
     } else {
@@ -316,6 +393,8 @@ export class SamOnnxModel {
       // If dims is [1, 1, 256, 256], data is already correct
       // If dims is [256, 256], data is already correct
       bestMaskData = maskData.slice(0, maskSize) as Float32Array;
+      const iouData = iouPredictions.data as Float32Array;
+      bestMaskIou = iouData[0] ?? 0;
     }
 
     // Threshold at 0.0 (SAM convention)
@@ -332,6 +411,21 @@ export class SamOnnxModel {
       else blackCount++;
     }
 
+    const fgRatio = whiteCount / binaryMask.length;
+    console.debug(
+      `${logPrefix} mask stats`,
+      {
+        dims,
+        numMasks,
+        height,
+        width,
+        whiteCount,
+        blackCount,
+        fgRatio: Number(fgRatio.toFixed(6)),
+        isEmpty: whiteCount === 0,
+        isTiny: fgRatio > 0 && fgRatio < 0.001,
+      }
+    );
 
     // Create canvas and render binary mask
     const canvas = document.createElement('canvas');
@@ -355,10 +449,25 @@ export class SamOnnxModel {
     ctx.putImageData(imageData, 0, 0);
 
     // Convert canvas to blob
-    return new Promise<Blob>((resolve, reject) => {
+    return new Promise<{ blob: Blob; stats: MaskStats }>((resolve, reject) => {
       canvas.toBlob(blob => {
         if (blob) {
-          resolve(blob);
+          resolve({
+            blob,
+            stats: {
+              width,
+              height,
+              numMasks,
+              whiteCount,
+              blackCount,
+              foregroundRatio: fgRatio,
+              isEmpty: whiteCount === 0,
+              isTiny: fgRatio > 0 && fgRatio < 0.001,
+              iouBestIndex: bestMaskIndex,
+              iouBestScore: bestMaskIou,
+              perMaskCoverages,
+            },
+          });
         } else {
           reject(new Error('Failed to create blob from canvas'));
         }

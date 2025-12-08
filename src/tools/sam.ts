@@ -5,13 +5,15 @@
  * using Meta's SAM model running entirely in the browser via ONNX Runtime Web.
  */
 
-import type * as ort from 'onnxruntime-web';
-import OpenSeadragon from 'openseadragon';
-import { BaseTool } from './base';
-import type { ToolHandlerOptions } from './types';
-import { SamOnnxModel } from '../ml/sam-onnx';
-import { loadMaskPolygons } from '../loaders/masks';
-import type { Annotation } from '../core/types';
+import type * as ort from "onnxruntime-web";
+import OpenSeadragon from "openseadragon";
+import { BaseTool } from "./base";
+import type { ToolHandlerOptions } from "./types";
+import { SamOnnxModel, type MaskStats } from "../ml/sam-onnx";
+import { loadMaskPolygons } from "../loaders/masks";
+import type { Annotation } from "../core/types";
+
+const MAX_FOREGROUND_RATIO = 0.4; // Treat masks covering >40% as invalid/noise
 
 /**
  * Configuration for SAM tool
@@ -54,7 +56,12 @@ export class SamTool extends BaseTool {
   private samOptions: Required<
     Omit<
       SamToolOptions,
-      keyof ToolHandlerOptions | 'annotationProperties' | 'onAnnotationCreated' | 'onPredictionStart' | 'onPredictionComplete' | 'onError'
+      | keyof ToolHandlerOptions
+      | "annotationProperties"
+      | "onAnnotationCreated"
+      | "onPredictionStart"
+      | "onPredictionComplete"
+      | "onError"
     >
   > & {
     annotationProperties?: Partial<Annotation>;
@@ -68,10 +75,16 @@ export class SamTool extends BaseTool {
   private previewSeq = 0;
   private lastPreviewTime = 0;
   private hoverHandler: ((evt: MouseEvent) => void) | null = null;
-  private lastPreviewResult: { maskBlob: Blob; x: number; y: number; iouScore: number } | null = null;
+  private lastPreviewResult: {
+    maskBlob: Blob;
+    x: number;
+    y: number;
+    iouScore: number;
+    maskStats: MaskStats;
+  } | null = null;
 
   constructor(options: SamToolOptions) {
-    super('sam', options);
+    super("sam", options);
 
     this.samOptions = {
       decoderModelUrl: options.decoderModelUrl,
@@ -139,10 +152,11 @@ export class SamTool extends BaseTool {
           const viewportPoint = this.viewer!.viewport.pointFromPixel(
             new OpenSeadragon.Point(pixelX, pixelY)
           );
-          const imagePoint = this.viewer!.viewport.viewportToImageCoordinates(viewportPoint);
+          const imagePoint =
+            this.viewer!.viewport.viewportToImageCoordinates(viewportPoint);
           this.onCanvasHover(imagePoint.x, imagePoint.y);
         };
-        container.addEventListener('mousemove', this.hoverHandler);
+        container.addEventListener("mousemove", this.hoverHandler);
       }
     }
   }
@@ -153,7 +167,7 @@ export class SamTool extends BaseTool {
     if (this.hoverHandler && this.viewer) {
       const container = this.viewer.element;
       if (container) {
-        container.removeEventListener('mousemove', this.hoverHandler);
+        container.removeEventListener("mousemove", this.hoverHandler);
         this.hoverHandler = null;
       }
     }
@@ -170,12 +184,15 @@ export class SamTool extends BaseTool {
     }
 
     if (!this.isModelInitialized()) {
-      const err = new Error('Model not initialized. Call initialize() first.');
+      const err = new Error("Model not initialized. Call initialize() first.");
       this.samOptions.onError?.(err);
       return;
     }
 
-    if (this.options.preventDefaultAction && evt.preventDefaultAction !== undefined) {
+    if (
+      this.options.preventDefaultAction &&
+      evt.preventDefaultAction !== undefined
+    ) {
       evt.preventDefaultAction = true;
     }
 
@@ -190,8 +207,20 @@ export class SamTool extends BaseTool {
     const viewportPoint = this.viewer.viewport.pointFromPixel(
       new OpenSeadragon.Point(pixelX, pixelY)
     );
-    const imagePoint = this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
+    const imagePoint =
+      this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
     const samCoords = { x: imagePoint.x, y: imagePoint.y };
+
+    // Ignore clicks that land outside the image bounds to avoid huge masks
+    if (
+      samCoords.x < 0 ||
+      samCoords.y < 0 ||
+      samCoords.x >= this.samOptions.imageWidth ||
+      samCoords.y >= this.samOptions.imageHeight
+    ) {
+      this.removePreview();
+      return;
+    }
 
     // Check if clicking on existing annotation
     // Note: We use SAM coords here too since annotations are stored in SAM space
@@ -221,17 +250,20 @@ export class SamTool extends BaseTool {
       // Check if we can reuse the cached preview result
       // Use a tolerance of 5 pixels to account for slight mouse movement
       const tolerance = 5;
-      const canReusePreview = this.lastPreviewResult &&
+      const canReusePreview =
+        this.lastPreviewResult &&
         Math.abs(this.lastPreviewResult.x - clickX) < tolerance &&
         Math.abs(this.lastPreviewResult.y - clickY) < tolerance;
 
       let maskBlob: Blob;
       let iouScore: number;
+      let maskStats: MaskStats;
 
       if (canReusePreview && this.lastPreviewResult) {
         // Reuse cached preview result
         maskBlob = this.lastPreviewResult.maskBlob;
         iouScore = this.lastPreviewResult.iouScore;
+        maskStats = this.lastPreviewResult.maskStats;
       } else {
         // Run new prediction
         const result = await this.model.predict({
@@ -243,16 +275,30 @@ export class SamTool extends BaseTool {
         });
         maskBlob = result.maskBlob;
         iouScore = result.iouScore;
+        maskStats = result.maskStats;
       }
 
       this.samOptions.onPredictionComplete?.(iouScore);
+
+      // Skip obviously invalid results that cover too much of the image
+      if (this.isMaskTooLarge(maskStats)) {
+        console.debug(
+          "[SAM] Skipping mask creation due to oversized foreground ratio",
+          {
+            foregroundRatio: Number(maskStats.foregroundRatio.toFixed(4)),
+            width: maskStats.width,
+            height: maskStats.height,
+          }
+        );
+        return;
+      }
 
       // Convert mask blob to URL
       const blobUrl = URL.createObjectURL(maskBlob);
 
       try {
         const annotations = await loadMaskPolygons(blobUrl, {
-          maskType: 'binary',
+          maskType: "binary",
         });
 
         if (annotations.length > 0) {
@@ -264,7 +310,7 @@ export class SamTool extends BaseTool {
 
           annotation.properties = {
             ...annotation.properties,
-            source: 'sam-onnx',
+            source: "sam-onnx",
             iouScore: iouScore,
             clickPoint: { x: clickX, y: clickY },
           };
@@ -279,7 +325,7 @@ export class SamTool extends BaseTool {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.samOptions.onError?.(err);
-      console.error('SAM prediction failed:', err);
+      console.error("SAM prediction failed:", err);
     } finally {
       this.isPredicting = false;
     }
@@ -294,12 +340,19 @@ export class SamTool extends BaseTool {
     }
 
     // Check if mouse is within image bounds
-    if (x < 0 || y < 0 || x >= this.samOptions.imageWidth || y >= this.samOptions.imageHeight) {
+    if (
+      x < 0 ||
+      y < 0 ||
+      x >= this.samOptions.imageWidth ||
+      y >= this.samOptions.imageHeight
+    ) {
       // Mouse is outside image - remove preview and clear cache
       this.removePreview();
       this.lastPreviewResult = null;
       return;
     }
+
+
 
     // Throttle to 50ms
     const now = Date.now();
@@ -333,6 +386,13 @@ export class SamTool extends BaseTool {
       // If a newer preview started, drop this one
       if (seq !== this.previewSeq) return;
 
+      // Skip preview if the mask is obviously too large (likely a miss)
+      if (this.isMaskTooLarge(result.maskStats)) {
+        this.removePreview();
+        this.lastPreviewResult = null;
+        return;
+      }
+
       // Extract best mask from tensor
       const maskData = result.maskTensor.data as Float32Array;
       const dims = result.maskTensor.dims;
@@ -348,10 +408,10 @@ export class SamTool extends BaseTool {
       const bestMaskData = maskData.slice(maskStart, maskStart + maskSize);
 
       // Create canvas with actual mask dimensions
-      const maskCanvas = document.createElement('canvas');
+      const maskCanvas = document.createElement("canvas");
       maskCanvas.width = maskWidth;
       maskCanvas.height = maskHeight;
-      const ctx = maskCanvas.getContext('2d');
+      const ctx = maskCanvas.getContext("2d");
       if (!ctx) return;
 
       const imageData = ctx.createImageData(maskWidth, maskHeight);
@@ -359,7 +419,7 @@ export class SamTool extends BaseTool {
         const on = bestMaskData[i] > 0.0;
         const p = i * 4;
         if (on) {
-          imageData.data[p] = 0;       // R
+          imageData.data[p] = 0; // R
           imageData.data[p + 1] = 114; // G
           imageData.data[p + 2] = 189; // B
           imageData.data[p + 3] = 255; // A
@@ -374,6 +434,7 @@ export class SamTool extends BaseTool {
         x,
         y,
         iouScore: result.iouScore,
+        maskStats: result.maskStats,
       };
 
       // Update or create overlay
@@ -381,7 +442,12 @@ export class SamTool extends BaseTool {
       this.previewCanvas = maskCanvas;
       this.previewCanvas.style.opacity = String(this.samOptions.previewOpacity);
 
-      const imageRect = new OpenSeadragon.Rect(0, 0, this.samOptions.imageWidth, this.samOptions.imageHeight);
+      const imageRect = new OpenSeadragon.Rect(
+        0,
+        0,
+        this.samOptions.imageWidth,
+        this.samOptions.imageHeight
+      );
       const vpRect = this.viewer.viewport.imageToViewportRectangle(imageRect);
 
       this.viewer.addOverlay({
@@ -406,6 +472,10 @@ export class SamTool extends BaseTool {
     }
     // Note: We don't clear lastPreviewResult here because we want to cache
     // the preview for click-to-create. It will be cleared when mouse leaves the image.
+  }
+
+  private isMaskTooLarge(stats: MaskStats): boolean {
+    return stats.foregroundRatio >= MAX_FOREGROUND_RATIO && !stats.isTiny;
   }
 
   /**
