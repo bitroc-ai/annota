@@ -59,7 +59,7 @@ export class PointTool extends BaseTool {
       properties: this.options.annotationProperties || {},
     };
 
-    this.annotator.state.store.add(annotation);
+    this.annotator.addAnnotation(annotation);
 
     // Select the newly created annotation
     this.selectAnnotation(annotation.id);

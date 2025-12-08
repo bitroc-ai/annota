@@ -65,7 +65,7 @@ export class RectangleTool extends BaseTool {
       properties: this.options.annotationProperties || {},
     };
 
-    this.annotator.state.store.add(annotation);
+    this.annotator.addAnnotation(annotation);
 
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;

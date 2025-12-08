@@ -141,7 +141,7 @@ export class PolygonTool extends BaseTool {
         },
       };
 
-      this.annotator.state.store.add(annotation);
+      this.annotator.addAnnotation(annotation);
     } else {
       // Update existing polygon (without preview since we just cleared it)
       this.updatePolygonWithPreview();

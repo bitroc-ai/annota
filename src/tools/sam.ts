@@ -269,7 +269,7 @@ export class SamTool extends BaseTool {
             clickPoint: { x: clickX, y: clickY },
           };
 
-          this.annotator.state.store.add(annotation);
+          this.annotator.addAnnotation(annotation);
           this.selectAnnotation(annotation.id);
           this.samOptions.onAnnotationCreated?.(annotation);
         }
@@ -401,7 +401,7 @@ export class SamTool extends BaseTool {
     if (this.previewCanvas && this.viewer) {
       try {
         this.viewer.removeOverlay(this.previewCanvas);
-      } catch {}
+      } catch { }
       this.previewCanvas = null;
     }
     // Note: We don't clear lastPreviewResult here because we want to cache

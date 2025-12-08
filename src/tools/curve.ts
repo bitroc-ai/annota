@@ -78,7 +78,7 @@ export class CurveTool extends BaseTool {
       },
     };
 
-    this.annotator.state.store.add(annotation);
+    this.annotator.addAnnotation(annotation);
   };
 
   /**

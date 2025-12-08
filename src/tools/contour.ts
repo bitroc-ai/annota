@@ -181,7 +181,7 @@ export class ContourTool extends BaseTool {
           },
         };
 
-        this.annotator.state.store.add(annotation);
+        this.annotator.addAnnotation(annotation);
 
         // Select the newly created annotation
         this.selectAnnotation(annotation.id);
