@@ -19,6 +19,15 @@ export abstract class BaseTool implements ToolHandler {
   protected annotator?: Annotator;
   protected options: ToolHandlerOptions;
 
+  // Store bound handler references so we can properly remove them
+  // (calling .bind(this) creates a new function each time, so we must store the reference)
+  private boundHandlers: {
+    click?: (evt: OpenSeadragon.ViewerEvent) => void;
+    press?: (evt: OpenSeadragon.ViewerEvent) => void;
+    drag?: (evt: OpenSeadragon.ViewerEvent) => void;
+    release?: (evt: OpenSeadragon.ViewerEvent) => void;
+  } = {};
+
   constructor(id: string, options: ToolHandlerOptions = {}) {
     this.id = id;
     this.options = {
@@ -55,16 +64,20 @@ export abstract class BaseTool implements ToolHandler {
     if (!this.viewer) return;
 
     if (this.onCanvasClick) {
-      this.viewer.addHandler('canvas-click', this.onCanvasClick.bind(this));
+      this.boundHandlers.click = this.onCanvasClick.bind(this);
+      this.viewer.addHandler('canvas-click', this.boundHandlers.click);
     }
     if (this.onCanvasPress) {
-      this.viewer.addHandler('canvas-press', this.onCanvasPress.bind(this));
+      this.boundHandlers.press = this.onCanvasPress.bind(this);
+      this.viewer.addHandler('canvas-press', this.boundHandlers.press);
     }
     if (this.onCanvasDrag) {
-      this.viewer.addHandler('canvas-drag', this.onCanvasDrag.bind(this));
+      this.boundHandlers.drag = this.onCanvasDrag.bind(this);
+      this.viewer.addHandler('canvas-drag', this.boundHandlers.drag);
     }
     if (this.onCanvasRelease) {
-      this.viewer.addHandler('canvas-release', this.onCanvasRelease.bind(this));
+      this.boundHandlers.release = this.onCanvasRelease.bind(this);
+      this.viewer.addHandler('canvas-release', this.boundHandlers.release);
     }
   }
 
@@ -74,17 +87,21 @@ export abstract class BaseTool implements ToolHandler {
   protected detachEventHandlers(): void {
     if (!this.viewer) return;
 
-    if (this.onCanvasClick) {
-      this.viewer.removeHandler('canvas-click', this.onCanvasClick.bind(this));
+    if (this.boundHandlers.click) {
+      this.viewer.removeHandler('canvas-click', this.boundHandlers.click);
+      this.boundHandlers.click = undefined;
     }
-    if (this.onCanvasPress) {
-      this.viewer.removeHandler('canvas-press', this.onCanvasPress.bind(this));
+    if (this.boundHandlers.press) {
+      this.viewer.removeHandler('canvas-press', this.boundHandlers.press);
+      this.boundHandlers.press = undefined;
     }
-    if (this.onCanvasDrag) {
-      this.viewer.removeHandler('canvas-drag', this.onCanvasDrag.bind(this));
+    if (this.boundHandlers.drag) {
+      this.viewer.removeHandler('canvas-drag', this.boundHandlers.drag);
+      this.boundHandlers.drag = undefined;
     }
-    if (this.onCanvasRelease) {
-      this.viewer.removeHandler('canvas-release', this.onCanvasRelease.bind(this));
+    if (this.boundHandlers.release) {
+      this.viewer.removeHandler('canvas-release', this.boundHandlers.release);
+      this.boundHandlers.release = undefined;
     }
   }
 
