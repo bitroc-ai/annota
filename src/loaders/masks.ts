@@ -162,7 +162,7 @@ async function loadMask8bit(
         const contour = contours.get(i);
         const area = cv.contourArea(contour);
 
-        if (area < 100) continue;
+        if (area < 15) continue;
 
         const approx = new cv.Mat();
         const perimeter = cv.arcLength(contour, true);
@@ -238,7 +238,7 @@ async function loadMask8bit(
           }
         }
 
-        if (pixelCount < 100) continue;
+        if (pixelCount < 15) continue;
 
         const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
         gray.data.set(binaryData);
@@ -254,7 +254,7 @@ async function loadMask8bit(
           const contour = contours.get(i);
           const area = cv.contourArea(contour);
 
-          if (area < 100) continue;
+          if (area < 15) continue;
 
           const approx = new cv.Mat();
           const perimeter = cv.arcLength(contour, true);
@@ -379,7 +379,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
       }
 
       // Skip instances with very few pixels (likely noise)
-      if (pixelCount < 100) {
+      if (pixelCount < 15) {
         skippedCount++;
         continue;
       }
@@ -406,7 +406,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
         const area = cv.contourArea(contour);
 
         // Skip tiny contours (noise)
-        if (area < 100) continue;
+        if (area < 15) continue;
 
         // Simplify polygon to reduce vertex count
         const approx = new cv.Mat();
