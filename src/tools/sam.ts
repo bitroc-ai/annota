@@ -304,12 +304,9 @@ export class SamTool extends BaseTool {
         if (annotations.length > 0) {
           const annotation = annotations[0];
 
-          if (this.samOptions.annotationProperties) {
-            Object.assign(annotation, this.samOptions.annotationProperties);
-          }
-
           annotation.properties = {
             ...annotation.properties,
+            ...this.samOptions.annotationProperties,
             source: "sam-onnx",
             iouScore: iouScore,
             clickPoint: { x: clickX, y: clickY },
