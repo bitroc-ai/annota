@@ -71,6 +71,8 @@ describe('ContourTool', () => {
       state: {
         store: mockStore,
       },
+      addAnnotation: vi.fn((annotation) => mockStore.add(annotation)),
+      setSelected: vi.fn(),
       updateAnnotation: vi.fn(),
     };
 
@@ -163,7 +165,7 @@ describe('ContourTool', () => {
   });
 
   it('should warn and return early if OpenCV not ready', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 
     // OpenCV not ready
     vi.mocked(opencv.isOpenCVReady).mockReturnValue(false);
@@ -270,7 +272,7 @@ describe('ContourTool', () => {
   });
 
   it('should handle detection failure gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 
     // OpenCV ready but detection fails
     vi.mocked(opencv.isOpenCVReady).mockReturnValue(true);
@@ -299,7 +301,7 @@ describe('ContourTool', () => {
   });
 
   it('should handle errors during detection', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
     // OpenCV ready but throws error
     vi.mocked(opencv.isOpenCVReady).mockReturnValue(true);

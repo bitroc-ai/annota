@@ -33,6 +33,8 @@ describe('PolygonTool', () => {
       state: {
         store: mockStore,
       },
+      addAnnotation: vi.fn((annotation) => mockStore.add(annotation)),
+      setSelected: vi.fn(),
       updateAnnotation: vi.fn(),
     };
 
