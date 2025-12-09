@@ -75,7 +75,8 @@ export type AnnotatorEvent =
   | 'createAnnotation'
   | 'updateAnnotation'
   | 'deleteAnnotation'
-  | 'selectionChanged';
+  | 'selectionChanged'
+  | 'notification';
 
 export type AnnotatorEventHandler = (data: any) => void;
 
@@ -156,6 +157,7 @@ export async function createOpenSeadragonAnnotator(
     ['updateAnnotation', new Set()],
     ['deleteAnnotation', new Set()],
     ['selectionChanged', new Set()],
+    ['notification', new Set()],
   ]);
 
   // Check if viewer canvas is ready
@@ -301,7 +303,7 @@ export async function createOpenSeadragonAnnotator(
 
     pointerMoveRafId = requestAnimationFrame(() => {
       pointerMoveRafId = null;
-      
+
       const imagePoint = pointerEventToImage(viewer, event);
       if (!imagePoint) return;
 

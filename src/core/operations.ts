@@ -102,7 +102,7 @@ function convexHull(points: [number, number][]): [number, number][] {
   let start = 0;
   for (let i = 1; i < points.length; i++) {
     if (points[i][1] < points[start][1] ||
-        (points[i][1] === points[start][1] && points[i][0] < points[start][0])) {
+      (points[i][1] === points[start][1] && points[i][0] < points[start][0])) {
       start = i;
     }
   }
@@ -318,7 +318,7 @@ export function splitAnnotation(
     }
 
     if (result.length === 1) {
-      console.error('[splitAnnotation] Split did not divide the annotation (line may not intersect)');
+      console.warn('[splitAnnotation] Split did not divide the annotation (line may not intersect)');
       return null;
     }
 
@@ -362,12 +362,20 @@ function createLineBuffer(lineCoords: [number, number][], width: number): [numbe
     // Calculate perpendicular vector
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const length = Math.sqrt(dx * dx + dy * dy);
+    const lengthSq = dx * dx + dy * dy;
+
+    // Skip degenerate segments (length ~ 0)
+    if (lengthSq < 1e-10) {
+      continue;
+    }
+
+    const length = Math.sqrt(lengthSq);
     const perpX = (-dy / length) * width;
     const perpY = (dx / length) * width;
 
     // Add points on both sides
-    if (i === 0) {
+    // If this is the very first valid segment, we need to handle the start cap
+    if (buffer.length === 0) {
       buffer.push([x1 + perpX, y1 + perpY]);
     }
     buffer.push([x2 + perpX, y2 + perpY]);
@@ -378,9 +386,35 @@ function createLineBuffer(lineCoords: [number, number][], width: number): [numbe
     const [x, y] = lineCoords[i];
     const dx = i > 0 ? lineCoords[i][0] - lineCoords[i - 1][0] : 0;
     const dy = i > 0 ? lineCoords[i][1] - lineCoords[i - 1][1] : 0;
-    const length = Math.sqrt(dx * dx + dy * dy) || 1;
-    const perpX = (-dy / length) * width;
-    const perpY = (dx / length) * width;
+
+    // For return path, we rely on the previous logic or check length again
+    // Simplified: safeguard the length calculation
+    const lengthSq = dx * dx + dy * dy;
+
+    // If i > 0 and length is tiny, this is a degenerate segment we might want to skip or handle gracefully
+    // But since we are iterating backwards, we need to be consistent with the forward pass.
+    // However, the logic here calculates normals per point 'i' based on segment 'i-1' to 'i'.
+
+    // Let's us safe division
+    const length = Math.sqrt(lengthSq);
+    if (length < 1e-10) {
+      // Just push the point without offset if we can't calculate normal? 
+      // Or if it's degenerate, it overlaps with previous point, so skipping might be better?
+      // For simplicity in this fix, we just prevent division by zero using || 1 as fallback was doing, but safer
+      // Actually, if length is 0, dx/dy are 0, so perpX/perpY become 0/0 = NaN.
+      // If we use 1, perpX/Y become 0.
+      // So fallback to 1 is actually "safe" for NaN avoidance if dx/dy are 0.
+      // But let's be explicit.
+      if (i > 0) {
+        // Degenerate segment, skip adding a point for it? 
+        // Better to match the forward pass logic: if segment is 0 length, it doesn't contribute geometry.
+        continue;
+      }
+    }
+
+    const effectiveLength = length || 1;
+    const perpX = (-dy / effectiveLength) * width;
+    const perpY = (dx / effectiveLength) * width;
 
     buffer.push([x - perpX, y - perpY]);
   }
