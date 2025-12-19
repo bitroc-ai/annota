@@ -63,6 +63,7 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -148,7 +149,9 @@ jobs:
           git push origin HEAD:main || echo "No changes to push"
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
