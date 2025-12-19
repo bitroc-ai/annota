@@ -1,12 +1,62 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SamTool } from '../../src/tools/sam';
-import { createDummyEmbedding } from '../../src/ml/embedding-utils';
+import type { SamPredictFn, SamPredictInput, SamPredictOutput, MaskStats } from '../../src/tools/sam';
+
+/**
+ * Create a mock predict function for testing
+ */
+function createMockPredictFn(): SamPredictFn {
+  return vi.fn(async (input: SamPredictInput): Promise<SamPredictOutput> => {
+    const mockMaskStats: MaskStats = {
+      width: input.imageWidth,
+      height: input.imageHeight,
+      numMasks: 1,
+      whiteCount: 1000,
+      blackCount: input.imageWidth * input.imageHeight - 1000,
+      foregroundRatio: 1000 / (input.imageWidth * input.imageHeight),
+      isEmpty: false,
+      isTiny: false,
+      iouBestIndex: 0,
+      iouBestScore: 0.95,
+    };
+
+    // Return a minimal PNG blob for testing
+    const mockPngData = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, // PNG signature
+      // Minimal IHDR chunk
+      0x00, 0x00, 0x00, 0x0d, // length
+      0x49, 0x48, 0x44, 0x52, // IHDR
+      0x00, 0x00, 0x00, 0x01, // width = 1
+      0x00, 0x00, 0x00, 0x01, // height = 1
+      0x08, 0x00, 0x00, 0x00, 0x00, // bit depth, color type, etc.
+      0x3a, 0x7e, 0x9b, 0x55, // CRC
+      // Minimal IDAT chunk
+      0x00, 0x00, 0x00, 0x0a, // length
+      0x49, 0x44, 0x41, 0x54, // IDAT
+      0x78, 0x9c, 0x62, 0x60, 0x00, 0x00, 0x00, 0x02, 0x00, 0x01, // compressed data
+      0x73, 0x75, 0x01, 0x18, // CRC
+      // IEND chunk
+      0x00, 0x00, 0x00, 0x00, // length
+      0x49, 0x45, 0x4e, 0x44, // IEND
+      0xae, 0x42, 0x60, 0x82, // CRC
+    ]);
+
+    const mockMaskBlob = new Blob([mockPngData], { type: 'image/png' });
+
+    return {
+      maskBlob: mockMaskBlob,
+      iouScore: 0.95,
+      maskStats: mockMaskStats,
+    };
+  });
+}
 
 describe('SamTool', () => {
   let tool: SamTool;
   let mockViewer: any;
   let mockAnnotator: any;
   let mockCanvas: HTMLCanvasElement;
+  let mockPredictFn: SamPredictFn;
 
   beforeEach(() => {
     // Mock OpenSeadragon global
@@ -68,10 +118,13 @@ describe('SamTool', () => {
       updateAnnotation: vi.fn(),
     };
 
-    // Create SAM tool with dummy embedding
+    // Create mock predict function
+    mockPredictFn = createMockPredictFn();
+
+    // Create SAM tool with mock predict function
     tool = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: mockPredictFn,
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: true,
@@ -85,6 +138,15 @@ describe('SamTool', () => {
     expect(tool.id).toBe('sam');
   });
 
+  it('should throw error if predictFn is not provided', () => {
+    expect(() => {
+      new SamTool({
+        imageWidth: 1024,
+        imageHeight: 1024,
+      } as any);
+    }).toThrow('SamTool requires a predictFn for inference');
+  });
+
   it('should attach mousemove event listener when showHoverPreview is true', () => {
     // Check that addEventListener was called on the container element
     const mockContainer = document.createElement('div');
@@ -95,10 +157,12 @@ describe('SamTool', () => {
       element: mockContainer,
     };
 
-    // Reinitialize to trigger event handler attachment
+    // Create a new mock predict function for this test
+    const testPredictFn = createMockPredictFn();
+
     const testTool = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: testPredictFn,
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: true,
@@ -111,18 +175,24 @@ describe('SamTool', () => {
   });
 
   it('should not attach mousemove event listener when showHoverPreview is false', () => {
-    const addEventListenerSpy = vi.spyOn(mockCanvas, 'addEventListener');
+    const mockContainer = document.createElement('div');
+    const addEventListenerSpy = vi.spyOn(mockContainer, 'addEventListener');
+
+    const testViewer = {
+      ...mockViewer,
+      element: mockContainer,
+    };
 
     // Create tool with showHoverPreview disabled
     const toolNoPreview = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: createMockPredictFn(),
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: false,
     });
 
-    toolNoPreview.init(mockViewer, mockAnnotator);
+    toolNoPreview.init(testViewer, mockAnnotator);
 
     // Should not attach mousemove listener
     expect(addEventListenerSpy).not.toHaveBeenCalledWith('mousemove', expect.any(Function));
@@ -139,8 +209,8 @@ describe('SamTool', () => {
     };
 
     const testTool = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: createMockPredictFn(),
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: true,
@@ -153,20 +223,11 @@ describe('SamTool', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('mousemove', expect.any(Function));
   });
 
-  it('should call model initialization', async () => {
-    // Mock the underlying model's initialize and isInitialized methods
-    const modelMock = (tool as any).model;
-    const isInitializedSpy = vi.spyOn(modelMock, 'isInitialized');
-    isInitializedSpy.mockReturnValueOnce(false); // First call returns false
-
+  it('should mark as initialized after initializeModel', async () => {
     // Initially not initialized
     expect(tool.isModelInitialized()).toBe(false);
 
-    // Now mock for successful initialization
-    vi.spyOn(modelMock, 'initialize').mockResolvedValue(undefined);
-    isInitializedSpy.mockReturnValue(true); // After init, return true
-
-    // After initialization, should return true
+    // After initialization
     await tool.initializeModel();
     expect(tool.isModelInitialized()).toBe(true);
   });
@@ -179,28 +240,17 @@ describe('SamTool', () => {
   });
 
   it('should update embedding with setEmbedding', () => {
-    const newEmbedding = createDummyEmbedding();
+    const newEmbedding = '/embeddings/new-test.npy';
     tool.setEmbedding(newEmbedding, 2048, 2048);
 
     // Access private property for testing
     const samOptions = (tool as any).samOptions;
-    expect(samOptions.embedding).toBe(newEmbedding);
+    expect((tool as any).embeddingData).toBe(newEmbedding);
     expect(samOptions.imageWidth).toBe(2048);
     expect(samOptions.imageHeight).toBe(2048);
   });
 
-  it('should run SAM prediction on hover when model is initialized', async () => {
-    // Mock the model to be initialized
-    const modelMock = (tool as any).model;
-    vi.spyOn(modelMock, 'isInitialized').mockReturnValue(true);
-
-    // Mock the predict method to return a result
-    const mockMaskBlob = new Blob(['fake mask data'], { type: 'image/png' });
-    const predictSpy = vi.spyOn(modelMock, 'predict').mockResolvedValue({
-      maskBlob: mockMaskBlob,
-      iouScore: 0.95,
-    });
-
+  it('should call predictFn on hover when model is initialized', async () => {
     // Create mock container and attach event handlers
     const mockContainer = document.createElement('div');
     const testViewer = {
@@ -208,24 +258,19 @@ describe('SamTool', () => {
       element: mockContainer,
     };
 
+    const testPredictFn = createMockPredictFn();
+
     const testTool = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: testPredictFn,
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: true,
       previewOpacity: 0.4,
     });
 
-    // Mock the model for this tool as well
-    const testModelMock = (testTool as any).model;
-    vi.spyOn(testModelMock, 'isInitialized').mockReturnValue(true);
-    vi.spyOn(testModelMock, 'predict').mockResolvedValue({
-      maskBlob: mockMaskBlob,
-      iouScore: 0.95,
-    });
-
     testTool.init(testViewer, mockAnnotator);
+    await testTool.initializeModel(); // Must initialize first
 
     // Simulate mousemove event
     const mouseMoveEvent = new MouseEvent('mousemove', {
@@ -237,23 +282,13 @@ describe('SamTool', () => {
     mockContainer.dispatchEvent(mouseMoveEvent);
 
     // Wait for async prediction to complete
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 150));
 
-    // Check that predict was called
-    expect(testModelMock.predict).toHaveBeenCalled();
+    // Check that predictFn was called
+    expect(testPredictFn).toHaveBeenCalled();
   });
 
-  it('should throttle hover preview updates to 15ms', async () => {
-    // Mock the model to be initialized
-    const modelMock = (tool as any).model;
-    vi.spyOn(modelMock, 'isInitialized').mockReturnValue(true);
-
-    const mockMaskBlob = new Blob(['fake mask data'], { type: 'image/png' });
-    const predictSpy = vi.spyOn(modelMock, 'predict').mockResolvedValue({
-      maskBlob: mockMaskBlob,
-      iouScore: 0.95,
-    });
-
+  it('should throttle hover preview updates to 100ms', async () => {
     // Create mock container
     const mockContainer = document.createElement('div');
     const testViewer = {
@@ -261,25 +296,21 @@ describe('SamTool', () => {
       element: mockContainer,
     };
 
+    const testPredictFn = createMockPredictFn();
+
     const testTool = new SamTool({
-      decoderModelUrl: '/models/sam_onnx_quantized_example.onnx',
-      embedding: createDummyEmbedding(),
+      predictFn: testPredictFn,
+      embedding: '/embeddings/test.npy',
       imageWidth: 1024,
       imageHeight: 1024,
       showHoverPreview: true,
       previewOpacity: 0.4,
     });
 
-    const testModelMock = (testTool as any).model;
-    vi.spyOn(testModelMock, 'isInitialized').mockReturnValue(true);
-    const testPredictSpy = vi.spyOn(testModelMock, 'predict').mockResolvedValue({
-      maskBlob: mockMaskBlob,
-      iouScore: 0.95,
-    });
-
     testTool.init(testViewer, mockAnnotator);
+    await testTool.initializeModel(); // Must initialize first
 
-    // Dispatch 3 events in quick succession (< 15ms apart)
+    // Dispatch 3 events in quick succession (< 100ms apart)
     for (let i = 0; i < 3; i++) {
       const event = new MouseEvent('mousemove', {
         clientX: 500 + i,
@@ -289,9 +320,33 @@ describe('SamTool', () => {
     }
 
     // Wait for any async operations
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise(resolve => setTimeout(resolve, 150));
 
     // Should only have been called once due to throttling
-    expect(testPredictSpy).toHaveBeenCalledTimes(1);
+    expect(testPredictFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should support Float32Array embedding', () => {
+    const embeddingArray = new Float32Array(256 * 64 * 64);
+    const testTool = new SamTool({
+      predictFn: createMockPredictFn(),
+      embedding: embeddingArray,
+      imageWidth: 1024,
+      imageHeight: 1024,
+    });
+
+    expect((testTool as any).embeddingData).toBe(embeddingArray);
+  });
+
+  it('should support string path embedding', () => {
+    const embeddingPath = '/path/to/embedding.npy';
+    const testTool = new SamTool({
+      predictFn: createMockPredictFn(),
+      embedding: embeddingPath,
+      imageWidth: 1024,
+      imageHeight: 1024,
+    });
+
+    expect((testTool as any).embeddingData).toBe(embeddingPath);
   });
 });
