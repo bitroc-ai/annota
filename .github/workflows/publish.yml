@@ -24,6 +24,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Attach HEAD to main (for pnpm git checks)
+        run: |
+          # Tag-triggered workflows often checkout a detached HEAD.
+          # pnpm publish enforces `publish-branch` (master|main), so create a local main ref at this commit.
+          git checkout -B main
+
       - name: Check if src/ has changes
         id: check_changes
         run: |
