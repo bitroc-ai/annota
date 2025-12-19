@@ -24,12 +24,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Attach HEAD to main (for pnpm git checks)
-        run: |
-          # Tag-triggered workflows often checkout a detached HEAD.
-          # pnpm publish enforces `publish-branch` (master|main), so create a local main ref at this commit.
-          git checkout -B main
-
       - name: Check if src/ has changes
         id: check_changes
         run: |
@@ -69,7 +63,6 @@ jobs:
         with:
           node-version: "20"
           cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -155,7 +148,6 @@ jobs:
           git push origin HEAD:main || echo "No changes to push"
 
       - name: Publish to npm
-        # Use npm CLI for Trusted Publishing (OIDC). pnpm publish still requires a registry auth token.
         run: npm publish --provenance --access public
 
       - name: Create GitHub Release
