@@ -1,17 +1,112 @@
 /**
- * SAM (Segment Anything Model) tool for browser-based interactive segmentation
+ * SAM (Segment Anything Model) tool for interactive segmentation
  *
  * This tool allows users to click on objects and instantly generate polygon annotations
- * using Meta's SAM model running entirely in the browser via ONNX Runtime Web.
+ * using Meta's SAM model. All inference is delegated to a backend server via `predictFn`.
+ *
+ * The library does not include ONNX runtime - you must provide a prediction function
+ * that handles the actual model inference (e.g., via API call to your backend).
  */
 
-import type * as ort from "onnxruntime-web";
 import OpenSeadragon from "openseadragon";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
-import { SamOnnxModel, type MaskStats, type SamOnnxConfig } from "../ml/sam-onnx";
 import { loadMaskPolygons } from "../loaders/masks";
 import type { Annotation } from "../core/types";
+
+/**
+ * Statistics about a generated mask
+ */
+export interface MaskStats {
+  /** Width of the mask in pixels */
+  width: number;
+  /** Height of the mask in pixels */
+  height: number;
+  /** Number of masks generated (typically 3 for SAM) */
+  numMasks: number;
+  /** Number of foreground (white) pixels */
+  whiteCount: number;
+  /** Number of background (black) pixels */
+  blackCount: number;
+  /** Ratio of foreground to total pixels */
+  foregroundRatio: number;
+  /** True if mask has no foreground pixels */
+  isEmpty: boolean;
+  /** True if mask covers very small area (<0.1%) */
+  isTiny: boolean;
+  /** Index of best mask based on IoU score */
+  iouBestIndex: number;
+  /** IoU score of best mask */
+  iouBestScore: number;
+}
+
+/**
+ * Input for SAM prediction
+ */
+export interface SamPredictInput {
+  /** Embedding data as Float32Array or path to .npy file */
+  embedding: Float32Array | string;
+
+  /** Click X coordinate in image space */
+  clickX: number;
+
+  /** Click Y coordinate in image space */
+  clickY: number;
+
+  /** Original image width */
+  imageWidth: number;
+
+  /** Original image height */
+  imageHeight: number;
+
+  /** Additional positive click points (optional) */
+  positivePoints?: Array<{ x: number; y: number }>;
+
+  /** Negative click points to exclude areas (optional) */
+  negativePoints?: Array<{ x: number; y: number }>;
+}
+
+/**
+ * Output from SAM prediction
+ */
+export interface SamPredictOutput {
+  /** Binary mask as PNG blob */
+  maskBlob: Blob;
+
+  /** IoU (Intersection over Union) prediction score */
+  iouScore: number;
+
+  /** Statistics about the generated mask */
+  maskStats: MaskStats;
+}
+
+/**
+ * Function type for SAM prediction
+ * Implement this to handle inference on your backend
+ *
+ * @example
+ * ```typescript
+ * const predictFn: SamPredictFn = async (input) => {
+ *   const response = await fetch('/api/sam/predict', {
+ *     method: 'POST',
+ *     headers: { 'Content-Type': 'application/json' },
+ *     body: JSON.stringify({
+ *       embeddingPath: input.embedding, // string path to .npy file
+ *       clickX: input.clickX,
+ *       clickY: input.clickY,
+ *       imageWidth: input.imageWidth,
+ *       imageHeight: input.imageHeight,
+ *     }),
+ *   });
+ *   return response.json();
+ * };
+ * ```
+ */
+export type SamPredictFn = (input: SamPredictInput) => Promise<SamPredictOutput>;
+
+// For backwards compatibility
+export type SamRemotePredictInput = SamPredictInput;
+export type SamRemotePredictOutput = SamPredictOutput;
 
 const MAX_FOREGROUND_RATIO = 0.4; // Treat masks covering >40% as invalid/noise
 
@@ -19,23 +114,37 @@ const MAX_FOREGROUND_RATIO = 0.4; // Treat masks covering >40% as invalid/noise
  * Configuration for SAM tool
  */
 export interface SamToolOptions extends ToolHandlerOptions {
-  /** URL to the SAM decoder ONNX model */
-  decoderModelUrl: string;
+  /**
+   * Prediction function that handles SAM inference.
+   * This is called for each click/hover to generate segmentation masks.
+   *
+   * @example
+   * ```typescript
+   * const samTool = new SamTool({
+   *   predictFn: async (input) => {
+   *     const response = await fetch('/api/sam/predict', {
+   *       method: 'POST',
+   *       body: JSON.stringify(input),
+   *     });
+   *     return response.json();
+   *   },
+   *   imageWidth: 1024,
+   *   imageHeight: 1024,
+   * });
+   * ```
+   */
+  predictFn: SamPredictFn;
 
-  /** Number of threads for WebAssembly execution (default: 1) */
-  numThreads?: SamOnnxConfig["numThreads"];
+  /**
+   * Initial embedding data (Float32Array or path to .npy file)
+   * Can be updated later with setEmbedding()
+   */
+  embedding?: Float32Array | string;
 
-  /** Enable SIMD optimizations (default: true) */
-  simd?: SamOnnxConfig["simd"];
-
-  /** Execution providers in order of preference (default: ['wasm']) */
-  executionProviders?: SamOnnxConfig["executionProviders"];
-
-  /** Precomputed image embedding tensor [1, 256, 64, 64] */
-  embedding: ort.Tensor;
-
-  /** Original image dimensions */
+  /** Original image width */
   imageWidth: number;
+
+  /** Original image height */
   imageHeight: number;
 
   /** Show hover preview of detected object (default: true) */
@@ -59,29 +168,50 @@ export interface SamToolOptions extends ToolHandlerOptions {
 
 /**
  * SAM tool for interactive segmentation
+ *
+ * Delegates all inference to a backend server via the provided `predictFn`.
+ * This avoids loading ONNX runtime in the browser, which can cause memory
+ * issues especially on Safari.
+ *
+ * @example
+ * ```typescript
+ * const samTool = new SamTool({
+ *   predictFn: async (input) => {
+ *     const res = await fetch('/api/sam', {
+ *       method: 'POST',
+ *       body: JSON.stringify(input),
+ *     });
+ *     return res.json();
+ *   },
+ *   imageWidth: 1024,
+ *   imageHeight: 1024,
+ * });
+ *
+ * // Initialize (validates configuration)
+ * await samTool.initializeModel();
+ *
+ * // Set embedding when image loads
+ * samTool.setEmbedding('/embeddings/image1.npy', 2048, 1536);
+ * ```
  */
 export class SamTool extends BaseTool {
-  private model: SamOnnxModel;
-  private samOptions: Required<
-    Omit<
-      SamToolOptions,
-      | keyof ToolHandlerOptions
-      | "annotationProperties"
-      | "onAnnotationCreated"
-      | "onPredictionStart"
-      | "onPredictionComplete"
-      | "onError"
-    >
-  > & {
+  private predictFn: SamPredictFn;
+  private embeddingData: Float32Array | string | null = null;
+
+  private samOptions: {
+    imageWidth: number;
+    imageHeight: number;
+    showHoverPreview: boolean;
+    previewOpacity: number;
     annotationProperties?: Partial<Annotation>;
     onAnnotationCreated?: (annotation: Annotation) => void;
     onPredictionStart?: () => void;
     onPredictionComplete?: (iouScore: number) => void;
     onError?: (error: Error) => void;
   };
+
   private isPredicting = false;
   private previewCanvas: HTMLCanvasElement | null = null;
-  private previewSeq = 0;
   private lastPreviewTime = 0;
   private hoverHandler: ((evt: MouseEvent) => void) | null = null;
   private lastPreviewResult: {
@@ -91,16 +221,19 @@ export class SamTool extends BaseTool {
     iouScore: number;
     maskStats: MaskStats;
   } | null = null;
+  private initialized = false;
 
   constructor(options: SamToolOptions) {
     super("sam", options);
 
+    if (!options.predictFn) {
+      throw new Error("SamTool requires a predictFn for inference");
+    }
+
+    this.predictFn = options.predictFn;
+    this.embeddingData = options.embedding ?? null;
+
     this.samOptions = {
-      decoderModelUrl: options.decoderModelUrl,
-      numThreads: options.numThreads ?? 1,
-      simd: options.simd ?? true,
-      executionProviders: options.executionProviders ?? ["wasm"],
-      embedding: options.embedding,
       imageWidth: options.imageWidth,
       imageHeight: options.imageHeight,
       showHoverPreview: options.showHoverPreview ?? true,
@@ -112,45 +245,48 @@ export class SamTool extends BaseTool {
       onError: options.onError,
     };
 
-    this.model = new SamOnnxModel({
-      decoderModelUrl: this.samOptions.decoderModelUrl,
-      numThreads: this.samOptions.numThreads,
-      simd: this.samOptions.simd,
-      executionProviders: this.samOptions.executionProviders,
-    });
   }
 
   /**
-   * Initialize the SAM model (must be called before use)
+   * Initialize the SAM tool (validates configuration)
+   * Since inference is delegated to the backend, this is lightweight.
    */
   async initializeModel(): Promise<void> {
-    try {
-      await this.model.initialize();
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.samOptions.onError?.(err);
-      throw err;
-    }
+    this.initialized = true;
   }
 
   /**
-   * Check if model is initialized
+   * Check if tool is initialized
    */
   isModelInitialized(): boolean {
-    return this.model.isInitialized();
+    return this.initialized;
   }
 
   /**
-   * Update the image embedding (when switching images)
+   * Update the embedding data (when switching images)
+   * @param embedding - Float32Array or path to .npy file
+   * @param imageWidth - Original image width
+   * @param imageHeight - Original image height
    */
   setEmbedding(
-    embedding: ort.Tensor,
+    embedding: Float32Array | string,
     imageWidth: number,
     imageHeight: number
   ): void {
-    this.samOptions.embedding = embedding;
+    this.embeddingData = embedding;
     this.samOptions.imageWidth = imageWidth;
     this.samOptions.imageHeight = imageHeight;
+  }
+
+  /**
+   * Alias for setEmbedding for backwards compatibility
+   */
+  setEmbeddingData(
+    embeddingData: Float32Array | string,
+    imageWidth: number,
+    imageHeight: number
+  ): void {
+    this.setEmbedding(embeddingData, imageWidth, imageHeight);
   }
 
   protected attachEventHandlers(): void {
@@ -199,7 +335,15 @@ export class SamTool extends BaseTool {
     }
 
     if (!this.isModelInitialized()) {
-      const err = new Error("Model not initialized. Call initialize() first.");
+      const err = new Error("Tool not initialized. Call initializeModel() first.");
+      this.samOptions.onError?.(err);
+      return;
+    }
+
+    if (!this.embeddingData) {
+      const err = new Error(
+        "Embedding not loaded. Please wait for image to load."
+      );
       this.samOptions.onError?.(err);
       return;
     }
@@ -211,8 +355,7 @@ export class SamTool extends BaseTool {
       evt.preventDefaultAction = true;
     }
 
-    // Use the same coordinate conversion as hover handler to get SAM embedding coordinates
-    // This ensures click and hover use the same coordinate system
+    // Convert click coordinates to image space
     const container = this.viewer.element;
     if (!container) return;
 
@@ -226,7 +369,7 @@ export class SamTool extends BaseTool {
       this.viewer.viewport.viewportToImageCoordinates(viewportPoint);
     const samCoords = { x: imagePoint.x, y: imagePoint.y };
 
-    // Ignore clicks that land outside the image bounds to avoid huge masks
+    // Ignore clicks outside image bounds
     if (
       samCoords.x < 0 ||
       samCoords.y < 0 ||
@@ -238,7 +381,6 @@ export class SamTool extends BaseTool {
     }
 
     // Check if clicking on existing annotation
-    // Note: We use SAM coords here too since annotations are stored in SAM space
     const hitAnnotation = this.checkAnnotationHit(samCoords);
     if (hitAnnotation) {
       return;
@@ -263,7 +405,6 @@ export class SamTool extends BaseTool {
 
     try {
       // Check if we can reuse the cached preview result
-      // Use a tolerance of 5 pixels to account for slight mouse movement
       const tolerance = 5;
       const canReusePreview =
         this.lastPreviewResult &&
@@ -280,9 +421,9 @@ export class SamTool extends BaseTool {
         iouScore = this.lastPreviewResult.iouScore;
         maskStats = this.lastPreviewResult.maskStats;
       } else {
-        // Run new prediction
-        const result = await this.model.predict({
-          embedding: this.samOptions.embedding,
+        // Call prediction function
+        const result = await this.predictFn({
+          embedding: this.embeddingData!,
           clickX,
           clickY,
           imageWidth: this.samOptions.imageWidth,
@@ -297,14 +438,6 @@ export class SamTool extends BaseTool {
 
       // Skip obviously invalid results that cover too much of the image
       if (this.isMaskTooLarge(maskStats)) {
-        console.debug(
-          "[SAM] Skipping mask creation due to oversized foreground ratio",
-          {
-            foregroundRatio: Number(maskStats.foregroundRatio.toFixed(4)),
-            width: maskStats.width,
-            height: maskStats.height,
-          }
-        );
         return;
       }
 
@@ -322,7 +455,7 @@ export class SamTool extends BaseTool {
           annotation.properties = {
             ...annotation.properties,
             ...this.samOptions.annotationProperties,
-            source: "sam-onnx",
+            source: "sam",
             iouScore: iouScore,
             clickPoint: { x: clickX, y: clickY },
           };
@@ -337,7 +470,6 @@ export class SamTool extends BaseTool {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.samOptions.onError?.(err);
-      console.error("SAM prediction failed:", err);
     } finally {
       this.isPredicting = false;
     }
@@ -347,7 +479,11 @@ export class SamTool extends BaseTool {
    * Handle canvas hover for preview (throttled)
    */
   private onCanvasHover(x: number, y: number): void {
-    if (!this.samOptions.showHoverPreview || !this.isModelInitialized()) {
+    if (
+      !this.samOptions.showHoverPreview ||
+      !this.isModelInitialized() ||
+      !this.embeddingData
+    ) {
       return;
     }
 
@@ -358,17 +494,15 @@ export class SamTool extends BaseTool {
       x >= this.samOptions.imageWidth ||
       y >= this.samOptions.imageHeight
     ) {
-      // Mouse is outside image - remove preview and clear cache
       this.removePreview();
       this.lastPreviewResult = null;
       return;
     }
 
-
-
-    // Throttle to 50ms
+    // Throttle predictions (100ms default for remote mode)
+    const throttleMs = 100;
     const now = Date.now();
-    if (now - this.lastPreviewTime < 50) {
+    if (now - this.lastPreviewTime < throttleMs) {
       return;
     }
     this.lastPreviewTime = now;
@@ -378,68 +512,29 @@ export class SamTool extends BaseTool {
 
   /**
    * Show hover preview at coordinates
+   * For remote mode, this caches the prediction for click-to-create
    */
   private async showPreview(x: number, y: number): Promise<void> {
     if (!this.viewer || this.isPredicting) {
       return;
     }
 
-    const seq = ++this.previewSeq;
-
     try {
-      const result = await this.model.predict({
-        embedding: this.samOptions.embedding,
+      const result = await this.predictFn({
+        embedding: this.embeddingData!,
         clickX: x,
         clickY: y,
         imageWidth: this.samOptions.imageWidth,
         imageHeight: this.samOptions.imageHeight,
       });
 
-      // If a newer preview started, drop this one
-      if (seq !== this.previewSeq) return;
-
-      // Skip preview if the mask is obviously too large (likely a miss)
+      // Skip preview if mask is too large
       if (this.isMaskTooLarge(result.maskStats)) {
         this.removePreview();
         this.lastPreviewResult = null;
         return;
       }
 
-      // Extract best mask from tensor
-      const maskData = result.maskTensor.data as Float32Array;
-      const dims = result.maskTensor.dims;
-
-      // Get actual mask dimensions from tensor: [batch, channels, height, width]
-      const maskHeight = dims[2];
-      const maskWidth = dims[3];
-      const maskSize = maskHeight * maskWidth;
-
-      // Get best mask slice based on IoU-selected index
-      const bestMaskIndex = result.bestMaskIndex;
-      const maskStart = bestMaskIndex * maskSize;
-      const bestMaskData = maskData.slice(maskStart, maskStart + maskSize);
-
-      // Create canvas with actual mask dimensions
-      const maskCanvas = document.createElement("canvas");
-      maskCanvas.width = maskWidth;
-      maskCanvas.height = maskHeight;
-      const ctx = maskCanvas.getContext("2d");
-      if (!ctx) return;
-
-      const imageData = ctx.createImageData(maskWidth, maskHeight);
-      for (let i = 0; i < maskSize; i++) {
-        const on = bestMaskData[i] > 0.0;
-        const p = i * 4;
-        if (on) {
-          imageData.data[p] = 0; // R
-          imageData.data[p + 1] = 114; // G
-          imageData.data[p + 2] = 189; // B
-          imageData.data[p + 3] = 255; // A
-        }
-      }
-      ctx.putImageData(imageData, 0, 0);
-
-      // SAM outputs masks at the original image resolution (after we pass orig_im_size)
       // Cache the result for click-to-create
       this.lastPreviewResult = {
         maskBlob: result.maskBlob,
@@ -449,10 +544,60 @@ export class SamTool extends BaseTool {
         maskStats: result.maskStats,
       };
 
-      // Update or create overlay
+      // Show preview overlay
+      await this.displayPreviewOverlay(result.maskBlob);
+    } catch {
+      // Preview failed, silently ignore
+    }
+  }
+
+  /**
+   * Display preview overlay from mask blob
+   */
+  private async displayPreviewOverlay(maskBlob: Blob): Promise<void> {
+    if (!this.viewer) return;
+
+    // Create image from blob
+    const blobUrl = URL.createObjectURL(maskBlob);
+    const img = new Image();
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = blobUrl;
+      });
+
+      // Create canvas from image
+      const maskCanvas = document.createElement("canvas");
+      maskCanvas.width = img.width;
+      maskCanvas.height = img.height;
+      const ctx = maskCanvas.getContext("2d");
+      if (!ctx) return;
+
+      // Draw image and colorize
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+
+      // Convert grayscale mask to colored overlay
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const value = imageData.data[i]; // Grayscale value
+        if (value > 127) {
+          imageData.data[i] = 0; // R
+          imageData.data[i + 1] = 114; // G
+          imageData.data[i + 2] = 189; // B
+          imageData.data[i + 3] = 180; // A
+        } else {
+          imageData.data[i + 3] = 0; // Transparent
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      // Update overlay
       this.removePreview();
       this.previewCanvas = maskCanvas;
       this.previewCanvas.style.opacity = String(this.samOptions.previewOpacity);
+      this.previewCanvas.style.pointerEvents = "none"; // Allow clicks to pass through
 
       const imageRect = new OpenSeadragon.Rect(
         0,
@@ -467,8 +612,8 @@ export class SamTool extends BaseTool {
         location: vpRect,
         placement: OpenSeadragon.Placement.TOP_LEFT,
       });
-    } catch (error) {
-      // Silently fail for preview errors
+    } finally {
+      URL.revokeObjectURL(blobUrl);
     }
   }
 
@@ -479,11 +624,9 @@ export class SamTool extends BaseTool {
     if (this.previewCanvas && this.viewer) {
       try {
         this.viewer.removeOverlay(this.previewCanvas);
-      } catch { }
+      } catch {}
       this.previewCanvas = null;
     }
-    // Note: We don't clear lastPreviewResult here because we want to cache
-    // the preview for click-to-create. It will be cleared when mouse leaves the image.
   }
 
   private isMaskTooLarge(stats: MaskStats): boolean {
@@ -495,7 +638,7 @@ export class SamTool extends BaseTool {
    */
   override destroy(): void {
     super.destroy();
-    this.model.dispose();
     this.removePreview();
+    this.lastPreviewResult = null;
   }
 }

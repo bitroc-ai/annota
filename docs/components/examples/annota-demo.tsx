@@ -27,8 +27,6 @@ import {
   RectangleTool,
   CurveTool,
   useTool,
-  loadNpyEmbedding,
-  createDummyEmbedding,
   type Annotation,
 } from "annota";
 import {
@@ -36,6 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { createApiPredictFn } from "@/components/playground/sam-predict-service";
 
 interface AnnotaDemoProps {
   /** Image URL to display (default: test image) */
@@ -215,17 +214,17 @@ function AnnotaDemoViewer({
   const [segmentTool, setSegmentTool] = useState<SamTool | null>(null);
   const modelReadyRef = useRef(false);
 
+  // Create API predict function (memoized)
+  const apiPredictFn = useMemo(() => createApiPredictFn(), []);
+
   // Initialize intelligent segmentation tool
   useEffect(() => {
     if (!viewer) return;
 
     const initSegmentTool = async () => {
       try {
-        const dummyEmbedding = createDummyEmbedding();
-
         const tool = new SamTool({
-          decoderModelUrl: "/models/sam_onnx_quantized_vit_b.onnx",
-          embedding: dummyEmbedding,
+          predictFn: apiPredictFn,
           imageWidth: 1024,
           imageHeight: 1024,
           showHoverPreview: true,
@@ -246,18 +245,13 @@ function AnnotaDemoViewer({
           onSegmentToolReady?.(true);
         }
 
-        // Load real embedding if available
+        // Set embedding path for the API backend
         if (embeddingUrl) {
-          try {
-            const embedding = await loadNpyEmbedding(embeddingUrl);
-            const item: any = viewer.world?.getItemAt?.(0);
-            const dims = item?.source?.dimensions;
-            const width = dims?.x ?? 1024;
-            const height = dims?.y ?? 1024;
-            tool.setEmbedding(embedding, width, height);
-          } catch (e) {
-            console.log("Using dummy embedding");
-          }
+          const item: any = viewer.world?.getItemAt?.(0);
+          const dims = item?.source?.dimensions;
+          const width = dims?.x ?? 1024;
+          const height = dims?.y ?? 1024;
+          tool.setEmbedding(embeddingUrl, width, height);
         }
       } catch (error) {
         console.error("Failed to initialize segmentation tool:", error);
@@ -266,7 +260,7 @@ function AnnotaDemoViewer({
     };
 
     initSegmentTool();
-  }, [viewer, embeddingUrl, onSegmentToolReady]);
+  }, [viewer, embeddingUrl, onSegmentToolReady, apiPredictFn]);
 
   // Initialize basic annotation tools (memoized to prevent recreation on every render)
   const pointTool = useMemo(() => new PointTool(), []);

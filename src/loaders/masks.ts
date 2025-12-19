@@ -31,7 +31,6 @@ export async function loadMaskPolygons(
   url: string,
   options: MaskLoaderOptions = {}
 ): Promise<Annotation[]> {
-
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to load mask file: ${response.statusText}`);
@@ -43,7 +42,6 @@ export async function loadMaskPolygons(
   // Check if it's a PNG file (starts with PNG signature)
   const view = new Uint8Array(arrayBuffer);
   const isPNG = view[0] === 0x89 && view[1] === 0x50 && view[2] === 0x4E && view[3] === 0x47;
-
 
   let annotations: Annotation[];
 
@@ -71,13 +69,6 @@ export async function loadMaskPolygons(
     },
   }));
 
-  // Log first styled annotation for debugging
-  if (styledAnnotations.length > 0) {
-    const firstShape = styledAnnotations[0].shape;
-    if (firstShape.type === 'polygon') {
-    }
-  }
-
   return styledAnnotations;
 }
 
@@ -92,7 +83,13 @@ async function loadMask8bit(
   try {
     // Decode 8-bit PNG using UPNG.js
     const img = UPNG.decode(arrayBuffer);
-    const data = new Uint8Array(img.data);
+    const rawData = new Uint8Array(img.data);
+
+    // Determine bytes per pixel based on color type (ctype)
+    // ctype: 0=grayscale, 2=RGB, 3=indexed, 4=grayscale+alpha, 6=RGBA
+    const isGrayscale = img.ctype === 0 || img.ctype === 4;
+    const hasAlpha = img.ctype === 4 || img.ctype === 6;
+    const bytesPerPixel = isGrayscale ? (hasAlpha ? 2 : 1) : (hasAlpha ? 4 : 3);
 
     // Initialize OpenCV if needed
     try {
@@ -117,8 +114,9 @@ async function loadMask8bit(
       let whitePixels = 0;
       let blackPixels = 0;
       for (let i = 0; i < binaryData.length; i++) {
-        const pixelIndex = i * 4;
-        const value = data[pixelIndex] > 128 ? 255 : 0;
+        // Get the grayscale value from the first channel
+        const pixelIndex = i * bytesPerPixel;
+        const value = rawData[pixelIndex] > 128 ? 255 : 0;
         binaryData[i] = value;
         if (value === 255) whitePixels++;
         else blackPixels++;
@@ -216,8 +214,9 @@ async function loadMask8bit(
     } else {
       // Instance mask: multiple instances with unique 8-bit IDs
       const instanceIds = new Set<number>();
-      for (let i = 0; i < data.length; i += 4) {
-        const value = data[i];
+      const pixelCount = img.width * img.height;
+      for (let i = 0; i < pixelCount; i++) {
+        const value = rawData[i * bytesPerPixel];
         if (value > 0) {
           instanceIds.add(value);
         }
@@ -225,20 +224,20 @@ async function loadMask8bit(
 
       // Process each instance
       for (const instanceId of instanceIds) {
-        const binaryData = new Uint8Array(img.width * img.height);
-        let pixelCount = 0;
+        const binaryData = new Uint8Array(pixelCount);
+        let instancePixelCount = 0;
 
-        for (let i = 0; i < binaryData.length; i++) {
-          const pixelIndex = i * 4;
-          if (data[pixelIndex] === instanceId) {
+        for (let i = 0; i < pixelCount; i++) {
+          const pixelIndex = i * bytesPerPixel;
+          if (rawData[pixelIndex] === instanceId) {
             binaryData[i] = 255;
-            pixelCount++;
+            instancePixelCount++;
           } else {
             binaryData[i] = 0;
           }
         }
 
-        if (pixelCount < 15) continue;
+        if (instancePixelCount < 15) continue;
 
         const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
         gray.data.set(binaryData);
@@ -480,6 +479,12 @@ async function loadMask(
   const img = UPNG.decode(arrayBuffer);
   const bitDepth = img.depth;
 
+  // Determine bytes per pixel based on color type (ctype)
+  // ctype: 0=grayscale, 2=RGB, 3=indexed, 4=grayscale+alpha, 6=RGBA
+  const isGrayscale = img.ctype === 0 || img.ctype === 4;
+  const hasAlpha = img.ctype === 4 || img.ctype === 6;
+  const bytesPerPixel = isGrayscale ? (hasAlpha ? 2 : 1) : (hasAlpha ? 4 : 3);
+
   // Determine mask type
   let actualType: 'binary' | 'instance8' | 'instance16';
 
@@ -488,14 +493,15 @@ async function loadMask(
       actualType = 'instance16';
     } else if (bitDepth === 8 || bitDepth === 1) {
       // Check if it's binary or instance mask by sampling pixel values
-      const data = new Uint8Array(img.data);
+      const rawData = new Uint8Array(img.data);
       const uniqueValues = new Set<number>();
 
       // Sample first 1000 pixels
-      const sampleSize = Math.min(1000, data.length / 4);
+      const pixelCount = img.width * img.height;
+      const sampleSize = Math.min(1000, pixelCount);
       for (let i = 0; i < sampleSize; i++) {
-        const pixelIndex = i * 4;
-        uniqueValues.add(data[pixelIndex]);
+        const pixelIndex = i * bytesPerPixel;
+        uniqueValues.add(rawData[pixelIndex]);
         if (uniqueValues.size > 2) break;
       }
 

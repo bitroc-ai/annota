@@ -52,7 +52,6 @@
   "dependencies": {
     "jsfive": "^0.4.0",
     "npyjs": "^1.0.4",
-    "onnxruntime-web": "^1.23.2",
     "pako": "^2.1.0",
     "pixi.js": "^8.14.0",
     "polygon-clipping": "^0.15.7",
@@ -67,6 +66,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitest/ui": "^4.0.2",
     "jsdom": "^27.0.1",
+    "onnxruntime-node": "^1.23.2",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "vitest": "^4.0.2"

@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { warmUpSamApi } from "./sam-warmup";
 
 export type ToolType =
   | "pan"
@@ -47,7 +48,7 @@ interface AnnotationToolbarProps {
   tool: ToolType;
   onToolChange: (tool: ToolType) => void;
   viewer?: any;
-  samInitialized?: boolean;
+  samInitializing?: boolean;
   layerPanel: React.ReactElement;
 }
 
@@ -63,7 +64,7 @@ export function AnnotationToolbar({
   tool,
   onToolChange,
   viewer,
-  samInitialized = false,
+  samInitializing = false,
   layerPanel,
 }: AnnotationToolbarProps) {
   const annotator = useAnnotator();
@@ -323,24 +324,27 @@ export function AnnotationToolbar({
         <Button
           variant={tool === "sam" ? "default" : "ghost"}
           size="icon"
-          onClick={() => onToolChange("sam")}
-          disabled={!samInitialized}
+          onClick={() => {
+            // Warm up SAM API when user clicks the tool (pre-loads ONNX model on server)
+            warmUpSamApi();
+            onToolChange("sam");
+          }}
           className={cn(
             "w-9 h-9",
             tool === "sam" && "bg-purple-600 hover:bg-purple-700"
           )}
           title={
-            samInitialized
-              ? "SAM Segmentation (click on objects)"
-              : "SAM Initializing..."
+            samInitializing
+              ? "SAM Initializing..."
+              : "SAM Segmentation (click on objects)"
           }
         >
-          {samInitialized ? (
-            <Wand2 className="w-4 h-4" />
-          ) : (
+          {samInitializing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Wand2 className="w-4 h-4" />
           )}
-        </Button>{" "}
+        </Button>
         <Button
           variant={tool === "split" ? "default" : "ghost"}
           size="icon"

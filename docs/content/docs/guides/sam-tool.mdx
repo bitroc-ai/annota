@@ -1,45 +1,73 @@
 ---
 title: SAM (Segment Anything Model) Tool
-description: Browser-based interactive segmentation using Meta's SAM via ONNX Runtime Web
+description: Interactive segmentation using Meta's SAM with backend inference
 ---
 
-import { Cards } from 'nextra/components'
+import { Cards, Callout } from 'nextra/components'
 
 # SAM (Segment Anything Model) Tool
 
-The SAM tool brings Meta AI's powerful Segment Anything Model directly into your browser, enabling instant object segmentation without requiring any backend infrastructure.
+The SAM tool brings Meta AI's powerful Segment Anything Model to your application, enabling instant object segmentation with just a click.
 
 ## Overview
 
-**Key Features:**
-- ✅ **Zero latency** - Runs entirely in browser using WebAssembly
-- ✅ **No backend required** - Pure client-side inference
-- ✅ **Privacy-first** - Images never leave the device
-- ✅ **Offline support** - Works without internet after model download
-- ✅ **Cost-effective** - No GPU server costs
+The SAM tool delegates all inference to a backend server via a `predictFn`. This architecture:
+
+- ✅ **Avoids browser memory issues** - No ONNX WASM in browser (critical for Safari)
+- ✅ **Reduces bundle size** - No ~20MB ONNX runtime in client
+- ✅ **Enables GPU acceleration** - Backend can use CUDA/Metal
 - ✅ **Real-time preview** - Hover to see segmentation before clicking
-- ✅ **Smart caching** - Reuses preview mask when clicking to avoid redundant inference
+- ✅ **Smart caching** - Reuses preview mask when clicking
+
+<Callout type="info">
+The library no longer includes ONNX runtime. All inference is delegated to your backend, completely avoiding [ONNX Runtime WASM memory leaks](https://github.com/microsoft/onnxruntime/issues/26827) on Safari.
+</Callout>
 
 **How it works:**
-1. User hovers over an object - blue preview overlay appears
+1. User hovers over an object → backend runs inference → blue preview overlay appears
 2. User clicks on the preview to create annotation
 3. Cached mask is converted to polygon (~instant)
 4. Annotation is automatically created and selected
 
-If clicking without hovering, SAM decoder runs inference (~100-300ms) then creates the annotation.
-
 ## Quick Start
 
 ```tsx
-import { SamTool, loadNpyEmbedding } from 'annota';
+import { SamTool } from 'annota';
+import type { SamPredictFn, SamPredictInput, SamPredictOutput } from 'annota';
 
-// Load precomputed embedding
-const embedding = await loadNpyEmbedding('/embeddings/image_001.npy');
+// Create a predict function that calls your backend
+const predictFn: SamPredictFn = async (input: SamPredictInput): Promise<SamPredictOutput> => {
+  const response = await fetch('/api/sam', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      embeddingPath: input.embedding, // Path to .npy file on server
+      clickX: input.clickX,
+      clickY: input.clickY,
+      imageWidth: input.imageWidth,
+      imageHeight: input.imageHeight,
+    }),
+  });
 
-// Create SAM tool
+  const result = await response.json();
+
+  // Convert base64 to Blob
+  const binary = atob(result.maskBase64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return {
+    maskBlob: new Blob([bytes], { type: 'image/png' }),
+    iouScore: result.iouScore,
+    maskStats: result.maskStats,
+  };
+};
+
+// Create SAM tool with remote prediction
 const samTool = new SamTool({
-  decoderModelUrl: '/models/sam_onnx_quantized_vit_b.onnx',
-  embedding,
+  predictFn,
   imageWidth: 1024,
   imageHeight: 1024,
   annotationProperties: {
@@ -47,8 +75,11 @@ const samTool = new SamTool({
   }
 });
 
-// Initialize the model
+// Initialize (validates configuration)
 await samTool.initializeModel();
+
+// Set embedding path when image loads
+samTool.setEmbedding('/embeddings/image_001.npy', 2048, 1536);
 
 // Activate the tool
 annotator.setTool(samTool);
@@ -56,21 +87,24 @@ annotator.setTool(samTool);
 
 ## Installation
 
-SAM support is built-in to Annota. Download the required models:
+SAM support is built-in to Annota. You need:
 
-### ONNX Decoder Models (for browser inference)
+1. **ONNX Decoder Model** (for backend inference)
+2. **Python Encoder Model** (for generating embeddings)
+
+### ONNX Decoder Models (for backend)
 
 Download one of the quantized decoder models (~4.5MB each):
 
 ```bash
-# ViT-B decoder (recommended for web - good balance of speed and quality)
+# ViT-B decoder (recommended - good balance of speed and quality)
 wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_onnx_quantized_vit_b.onnx
 
 # ViT-H decoder (higher quality, same size due to quantization)
 wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_onnx_quantized_vit_h.onnx
 ```
 
-Place in your `public/models/` directory.
+Place in your backend's `models/` directory.
 
 ### Python Encoder Models (for generating embeddings)
 
@@ -85,18 +119,12 @@ wget https://bitrepo.oss-cn-shanghai.aliyuncs.com/models/sam/sam_vit_h_4b8939.pt
 ```
 
 **Model Pairing:**
-- Use `sam_vit_b_01ec64.pth` (Python) with `sam_onnx_quantized_vit_b.onnx` (browser)
-- Use `sam_vit_h_4b8939.pth` (Python) with `sam_onnx_quantized_vit_h.onnx` (browser)
-
-**Note:** The encoder models are only needed once to generate embeddings. After embeddings are created, you only need the ONNX decoder for browser inference.
-
-**Alternative Sources:**
-- Official Meta repository: [github.com/facebookresearch/segment-anything](https://github.com/facebookresearch/segment-anything)
-- All models are also mirrored on our OSS bucket for faster downloads in Asia-Pacific regions
+- Use `sam_vit_b_01ec64.pth` (Python) with `sam_onnx_quantized_vit_b.onnx` (backend)
+- Use `sam_vit_h_4b8939.pth` (Python) with `sam_onnx_quantized_vit_h.onnx` (backend)
 
 ## Generating Embeddings
 
-**Important**: SAM inference runs entirely in TypeScript/browser, but you need Python to pre-generate embeddings (one-time per image).
+**Important**: SAM inference runs on your backend, but you need Python to pre-generate embeddings (one-time per image).
 
 ```python
 import torch
@@ -130,15 +158,144 @@ bash scripts/gen_sam_embeddings.sh -m vit_b \
   -o docs/public/playground/embeddings/test
 ```
 
-After embeddings are generated, everything runs in TypeScript with no Python required.
+## Implementing a Backend
+
+You need a backend that runs SAM inference. Here are two approaches:
+
+### Node.js API (Next.js / Express)
+
+Using `onnxruntime-node` for server-side inference:
+
+```ts
+// app/api/sam/route.ts (Next.js App Router)
+import { NextRequest, NextResponse } from 'next/server';
+import * as ort from 'onnxruntime-node';
+import * as fs from 'fs';
+import sharp from 'sharp';
+
+// Singleton session for performance
+let cachedSession: ort.InferenceSession | null = null;
+
+async function getSession(modelPath: string) {
+  if (!cachedSession) {
+    cachedSession = await ort.InferenceSession.create(modelPath, {
+      executionProviders: ['cpu'],
+    });
+  }
+  return cachedSession;
+}
+
+export async function POST(request: NextRequest) {
+  const { embeddingPath, clickX, clickY, imageWidth, imageHeight } = await request.json();
+
+  // Load embedding from .npy file
+  const embeddingData = loadNpyFile(embeddingPath);
+
+  // Get ONNX session
+  const session = await getSession('models/sam_onnx_quantized_vit_b.onnx');
+
+  // Prepare inputs
+  const modelScale = 1024 / Math.max(imageWidth, imageHeight);
+  const feeds = {
+    image_embeddings: new ort.Tensor('float32', embeddingData, [1, 256, 64, 64]),
+    point_coords: new ort.Tensor('float32', [
+      clickX * modelScale, clickY * modelScale,
+      0, 0  // padding point
+    ], [1, 2, 2]),
+    point_labels: new ort.Tensor('float32', [1, -1], [1, 2]),
+    mask_input: new ort.Tensor('float32', new Float32Array(256 * 256), [1, 1, 256, 256]),
+    has_mask_input: new ort.Tensor('float32', [0], [1]),
+    orig_im_size: new ort.Tensor('float32', [imageHeight, imageWidth], [2]),
+  };
+
+  const results = await session.run(feeds);
+
+  // Find best mask by IoU score
+  const iouData = results.iou_predictions.data as Float32Array;
+  let bestIdx = 0;
+  for (let i = 1; i < iouData.length; i++) {
+    if (iouData[i] > iouData[bestIdx]) bestIdx = i;
+  }
+
+  // Convert mask to PNG using sharp
+  const maskData = results.masks.data as Float32Array;
+  const maskWidth = results.masks.dims[3];
+  const maskHeight = results.masks.dims[2];
+  const maskSize = maskWidth * maskHeight;
+
+  const binaryMask = new Uint8Array(maskSize);
+  let whiteCount = 0;
+  for (let i = 0; i < maskSize; i++) {
+    if (maskData[bestIdx * maskSize + i] > 0) {
+      binaryMask[i] = 255;
+      whiteCount++;
+    }
+  }
+
+  const pngBuffer = await sharp(Buffer.from(binaryMask), {
+    raw: { width: maskWidth, height: maskHeight, channels: 1 }
+  }).png().toBuffer();
+
+  return NextResponse.json({
+    maskBase64: pngBuffer.toString('base64'),
+    iouScore: iouData[bestIdx],
+    maskStats: {
+      width: maskWidth,
+      height: maskHeight,
+      whiteCount,
+      blackCount: maskSize - whiteCount,
+      foregroundRatio: whiteCount / maskSize,
+      isEmpty: whiteCount === 0,
+      isTiny: whiteCount / maskSize < 0.001,
+    }
+  });
+}
+```
+
+### Tauri / Rust Backend
+
+For desktop apps, use native ONNX runtime via the `ort` crate:
+
+```rust
+// src-tauri/src/commands/sam_predict.rs
+use ort::{Session, GraphOptimizationLevel};
+
+#[tauri::command]
+pub async fn sam_predict(
+    state: State<'_, SamModelState>,
+    input: SamPredictInput,
+) -> Result<SamPredictOutput, String> {
+    // Load .npy embedding
+    let embedding = load_npy_embedding(&input.embedding_path)?;
+
+    // Get cached ONNX session
+    let session = get_or_create_session(&state, &input.model_path)?;
+
+    // Run inference
+    let outputs = session.run(ort::inputs![
+        "image_embeddings" => embedding.view(),
+        "point_coords" => point_coords.view(),
+        // ...
+    ])?;
+
+    // Extract mask and encode as base64 PNG
+    let mask_base64 = encode_mask_png(&outputs["masks"])?;
+
+    Ok(SamPredictOutput {
+        mask_base64,
+        iou_score: best_iou,
+        mask_stats,
+    })
+}
+```
 
 ## Hover Preview & Click-to-Create
 
 The SAM tool features a real-time hover preview that dramatically improves user experience:
 
 **Preview Behavior:**
-- Hover over any object → blue overlay appears showing predicted segmentation
-- Preview updates in real-time as you move the mouse (throttled to 50ms)
+- Hover over any object → backend runs inference → blue overlay appears
+- Preview updates in real-time as you move the mouse (throttled to 100ms)
 - Move mouse outside image bounds → preview disappears
 
 **Click-to-Create:**
@@ -151,8 +308,7 @@ The SAM tool features a real-time hover preview that dramatically improves user 
 
 ```tsx
 const samTool = new SamTool({
-  decoderModelUrl: '/models/sam_onnx_quantized_vit_b.onnx',
-  embedding,
+  predictFn,
   imageWidth: 1024,
   imageHeight: 1024,
 
@@ -164,28 +320,27 @@ const samTool = new SamTool({
 });
 ```
 
-**Performance Notes:**
-- Preview caching eliminates ~100-300ms inference delay on click
-- Only the largest contour is converted to polygon (prevents fragment annotations)
-- Preview runs at 20 FPS (50ms throttle) for smooth interaction
-
 ## API Reference
 
-### SamTool
+### SamToolOptions
 
 ```tsx
 interface SamToolOptions {
-  // Model configuration
-  decoderModelUrl: string;
-  embedding: ort.Tensor;
+  // Required: prediction function for backend inference
+  predictFn: SamPredictFn;
+
+  // Image dimensions
   imageWidth: number;
   imageHeight: number;
 
-  // Preview options
-  showHoverPreview?: boolean;      // Show preview on hover (default: true)
-  previewOpacity?: number;          // Preview overlay opacity (default: 0.5)
+  // Optional: initial embedding (can be set later with setEmbedding)
+  embedding?: Float32Array | string;
 
-  // Annotation options
+  // Preview options
+  showHoverPreview?: boolean;        // Show preview on hover (default: true)
+  previewOpacity?: number;           // Preview overlay opacity (default: 0.5)
+
+  // Annotation properties
   annotationProperties?: Partial<Annotation>;
 
   // Callbacks
@@ -196,40 +351,46 @@ interface SamToolOptions {
 }
 ```
 
-**Methods:**
-- `initializeModel()`: Initialize ONNX model (must be called before use)
-- `isModelInitialized()`: Check if model is ready
-- `setEmbedding(embedding, width, height)`: Update embedding for new image
-- `destroy()`: Clean up resources
-
-### Embedding Utilities
+### SamPredictFn Type
 
 ```tsx
-// Load embedding from .npy file
-const embedding = await loadNpyEmbedding('/embeddings/image.npy');
+// Input passed to your prediction function
+interface SamPredictInput {
+  embedding: Float32Array | string;  // Embedding data or path
+  clickX: number;
+  clickY: number;
+  imageWidth: number;
+  imageHeight: number;
+  positivePoints?: Array<{ x: number; y: number }>;
+  negativePoints?: Array<{ x: number; y: number }>;
+}
 
-// Load with caching
-const embedding = await loadNpyEmbeddingCached('/embeddings/image.npy');
+// Output your prediction function must return
+interface SamPredictOutput {
+  maskBlob: Blob;                    // PNG mask as Blob
+  iouScore: number;                  // IoU confidence score
+  maskStats: MaskStats;              // Mask statistics
+}
 
-// Create dummy embedding for testing
-const dummyEmbedding = createDummyEmbedding();
-
-// Manage cache
-import { embeddingCache } from 'annota';
-embeddingCache.clear();
-embeddingCache.getSize();
-embeddingCache.delete('/embeddings/old.npy');
+type SamPredictFn = (input: SamPredictInput) => Promise<SamPredictOutput>;
 ```
+
+### Methods
+
+- `initializeModel()`: Validates configuration (lightweight, no model loading)
+- `isModelInitialized()`: Check if tool is ready
+- `setEmbedding(embedding, width, height)`: Update embedding for new image
+- `destroy()`: Clean up resources
 
 ## FAQ
 
 ### Do I need Python?
 
-**Short answer**: Only once, to generate embeddings. After that, everything is TypeScript.
+**Short answer**: Only once, to generate embeddings. After that, backend inference uses the pre-generated embeddings.
 
-### Why can't I generate embeddings in TypeScript?
+### Why can't I generate embeddings in the browser?
 
-The SAM encoder model is ~350MB (too large for browser) and computationally expensive (~5-10 seconds per image even on GPU). Phase 3 will add browser-based encoding.
+The SAM encoder model is ~350MB (too large for browser) and computationally expensive (~5-10 seconds per image even on GPU). Pre-generating embeddings is much more practical.
 
 ### How much disk space do embeddings take?
 
@@ -239,16 +400,20 @@ Each embedding is ~4MB (`[1, 256, 64, 64]` float32 tensor).
 
 ### Does the preview affect performance?
 
-No. The preview runs inference on-demand while hovering, but the result is cached. When you click, the cached mask is instantly reused, making annotation creation feel instant (~0ms inference vs ~100-300ms without cache).
+The preview runs inference on-demand while hovering, but the result is cached. When you click, the cached mask is instantly reused, making annotation creation feel instant (~0ms inference vs ~100-300ms without cache).
 
 ### Can I disable the hover preview?
 
 Yes, set `showHoverPreview: false` in the SamTool options. The tool will still work - clicking will trigger inference and create annotations, just without the preview.
+
+### Why was browser ONNX removed?
+
+The ONNX Runtime WASM has significant [memory leak issues on Safari](https://github.com/microsoft/onnxruntime/issues/26827), especially on Intel Macs. Moving inference to the backend completely avoids these issues and also reduces the client bundle size by ~20MB.
 
 ## Related
 
 <Cards>
   <Cards.Card title="Annotation Tools" href="/docs/guides/tools" />
   <Cards.Card title="Meta SAM Repository" href="https://github.com/facebookresearch/segment-anything" />
-  <Cards.Card title="ONNX Runtime Web" href="https://onnxruntime.ai/docs/tutorials/web/" />
+  <Cards.Card title="ONNX Runtime Node" href="https://onnxruntime.ai/docs/get-started/with-javascript/node.html" />
 </Cards>

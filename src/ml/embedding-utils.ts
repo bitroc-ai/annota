@@ -1,9 +1,22 @@
 /**
- * Utilities for loading and managing SAM image embeddings
+ * Utilities for loading SAM image embeddings
+ *
+ * For remote SAM inference, embeddings are typically just paths passed to the backend.
+ * These utilities are provided for advanced use cases where you need to load
+ * embedding data client-side.
  */
 
-import * as ort from 'onnxruntime-web';
 import npyjs from 'npyjs';
+
+/**
+ * SAM embedding data structure
+ */
+export interface SamEmbedding {
+  /** Float32Array of embedding values */
+  data: Float32Array;
+  /** Shape of the embedding, typically [1, 256, 64, 64] */
+  shape: number[];
+}
 
 /**
  * Load precomputed SAM embedding from .npy file
@@ -12,14 +25,16 @@ import npyjs from 'npyjs';
  * and dtype float32.
  *
  * @param url - URL to the .npy file
- * @returns ONNX tensor containing the embedding
+ * @returns Embedding data as Float32Array with shape info
  *
  * @example
  * ```typescript
  * const embedding = await loadNpyEmbedding('/embeddings/image_001.npy');
+ * console.log(embedding.shape); // [1, 256, 64, 64]
+ * console.log(embedding.data.length); // 1048576
  * ```
  */
-export async function loadNpyEmbedding(url: string): Promise<ort.Tensor> {
+export async function loadNpyEmbedding(url: string): Promise<SamEmbedding> {
   try {
     // Let npyjs handle fetching + parsing directly (robust to content-type, gzip)
     const npyLoader = new npyjs();
@@ -47,8 +62,7 @@ export async function loadNpyEmbedding(url: string): Promise<ort.Tensor> {
       throw new Error(`Invalid embedding dtype: expected float32, got ${npyData.dtype}`);
     }
 
-    // Create ONNX tensor
-    return new ort.Tensor('float32', data, shape);
+    return { data, shape };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to load .npy embedding from ${url}: ${msg}`);
@@ -56,87 +70,21 @@ export async function loadNpyEmbedding(url: string): Promise<ort.Tensor> {
 }
 
 /**
- * Create a dummy embedding for testing
- *
- * Generates a random embedding tensor with the correct shape [1, 256, 64, 64].
- * This is useful for testing the SAM tool without needing actual precomputed embeddings.
- *
- * **Note**: Dummy embeddings will produce random/poor segmentation results.
- * Use real embeddings for production.
- *
- * @returns ONNX tensor with random values
- *
- * @example
- * ```typescript
- * const dummyEmbedding = createDummyEmbedding();
- * const samTool = new SamTool({
- *   decoderModelUrl: '/models/sam_decoder.onnx',
- *   embedding: dummyEmbedding,
- *   imageWidth: 1024,
- *   imageHeight: 1024
- * });
- * ```
- */
-export function createDummyEmbedding(): ort.Tensor {
-  const shape = [1, 256, 64, 64];
-  const size = shape.reduce((a, b) => a * b, 1);
-  const data = new Float32Array(size);
-
-  // Fill with random values (mean 0, std 1)
-  for (let i = 0; i < size; i++) {
-    data[i] = (Math.random() - 0.5) * 2;
-  }
-
-  return new ort.Tensor('float32', data, shape);
-}
-
-/**
- * Load embedding from raw Float32Array data
- *
- * Useful when embeddings are stored in custom formats or generated dynamically.
- *
- * @param data - Float32Array containing embedding data
- * @param shape - Shape of the tensor (default: [1, 256, 64, 64])
- * @returns ONNX tensor
- *
- * @example
- * ```typescript
- * const data = new Float32Array(1 * 256 * 64 * 64);
- * // ... fill data ...
- * const embedding = loadRawEmbedding(data);
- * ```
- */
-export function loadRawEmbedding(
-  data: Float32Array,
-  shape: number[] = [1, 256, 64, 64]
-): ort.Tensor {
-  const expectedSize = shape.reduce((a, b) => a * b, 1);
-
-  if (data.length !== expectedSize) {
-    throw new Error(
-      `Data size mismatch: expected ${expectedSize}, got ${data.length}`
-    );
-  }
-
-  return new ort.Tensor('float32', data, shape);
-}
-
-/**
  * Cache for storing loaded embeddings to avoid re-fetching
  */
 class EmbeddingCache {
-  private cache = new Map<string, ort.Tensor>();
+  private cache = new Map<string, SamEmbedding>();
   private maxSize: number;
 
   constructor(maxSize = 10) {
     this.maxSize = maxSize;
   }
 
-  get(key: string): ort.Tensor | undefined {
+  get(key: string): SamEmbedding | undefined {
     return this.cache.get(key);
   }
 
-  set(key: string, value: ort.Tensor): void {
+  set(key: string, value: SamEmbedding): void {
     // Simple LRU: if cache is full, remove oldest entry
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
@@ -176,7 +124,7 @@ export const embeddingCache = new EmbeddingCache(10);
  *
  * @param url - URL to the .npy file
  * @param useCache - Whether to use cache (default: true)
- * @returns ONNX tensor
+ * @returns Embedding data
  *
  * @example
  * ```typescript
@@ -190,7 +138,7 @@ export const embeddingCache = new EmbeddingCache(10);
 export async function loadNpyEmbeddingCached(
   url: string,
   useCache = true
-): Promise<ort.Tensor> {
+): Promise<SamEmbedding> {
   if (useCache && embeddingCache.has(url)) {
     const cached = embeddingCache.get(url);
     if (cached) {

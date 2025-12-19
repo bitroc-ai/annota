@@ -146,7 +146,16 @@ export {
 } from "./tools";
 
 export { SamTool } from "./tools/sam";
-export type { SamToolOptions } from "./tools/sam";
+export type {
+  SamToolOptions,
+  SamPredictFn,
+  SamPredictInput,
+  SamPredictOutput,
+  MaskStats,
+  // Backwards compatibility aliases
+  SamRemotePredictInput,
+  SamRemotePredictOutput,
+} from "./tools/sam";
 
 export type {
   CurveToolOptions,
@@ -187,20 +196,18 @@ export {
 } from "./core/operations";
 
 // ============================================
-// ML/AI Models
+// ML/AI Utilities
 // ============================================
-
-export { SamOnnxModel } from "./ml/sam-onnx";
-export type {
-  SamOnnxConfig,
-  SamPredictInput,
-  SamPredictOutput,
-} from "./ml/sam-onnx";
 
 export {
   loadNpyEmbedding,
   loadNpyEmbeddingCached,
-  createDummyEmbedding,
-  loadRawEmbedding,
   embeddingCache,
 } from "./ml/embedding-utils";
+export type { SamEmbedding } from "./ml/embedding-utils";
+
+// ============================================
+// Extensions (OpenCV)
+// ============================================
+
+export { initOpenCV, isOpenCVReady } from "./extensions/opencv";
