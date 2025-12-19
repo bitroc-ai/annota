@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitroc-ai/annota.git"
+    "url": "git+https://github.com/bitroc-ai/annota.git"
   },
   "files": [
     "dist",
