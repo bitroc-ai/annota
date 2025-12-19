@@ -16,7 +16,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "annota": "file:..",
     "lucide-react": "^0.553.0",
-    "next": "^15.1.4",
+    "next": "^16.1.0",
     "next-themes": "^0.4.6",
     "nextra": "^4.2.17",
     "nextra-theme-docs": "^4.2.17",

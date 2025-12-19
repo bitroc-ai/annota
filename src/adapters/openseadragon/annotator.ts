@@ -150,6 +150,24 @@ export async function createOpenSeadragonAnnotator(
   const hover: { current: string | undefined } = { current: undefined };
   const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
   const toolDrawing: { active: boolean } = { active: false };
+  let currentFilter: Filter | undefined = options.filter;
+  let suppressHoverUntil = 0;
+  let interactionEndTimer: number | null = null;
+
+  const markViewportInteraction = () => {
+    // During fast pan/zoom the pointer position changes constantly; hover hit-testing is wasted work.
+    // Keep this short so hover resumes quickly after interaction ends.
+    suppressHoverUntil = Math.max(suppressHoverUntil, performance.now() + 80);
+
+    stage.beginInteraction();
+    if (interactionEndTimer !== null) {
+      window.clearTimeout(interactionEndTimer);
+    }
+    interactionEndTimer = window.setTimeout(() => {
+      interactionEndTimer = null;
+      stage.endInteraction();
+    }, 120);
+  };
 
   // Event emitter state
   const eventHandlers: Map<AnnotatorEvent, Set<AnnotatorEventHandler>> = new Map([
@@ -254,12 +272,28 @@ export async function createOpenSeadragonAnnotator(
   // Sync with viewport changes
   // Use 'animation-start' for immediate sync at the START of pan/zoom
   // This keeps annotations perfectly in sync with image tiles during interaction
-  const onViewportUpdate = () => {
+  const onViewportUpdateStart = () => {
+    markViewportInteraction();
     stage.redraw();
   };
 
-  viewer.addHandler('animation-start', onViewportUpdate);
-  viewer.addHandler('animation', onViewportUpdate);
+  // Coalesce bursts of viewport events so panning doesn't trigger redundant redraws
+  const onViewportUpdate = () => {
+    markViewportInteraction();
+    // IMPORTANT: keep overlay in lockstep with OSD tile drawing.
+    // Scheduling via RAF can introduce a visible 1-frame lag during fast pans.
+    stage.redraw();
+  };
+
+  const onViewportUpdateFinish = () => {
+    // Ensure a final vector redraw after zoom/pan finishes so zoom-dependent
+    // annotation rendering (e.g. point size) settles correctly.
+    stage.endInteraction();
+    stage.redraw();
+  };
+
+  viewer.addHandler('animation-start', onViewportUpdateStart);
+  viewer.addHandler('animation-finish', onViewportUpdateFinish);
   viewer.addHandler('update-viewport', onViewportUpdate);
 
   // Handle resize
@@ -279,10 +313,10 @@ export async function createOpenSeadragonAnnotator(
   resizeObserver.observe(viewer.canvas);
 
   // Helper to create a filter that combines user filter with layer visibility
-  const createVisibilityFilter = (userFilter?: Filter): Filter => {
+  const createVisibilityFilter = (): Filter => {
     return (annotation: import('../../core/types').Annotation) => {
       // First check user filter
-      if (userFilter && !userFilter(annotation)) {
+      if (currentFilter && !currentFilter(annotation)) {
         return false;
       }
 
@@ -304,11 +338,13 @@ export async function createOpenSeadragonAnnotator(
     pointerMoveRafId = requestAnimationFrame(() => {
       pointerMoveRafId = null;
 
+      if (performance.now() < suppressHoverUntil) return;
+
       const imagePoint = pointerEventToImage(viewer, event);
       if (!imagePoint) return;
 
       const hitTolerance = 5 / viewer.viewport.getZoom();
-      const visibilityFilter = createVisibilityFilter(options.filter);
+      const visibilityFilter = createVisibilityFilter();
       const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
 
       const hitId: string | undefined = hit ? hit.id : undefined;
@@ -339,7 +375,7 @@ export async function createOpenSeadragonAnnotator(
     if (!imagePoint) return;
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
-    const visibilityFilter = createVisibilityFilter(options.filter);
+    const visibilityFilter = createVisibilityFilter();
     const hit = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
 
     // If we hit an in-progress annotation, let the tool handle it exclusively
@@ -432,7 +468,7 @@ export async function createOpenSeadragonAnnotator(
           const maxX = Math.max(pressState.imagePos.x, imagePoint.x);
           const maxY = Math.max(pressState.imagePos.y, imagePoint.y);
 
-          const visibilityFilter = createVisibilityFilter(options.filter);
+          const visibilityFilter = createVisibilityFilter();
           const intersecting = store.getIntersecting({ minX, minY, maxX, maxY }, visibilityFilter);
 
           const originalEvent = evt.originalEvent as MouseEvent;
@@ -473,7 +509,7 @@ export async function createOpenSeadragonAnnotator(
     }
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
-    const visibilityFilter = createVisibilityFilter(options.filter);
+    const visibilityFilter = createVisibilityFilter();
     const hitOnRelease = store.getAt(imagePoint.x, imagePoint.y, visibilityFilter, hitTolerance);
     const originalEvent = evt.originalEvent as MouseEvent;
     const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
@@ -672,6 +708,7 @@ export async function createOpenSeadragonAnnotator(
     },
 
     setFilter(filter) {
+      currentFilter = filter;
       stage.setFilter(filter);
     },
 
@@ -723,10 +760,15 @@ export async function createOpenSeadragonAnnotator(
       store.unobserve(onStoreChange);
       layerManager.unobserve(onLayerChange);
       viewer.removeHandler('update-viewport', onViewportUpdate);
-      viewer.removeHandler('animation', onViewportUpdate);
+      viewer.removeHandler('animation-start', onViewportUpdateStart);
+      viewer.removeHandler('animation-finish', onViewportUpdateFinish);
       viewer.removeHandler('resize', onResize);
       canvas.removeEventListener('pointermove', onPointerMove);
       resizeObserver.disconnect();
+      if (interactionEndTimer !== null) {
+        window.clearTimeout(interactionEndTimer);
+        interactionEndTimer = null;
+      }
       stage.destroy();
       canvas.remove();
       // Clear all event handlers

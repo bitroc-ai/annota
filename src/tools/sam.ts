@@ -9,7 +9,7 @@ import type * as ort from "onnxruntime-web";
 import OpenSeadragon from "openseadragon";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
-import { SamOnnxModel, type MaskStats } from "../ml/sam-onnx";
+import { SamOnnxModel, type MaskStats, type SamOnnxConfig } from "../ml/sam-onnx";
 import { loadMaskPolygons } from "../loaders/masks";
 import type { Annotation } from "../core/types";
 
@@ -21,6 +21,15 @@ const MAX_FOREGROUND_RATIO = 0.4; // Treat masks covering >40% as invalid/noise
 export interface SamToolOptions extends ToolHandlerOptions {
   /** URL to the SAM decoder ONNX model */
   decoderModelUrl: string;
+
+  /** Number of threads for WebAssembly execution (default: 1) */
+  numThreads?: SamOnnxConfig["numThreads"];
+
+  /** Enable SIMD optimizations (default: true) */
+  simd?: SamOnnxConfig["simd"];
+
+  /** Execution providers in order of preference (default: ['wasm']) */
+  executionProviders?: SamOnnxConfig["executionProviders"];
 
   /** Precomputed image embedding tensor [1, 256, 64, 64] */
   embedding: ort.Tensor;
@@ -88,6 +97,9 @@ export class SamTool extends BaseTool {
 
     this.samOptions = {
       decoderModelUrl: options.decoderModelUrl,
+      numThreads: options.numThreads ?? 1,
+      simd: options.simd ?? true,
+      executionProviders: options.executionProviders ?? ["wasm"],
       embedding: options.embedding,
       imageWidth: options.imageWidth,
       imageHeight: options.imageHeight,
@@ -102,6 +114,9 @@ export class SamTool extends BaseTool {
 
     this.model = new SamOnnxModel({
       decoderModelUrl: this.samOptions.decoderModelUrl,
+      numThreads: this.samOptions.numThreads,
+      simd: this.samOptions.simd,
+      executionProviders: this.samOptions.executionProviders,
     });
   }
 

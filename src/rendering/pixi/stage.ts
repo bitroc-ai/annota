@@ -5,6 +5,7 @@
 
 import * as PIXI from 'pixi.js';
 import OpenSeadragon from 'openseadragon';
+import RBush from 'rbush';
 import type { Annotation, Filter, StyleExpression } from '../../core/types';
 import type { LayerManager } from '../../core/layer';
 import { isAnnotationVisible } from '../../core/layer';
@@ -35,6 +36,14 @@ interface AnnotationGraphics {
   };
 }
 
+interface SpatialEntry {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+  id: string;
+}
+
 /**
  * PixiJS Stage Manager
  * Manages WebGL rendering of annotations with viewport culling
@@ -44,6 +53,19 @@ export class PixiStage {
   private viewer: OpenSeadragon.Viewer;
   private container: PIXI.Container;
   private annotationMap: Map<string, AnnotationGraphics>;
+  private spatialIndex: RBush<SpatialEntry>;
+  private spatialEntryById: Map<string, SpatialEntry>;
+  private visibleIds: Set<string>;
+  private interacting: boolean;
+  private captureSnapshotOnNextRedraw: boolean;
+  private snapshotDirty: boolean;
+  private snapshotPadPx: number;
+  private snapshotTexture: PIXI.RenderTexture | null;
+  private snapshotSprite: PIXI.Sprite | null;
+  private snapshotBaseScale: number;
+  private snapshotBaseDx: number;
+  private snapshotBaseDy: number;
+  private vectorNeedsRefresh: boolean;
 
   private style?: StyleExpression;
   private filter?: Filter;
@@ -52,6 +74,8 @@ export class PixiStage {
   private hoveredId?: string;
   private selectedIds: Set<string>;
   private scale: number;
+  private redrawRafId: number | null;
+  private boundHandleLayerChange: (() => void) | null;
 
   private constructor(
     app: PIXI.Application,
@@ -61,22 +85,152 @@ export class PixiStage {
     this.app = app;
     this.viewer = viewer;
     this.annotationMap = new Map();
+    this.spatialIndex = new RBush<SpatialEntry>();
+    this.spatialEntryById = new Map();
+    this.visibleIds = new Set();
     this.selectedIds = new Set();
     this.style = options.style;
     this.filter = options.filter;
     this.visible = options.visible ?? true;
     this.layerManager = options.layerManager;
     this.scale = 1.0;
+    this.redrawRafId = null;
+    this.boundHandleLayerChange = null;
+    this.interacting = false;
+    this.captureSnapshotOnNextRedraw = false;
+    this.snapshotDirty = true;
+    this.snapshotPadPx = 256;
+    this.snapshotTexture = null;
+    this.snapshotSprite = null;
+    this.snapshotBaseScale = 1;
+    this.snapshotBaseDx = 0;
+    this.snapshotBaseDy = 0;
+    this.vectorNeedsRefresh = true;
 
     // Create main container for annotations
     this.container = new PIXI.Container();
     this.container.visible = this.visible;
     this.app.stage.addChild(this.container);
 
+    // Don't run a continuous render loop; we render only when the viewer or annotations change.
+    // This avoids spending GPU/CPU on redundant frames, which is especially noticeable with many annotations.
+    this.app.ticker.stop();
+
+    // Snapshot sprite (used only during fast pan/zoom interaction)
+    this.snapshotSprite = new PIXI.Sprite();
+    this.snapshotSprite.visible = false;
+    this.app.stage.addChild(this.snapshotSprite);
+
     // Listen for layer changes to update annotation visibility/opacity
     if (this.layerManager) {
-      this.layerManager.observe(this.handleLayerChange.bind(this));
+      this.boundHandleLayerChange = this.handleLayerChange.bind(this);
+      this.layerManager.observe(this.boundHandleLayerChange);
     }
+  }
+
+  /**
+   * When interacting (fast pan/zoom), treat annotations as a single transformed layer:
+   * only update container transform + render, skip per-annotation culling and LOD work.
+   */
+  beginInteraction(): void {
+    if (this.interacting) return;
+    this.interacting = true;
+    this.captureSnapshotOnNextRedraw = true;
+    this.vectorNeedsRefresh = true;
+  }
+
+  endInteraction(): void {
+    if (!this.interacting) return;
+    this.interacting = false;
+    this.captureSnapshotOnNextRedraw = false;
+    if (this.snapshotSprite) this.snapshotSprite.visible = false;
+    this.container.visible = true;
+    this.vectorNeedsRefresh = true;
+    // Ensure we re-render vectors immediately so zoom-dependent sizing (e.g. point radius)
+    // is correct as soon as interaction ends.
+    this.redraw();
+  }
+
+  private ensureSnapshotTexture(width: number, height: number): void {
+    if (
+      this.snapshotTexture &&
+      this.snapshotTexture.source.width === width &&
+      this.snapshotTexture.source.height === height
+    ) {
+      return;
+    }
+
+    if (this.snapshotTexture) {
+      this.snapshotTexture.destroy(true);
+    }
+
+    this.snapshotTexture = PIXI.RenderTexture.create({
+      width,
+      height,
+      resolution: 1,
+      antialias: false,
+    });
+  }
+
+  private updateSnapshot(): void {
+    if (!this.snapshotSprite) return;
+
+    const pad = this.snapshotPadPx;
+    const width = this.app.renderer.width + pad * 2;
+    const height = this.app.renderer.height + pad * 2;
+    this.ensureSnapshotTexture(width, height);
+    if (!this.snapshotTexture) return;
+
+    // Capture after the container transform is updated for the current viewport.
+    // Hide the snapshot sprite to avoid feedback rendering.
+    const prevSpriteVisible = this.snapshotSprite.visible;
+    this.snapshotSprite.visible = false;
+
+    const prevContainerVisible = this.container.visible;
+    this.container.visible = true;
+
+    // Render stage into the render texture, offset by padding so small pans don't show empty edges.
+    const transform = new PIXI.Matrix().translate(pad, pad);
+    this.app.renderer.render({
+      container: this.app.stage,
+      target: this.snapshotTexture,
+      transform,
+      clearColor: [0, 0, 0, 0],
+    });
+
+    this.container.visible = prevContainerVisible;
+    this.snapshotSprite.visible = prevSpriteVisible;
+
+    this.snapshotSprite.texture = this.snapshotTexture;
+    this.snapshotDirty = false;
+  }
+
+  private upsertSpatialEntry(annotation: Annotation): void {
+    const bounds = annotation.shape.bounds;
+    const existing = this.spatialEntryById.get(annotation.id);
+    if (existing) {
+      this.spatialIndex.remove(existing);
+    }
+
+    const entry: SpatialEntry = {
+      minX: bounds.minX,
+      minY: bounds.minY,
+      maxX: bounds.maxX,
+      maxY: bounds.maxY,
+      id: annotation.id,
+    };
+    this.spatialIndex.insert(entry);
+    this.spatialEntryById.set(annotation.id, entry);
+  }
+
+  private updateEntryRenderCache(id: string): void {
+    const entry = this.annotationMap.get(id);
+    if (!entry) return;
+    entry.lastRenderedScale = this.scale;
+    entry.lastRenderedState = {
+      hovered: this.hoveredId === id,
+      selected: this.selectedIds.has(id),
+    };
   }
 
   /**
@@ -108,13 +262,8 @@ export class PixiStage {
    * Add annotation to stage
    */
   addAnnotation(annotation: Annotation): void {
-    // Check filter
-    if (this.filter && !this.filter(annotation)) {
-      return;
-    }
-
-    // Don't check layer visibility here - let renderAnnotation handle it
-    // This allows annotations to be shown/hidden when layer visibility changes
+    // Note: We intentionally keep all annotations on the stage even when filtered out.
+    // Filter is applied during rendering/culling so changing filters can reveal previously-hidden annotations.
 
     // Remove existing if present
     this.removeAnnotation(annotation);
@@ -128,9 +277,12 @@ export class PixiStage {
 
     this.annotationMap.set(annotation.id, { annotation, graphics });
     this.container.addChild(graphics);
+    this.upsertSpatialEntry(annotation);
 
     // Render the annotation
     this.renderAnnotation(annotation.id);
+    this.updateEntryRenderCache(annotation.id);
+    this.snapshotDirty = true;
   }
 
   /**
@@ -146,6 +298,7 @@ export class PixiStage {
 
     // Update the annotation reference in the map
     entry.annotation = newAnnotation;
+    this.upsertSpatialEntry(newAnnotation);
 
     // Invalidate cache to force re-render
     entry.lastRenderedScale = undefined;
@@ -153,6 +306,8 @@ export class PixiStage {
 
     // Re-render with updated annotation
     this.renderAnnotation(newAnnotation.id);
+    this.updateEntryRenderCache(newAnnotation.id);
+    this.snapshotDirty = true;
   }
 
   /**
@@ -174,6 +329,14 @@ export class PixiStage {
 
       this.annotationMap.delete(id);
     }
+
+    const spatialEntry = this.spatialEntryById.get(id);
+    if (spatialEntry) {
+      this.spatialIndex.remove(spatialEntry);
+      this.spatialEntryById.delete(id);
+    }
+    this.visibleIds.delete(id);
+    this.snapshotDirty = true;
   }
 
   /**
@@ -185,14 +348,23 @@ export class PixiStage {
 
     const { annotation, graphics } = entry;
 
+    // Check filter - hide if filtered out
+    if (this.filter && !this.filter(annotation)) {
+      graphics.visible = false;
+      if (entry.sprite) entry.sprite.visible = false;
+      return;
+    }
+
     // Check layer visibility - hide graphics if layer is not visible
     if (this.layerManager && !isAnnotationVisible(annotation, this.layerManager)) {
       graphics.visible = false;
+      if (entry.sprite) entry.sprite.visible = false;
       return;
     }
 
     // Make sure graphics is visible
     graphics.visible = true;
+    if (entry.sprite) entry.sprite.visible = true;
 
     // Compute style
     const computedStyle = computeStyle(annotation, this.style, {
@@ -301,6 +473,7 @@ export class PixiStage {
       entry.lastRenderedState = undefined;
     });
     this.redraw();
+    this.snapshotDirty = true;
   }
 
   /**
@@ -308,13 +481,8 @@ export class PixiStage {
    */
   setFilter(filter?: Filter): void {
     this.filter = filter;
-
-    // Re-add all annotations (filter will be applied)
-    const annotations = Array.from(this.annotationMap.values()).map(e => e.annotation);
-    this.annotationMap.clear();
-    this.container.removeChildren();
-
-    annotations.forEach(annotation => this.addAnnotation(annotation));
+    this.redraw();
+    this.snapshotDirty = true;
   }
 
   /**
@@ -323,6 +491,8 @@ export class PixiStage {
   setVisible(visible: boolean): void {
     this.visible = visible;
     this.container.visible = visible;
+    if (this.snapshotSprite) this.snapshotSprite.visible = false;
+    this.snapshotDirty = true;
   }
 
   /**
@@ -337,10 +507,13 @@ export class PixiStage {
     // Re-render affected annotations
     if (prevHoveredId) {
       this.renderAnnotation(prevHoveredId);
+      this.updateEntryRenderCache(prevHoveredId);
     }
     if (id) {
       this.renderAnnotation(id);
+      this.updateEntryRenderCache(id);
     }
+    this.snapshotDirty = true;
   }
 
   /**
@@ -352,7 +525,11 @@ export class PixiStage {
 
     // Re-render affected annotations
     const affectedIds = new Set([...prevSelectedIds, ...this.selectedIds]);
-    affectedIds.forEach(id => this.renderAnnotation(id));
+    affectedIds.forEach(id => {
+      this.renderAnnotation(id);
+      this.updateEntryRenderCache(id);
+    });
+    this.snapshotDirty = true;
   }
 
   /**
@@ -366,9 +543,22 @@ export class PixiStage {
    * Redraw all annotations (immediate execution for perfect sync)
    */
   redraw(): void {
-    // Execute immediately for perfect sync with OpenSeadragon viewport
-    // OSD's event handlers already provide natural throttling
+    if (this.redrawRafId !== null) {
+      cancelAnimationFrame(this.redrawRafId);
+      this.redrawRafId = null;
+    }
     this.performRedraw();
+  }
+
+  /**
+   * Schedule a redraw on the next animation frame (coalesces bursts of viewport events)
+   */
+  requestRedraw(): void {
+    if (this.redrawRafId !== null) return;
+    this.redrawRafId = requestAnimationFrame(() => {
+      this.redrawRafId = null;
+      this.performRedraw();
+    });
   }
 
   /**
@@ -379,9 +569,12 @@ export class PixiStage {
 
     // ANNOTORIOUS PATTERN: Get current scale
     // From stageRenderer.ts line 185-189
+    const prevScale = this.scale;
     const containerWidth = this.viewer.viewport.getContainerSize().x;
     const zoom = this.viewer.viewport.getZoom(true);
     this.scale = (zoom * containerWidth) / this.viewer.world.getContentFactor();
+    const scaleChangedSignificantly =
+      !prevScale || Math.abs(prevScale - this.scale) / this.scale > 0.01;
 
     // ANNOTORIOUS PATTERN: Get viewport bounds in image coordinates
     // From stageRenderer.ts line 197
@@ -398,6 +591,36 @@ export class PixiStage {
     this.container.position.set(dx, dy);
     this.container.scale.set(this.scale, this.scale);
 
+    if (this.interacting) {
+      // During interaction, render as a single cached image for maximum pan/zoom speed.
+      if (this.captureSnapshotOnNextRedraw || this.snapshotDirty) {
+        this.snapshotBaseScale = this.scale;
+        this.snapshotBaseDx = dx;
+        this.snapshotBaseDy = dy;
+        this.updateSnapshot();
+        this.captureSnapshotOnNextRedraw = false;
+      }
+
+      if (this.snapshotSprite && this.snapshotTexture) {
+        const r = this.scale / this.snapshotBaseScale;
+        const pad = this.snapshotPadPx;
+
+        this.snapshotSprite.visible = true;
+        this.container.visible = false;
+
+        this.snapshotSprite.scale.set(r, r);
+        this.snapshotSprite.position.set(dx - r * this.snapshotBaseDx - r * pad, dy - r * this.snapshotBaseDy - r * pad);
+      }
+
+      // Force a render immediately to stay synced with the viewer tiles.
+      this.app.renderer.render({ container: this.app.stage });
+      return;
+    }
+
+    // Not interacting: render true vector annotations
+    if (this.snapshotSprite) this.snapshotSprite.visible = false;
+    this.container.visible = true;
+
     // Viewport culling: Only render annotations visible in current viewport
     // Add margin to include annotations just outside viewport (prevents pop-in)
     const margin = 100; // pixels
@@ -408,68 +631,89 @@ export class PixiStage {
       maxY: viewportBounds.y + viewportBounds.height + margin / this.scale,
     };
 
-    // Render only visible annotations
-    // Smart caching: only re-render graphics if LOD or state changed
-    let culled = 0;
-    let visible = 0;
-    let rerendered = 0;
+    // Query spatial index so culling work scales with "visible in viewport", not "all annotations"
+    const visibleEntries = this.spatialIndex.search(viewportWithMargin);
+    const visibleEntryIds = new Set<string>();
+    for (const e of visibleEntries) visibleEntryIds.add(e.id);
+    const nextVisibleIds = new Set<string>();
 
-    this.annotationMap.forEach((entry, id) => {
-      const bounds = entry.annotation.shape.bounds;
+    // Hide previously-visible annotations that are no longer in view
+    for (const id of this.visibleIds) {
+      // Avoid map lookup work unless we need to hide
+      // (Most IDs remain visible during small pans)
+      if (visibleEntryIds.has(id)) continue;
+      const entry = this.annotationMap.get(id);
+      if (!entry) continue;
+      entry.graphics.visible = false;
+      if (entry.sprite) entry.sprite.visible = false;
+    }
 
-      // Check if annotation bounds intersect with viewport
-      const isVisible =
-        bounds.maxX >= viewportWithMargin.minX &&
-        bounds.minX <= viewportWithMargin.maxX &&
-        bounds.maxY >= viewportWithMargin.minY &&
-        bounds.minY <= viewportWithMargin.maxY;
+    // Render only visible annotations; on pure pans we try hard to avoid per-annotation work
+    for (const spatialEntry of visibleEntries) {
+      const id = spatialEntry.id;
+      nextVisibleIds.add(id);
 
-      if (isVisible) {
-        // Check layer visibility before showing
-        const layerVisible = !this.layerManager || isAnnotationVisible(entry.annotation, this.layerManager);
-        entry.graphics.visible = layerVisible;
-        visible++;
+      const entry = this.annotationMap.get(id);
+      if (!entry) continue;
 
-        // Check if we need to re-render the graphics
-        const currentState = {
-          hovered: this.hoveredId === id,
-          selected: this.selectedIds.has(id),
-        };
+      const wasVisible = this.visibleIds.has(id);
 
-        const pixelSize = this.getAnnotationPixelSize(entry.annotation);
-        const isComplexShape = entry.annotation.shape.type !== 'point';
-        const currentLOD = isComplexShape && pixelSize < 3;
-        const lastLOD = entry.lastRenderedScale
-          ? isComplexShape &&
-            this.getAnnotationPixelSizeAtScale(entry.annotation, entry.lastRenderedScale) < 3
-          : null;
-
-        const stateChanged =
-          !entry.lastRenderedState ||
-          entry.lastRenderedState.hovered !== currentState.hovered ||
-          entry.lastRenderedState.selected !== currentState.selected;
-
-        const lodChanged = lastLOD !== currentLOD;
-
-        // Check if scale changed significantly (for counter-scaled elements)
-        // Use 1% threshold - smaller changes are visually imperceptible
-        const scaleChanged =
-          !entry.lastRenderedScale ||
-          Math.abs(entry.lastRenderedScale - this.scale) / this.scale > 0.01;
-
-        // Re-render if state, LOD, or scale changed
-        if (stateChanged || lodChanged || scaleChanged) {
-          this.renderAnnotation(id);
-          entry.lastRenderedScale = this.scale;
-          entry.lastRenderedState = currentState;
-          rerendered++;
-        }
-      } else {
-        // Hide off-screen annotation (no re-render needed)
+      // Apply filter/layer visibility before doing any heavier work
+      if (this.filter && !this.filter(entry.annotation)) {
         entry.graphics.visible = false;
-        culled++;
+        if (entry.sprite) entry.sprite.visible = false;
+        continue;
       }
-    });
+
+      const layerVisible = !this.layerManager || isAnnotationVisible(entry.annotation, this.layerManager);
+      entry.graphics.visible = layerVisible;
+      if (entry.sprite) entry.sprite.visible = layerVisible;
+      if (!layerVisible) continue;
+
+      // Fast path: during pans (scale unchanged) and for already-visible annotations,
+      // the geometry/style caches are still valid, so avoid any LOD/state checks.
+      if (!this.vectorNeedsRefresh && !scaleChangedSignificantly && wasVisible) {
+        continue;
+      }
+
+      const currentState = {
+        hovered: this.hoveredId === id,
+        selected: this.selectedIds.has(id),
+      };
+
+      const pixelSize = this.getAnnotationPixelSize(entry.annotation);
+      const isComplexShape = entry.annotation.shape.type !== 'point';
+      const currentLOD = isComplexShape && pixelSize < 3;
+      const lastLOD = entry.lastRenderedScale
+        ? isComplexShape && this.getAnnotationPixelSizeAtScale(entry.annotation, entry.lastRenderedScale) < 3
+        : null;
+
+      const stateChanged =
+        !entry.lastRenderedState ||
+        entry.lastRenderedState.hovered !== currentState.hovered ||
+        entry.lastRenderedState.selected !== currentState.selected;
+
+      const lodChanged = lastLOD !== currentLOD;
+
+      // Use 1% threshold - smaller changes are visually imperceptible
+      const scaleChanged =
+        this.vectorNeedsRefresh ||
+        !entry.lastRenderedScale || Math.abs(entry.lastRenderedScale - this.scale) / this.scale > 0.01;
+
+      if (stateChanged || lodChanged || scaleChanged) {
+        this.renderAnnotation(id);
+        this.updateEntryRenderCache(id);
+      } else if (!wasVisible) {
+        // Newly visible but cache still valid; ensure caches reflect current state/scale.
+        this.updateEntryRenderCache(id);
+      }
+    }
+
+    this.visibleIds = nextVisibleIds;
+    this.vectorNeedsRefresh = false;
+
+    // Force an immediate render so the overlay doesn't trail behind the OSD tiles.
+    this.app.renderer.render({ container: this.app.stage });
 
     // Performance logging (can be disabled in production)
     // Disabled to avoid requiring @types/node in browser environment
@@ -484,6 +728,7 @@ export class PixiStage {
    */
   resize(width: number, height: number): void {
     this.app.renderer.resize(width, height);
+    this.snapshotDirty = true;
     this.redraw();
   }
 
@@ -517,7 +762,8 @@ export class PixiStage {
     });
     
     // Trigger a redraw to handle culling and other state updates
-    this.redraw();
+    this.requestRedraw();
+    this.snapshotDirty = true;
   }
 
   /**
@@ -526,11 +772,30 @@ export class PixiStage {
   destroy(): void {
     // Unobserve layer changes
     if (this.layerManager) {
-      this.layerManager.unobserve(this.handleLayerChange.bind(this));
+      if (this.boundHandleLayerChange) {
+        this.layerManager.unobserve(this.boundHandleLayerChange);
+      }
     }
 
     this.annotationMap.forEach(entry => entry.graphics.destroy());
     this.annotationMap.clear();
+    this.spatialIndex.clear();
+    this.spatialEntryById.clear();
+    this.visibleIds.clear();
+
+    if (this.snapshotSprite) {
+      this.snapshotSprite.destroy();
+      this.snapshotSprite = null;
+    }
+    if (this.snapshotTexture) {
+      this.snapshotTexture.destroy(true);
+      this.snapshotTexture = null;
+    }
+
+    if (this.redrawRafId !== null) {
+      cancelAnimationFrame(this.redrawRafId);
+      this.redrawRafId = null;
+    }
     this.app.destroy(true, { children: true, texture: true });
   }
 }
