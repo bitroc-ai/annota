@@ -782,12 +782,24 @@ export default function CompatibilityTestPage() {
     setTestResults(results);
   };
 
+  // Detect if WebGL is likely to fail (macOS 13 Safari issue)
+  const shouldUseCanvasFallback = () => {
+    if (drawerMode !== "webgl") return false;
+    const ua = navigator.userAgent.toLowerCase();
+    const isMacOS13 =
+      ua.includes("mac os x") &&
+      (ua.includes("version/16") || ua.includes("version/17"));
+    const isSafari = ua.includes("safari") && !ua.includes("chrome");
+    return isMacOS13 && isSafari;
+  };
+
   // Dynamically load and initialize OpenSeadragon viewer
   useEffect(() => {
     if (!viewerRef.current) return;
 
     let currentViewer: OpenSeadragon.Viewer | null = null;
     let isMounted = true;
+    let webglCheckTimeout: NodeJS.Timeout | null = null;
 
     const initViewer = async () => {
       try {
@@ -801,6 +813,11 @@ export default function CompatibilityTestPage() {
 
         if (!isMounted || !viewerRef.current) return;
 
+        // Use canvas mode if WebGL is known to fail on this browser
+        const effectiveDrawer = shouldUseCanvasFallback()
+          ? "canvas"
+          : drawerMode;
+
         // OpenSeadragon is a function that creates a viewer
         currentViewer = OSD({
           element: viewerRef.current,
@@ -808,15 +825,73 @@ export default function CompatibilityTestPage() {
             type: "image",
             url: imageUrl,
           },
-          ...(drawerMode === "canvas"
+          ...(effectiveDrawer === "canvas"
             ? { drawer: "canvas" }
             : { drawer: "webgl" }),
           showNavigationControl: false,
           visibilityRatio: 1,
         } as OpenSeadragon.Options & { drawer?: string });
 
+        // If using WebGL, check if it's actually rendering after a delay
+        if (effectiveDrawer === "webgl" && drawerMode === "webgl") {
+          const checkWebGLRendering = () => {
+            if (!currentViewer || !isMounted) return;
+
+            const osdCanvas = currentViewer.element?.querySelector(
+              ".openseadragon-canvas"
+            );
+            if (!osdCanvas) return;
+
+            const imageCanvas = osdCanvas.querySelector(
+              "canvas:not(.annota-pixi-canvas)"
+            ) as HTMLCanvasElement;
+
+            if (imageCanvas && currentViewer) {
+              // Try to detect if WebGL is actually rendering by checking canvas state
+              // On macOS 13 Safari, WebGL canvas may have dimensions but be blank
+              const gl = (imageCanvas.getContext("webgl") ||
+                imageCanvas.getContext(
+                  "experimental-webgl"
+                )) as WebGLRenderingContext | null;
+
+              if (gl) {
+                // Check if there's any texture bound or if rendering happened
+                try {
+                  const params = gl.getParameter(gl.TEXTURE_BINDING_2D);
+                  // If no texture is bound and canvas appears blank, WebGL likely failed
+                  // Auto-switch to canvas mode
+                  if (
+                    !params &&
+                    imageCanvas.width > 0 &&
+                    imageCanvas.height > 0
+                  ) {
+                    console.warn(
+                      "WebGL appears to not be rendering on macOS 13 Safari. Consider using canvas mode."
+                    );
+                    // Don't auto-switch here - let user manually switch via the dropdown
+                  }
+                } catch (e) {
+                  // WebGL context might not support this check
+                  console.warn("Could not check WebGL texture binding:", e);
+                }
+              }
+            }
+          };
+
+          // Check after image loads
+          if (currentViewer) {
+            currentViewer.addHandler("open", () => {
+              webglCheckTimeout = setTimeout(checkWebGLRendering, 500);
+            });
+          }
+        }
+
         if (isMounted) {
           setViewer(currentViewer);
+          // If we auto-switched to canvas, update the drawer mode state
+          if (effectiveDrawer !== drawerMode) {
+            setDrawerMode("canvas");
+          }
         }
       } catch (error) {
         console.error(
@@ -830,6 +905,9 @@ export default function CompatibilityTestPage() {
 
     return () => {
       isMounted = false;
+      if (webglCheckTimeout) {
+        clearTimeout(webglCheckTimeout);
+      }
       if (currentViewer) {
         try {
           // Remove all handlers before destroying to prevent errors
@@ -853,6 +931,22 @@ export default function CompatibilityTestPage() {
             This page tests PNG image loading and rendering across different
             methods to diagnose WebKit/Safari compatibility issues on macOS 13.
           </p>
+
+          {/* WebGL Warning for macOS 13 Safari */}
+          {browserInfo && shouldUseCanvasFallback() && (
+            <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-700 rounded-lg">
+              <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                ⚠️ WebGL Compatibility Issue Detected
+              </h3>
+              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                macOS 13 Safari has a known issue where PNG images don't display
+                correctly in WebGL mode. The viewer will automatically use
+                Canvas mode for better compatibility. If the image still doesn't
+                appear, try manually switching to Canvas mode using the dropdown
+                below.
+              </p>
+            </div>
+          )}
 
           {/* Browser Info */}
           {browserInfo && (
