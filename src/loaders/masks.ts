@@ -213,34 +213,49 @@ async function loadMask8bit(
       hierarchy.delete();
     } else {
       // Instance mask: multiple instances with unique 8-bit IDs
-      const instanceIds = new Set<number>();
-      const pixelCount = img.width * img.height;
-      for (let i = 0; i < pixelCount; i++) {
-        const value = rawData[i * bytesPerPixel];
-        if (value > 0) {
-          instanceIds.add(value);
+      // Optimized: Collect bounding boxes first to avoid repetitive O(W*H) scans
+      const bboxes = new Map<number, {minX: number, minY: number, maxX: number, maxY: number, count: number}>();
+      for (let y = 0; y < img.height; y++) {
+        for (let x = 0; x < img.width; x++) {
+          const val = rawData[(y * img.width + x) * bytesPerPixel];
+          if (val > 0) {
+            let b = bboxes.get(val);
+            if (!b) {
+              b = { minX: x, minY: y, maxX: x, maxY: y, count: 0 };
+              bboxes.set(val, b);
+            }
+            if (x < b.minX) b.minX = x;
+            if (x > b.maxX) b.maxX = x;
+            if (y < b.minY) b.minY = y;
+            if (y > b.maxY) b.maxY = y;
+            b.count++;
+          }
         }
       }
 
-      // Process each instance
-      for (const instanceId of instanceIds) {
-        const binaryData = new Uint8Array(pixelCount);
-        let instancePixelCount = 0;
+      // Process each instance using its bounding box
+      for (const [instanceId, b] of bboxes.entries()) {
+        if (b.count < 15) continue;
 
-        for (let i = 0; i < pixelCount; i++) {
-          const pixelIndex = i * bytesPerPixel;
-          if (rawData[pixelIndex] === instanceId) {
-            binaryData[i] = 255;
-            instancePixelCount++;
-          } else {
-            binaryData[i] = 0;
+        const w = b.maxX - b.minX + 1;
+        const h = b.maxY - b.minY + 1;
+        // Padding for OpenCV contours
+        const sw = w + 2;
+        const sh = h + 2;
+
+        const subBinaryData = new Uint8Array(sw * sh);
+        for (let y = 0; y < h; y++) {
+          const srcRow = (y + b.minY) * img.width + b.minX;
+          const dstRow = (y + 1) * sw + 1;
+          for (let x = 0; x < w; x++) {
+            if (rawData[(srcRow + x) * bytesPerPixel] === instanceId) {
+              subBinaryData[dstRow + x] = 255;
+            }
           }
         }
 
-        if (instancePixelCount < 15) continue;
-
-        const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
-        gray.data.set(binaryData);
+        const gray = new cv.Mat(sh, sw, cv.CV_8UC1);
+        gray.data.set(subBinaryData);
 
         const binary = new cv.Mat();
         cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
@@ -263,8 +278,8 @@ async function loadMask8bit(
           const points: import('../core/types').Point[] = [];
           for (let j = 0; j < approx.data32S.length; j += 2) {
             points.push({
-              x: approx.data32S[j],
-              y: approx.data32S[j + 1],
+              x: approx.data32S[j] + b.minX - 1,
+              y: approx.data32S[j + 1] + b.minY - 1,
             });
           }
           approx.delete();
@@ -332,13 +347,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
       data16[i] = (data8[i * 2] << 8) | data8[i * 2 + 1];
     }
 
-    // Find unique instance IDs (excluding 0 = background)
-    const instanceIds = new Set<number>();
-    for (let i = 0; i < data16.length; i++) {
-      if (data16[i] > 0) {
-        instanceIds.add(data16[i]);
-      }
-    }
+
 
 
     // Initialize OpenCV if needed
@@ -364,30 +373,53 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
     let processedCount = 0;
     let skippedCount = 0;
 
-    for (const instanceId of instanceIds) {
-      // Create binary mask for this instance only
-      const binaryData = new Uint8Array(img.width * img.height);
-      let pixelCount = 0;
-      for (let i = 0; i < data16.length; i++) {
-        if (data16[i] === instanceId) {
-          binaryData[i] = 255;
-          pixelCount++;
-        } else {
-          binaryData[i] = 0;
+    // Optimized: Collect bounding boxes first to avoid repetitive O(W*H) scans
+    const bboxes = new Map<number, {minX: number, minY: number, maxX: number, maxY: number, count: number}>();
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        const val = data16[y * img.width + x];
+        if (val > 0) {
+          let b = bboxes.get(val);
+          if (!b) {
+            b = { minX: x, minY: y, maxX: x, maxY: y, count: 0 };
+            bboxes.set(val, b);
+          }
+          if (x < b.minX) b.minX = x;
+          if (x > b.maxX) b.maxX = x;
+          if (y < b.minY) b.minY = y;
+          if (y > b.maxY) b.maxY = y;
+          b.count++;
         }
       }
+    }
 
-      // Skip instances with very few pixels (likely noise)
-      if (pixelCount < 15) {
+    // Process each instance separately
+    for (const [instanceId, b] of bboxes.entries()) {
+      if (b.count < 15) {
         skippedCount++;
         continue;
       }
 
       processedCount++;
 
-      // Create OpenCV Mat directly from binary data (avoid ImageData retina scaling)
-      const gray = new cv.Mat(img.height, img.width, cv.CV_8UC1);
-      gray.data.set(binaryData);
+      const w = b.maxX - b.minX + 1;
+      const h = b.maxY - b.minY + 1;
+      const sw = w + 2;
+      const sh = h + 2;
+
+      const subBinaryData = new Uint8Array(sw * sh);
+      for (let y = 0; y < h; y++) {
+        const srcRow = (y + b.minY) * img.width + b.minX;
+        const dstRow = (y + 1) * sw + 1;
+        for (let x = 0; x < w; x++) {
+          if (data16[srcRow + x] === instanceId) {
+            subBinaryData[dstRow + x] = 255;
+          }
+        }
+      }
+
+      const gray = new cv.Mat(sh, sw, cv.CV_8UC1);
+      gray.data.set(subBinaryData);
 
       // Apply binary threshold to ensure proper binarization
       const binary = new cv.Mat();
@@ -417,8 +449,8 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
         const points: import('../core/types').Point[] = [];
         for (let j = 0; j < approx.data32S.length; j += 2) {
           points.push({
-            x: approx.data32S[j],
-            y: approx.data32S[j + 1],
+            x: approx.data32S[j] + b.minX - 1,
+            y: approx.data32S[j + 1] + b.minY - 1,
           });
         }
         approx.delete();
