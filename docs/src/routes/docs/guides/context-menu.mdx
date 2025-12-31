@@ -1,0 +1,330 @@
+---
+title: Context Menu
+description: Add custom right-click context menus to annotations and the viewer
+---
+
+# Context Menu
+
+Annota provides a flexible context menu system that allows you to add custom right-click menus to both the viewer and individual annotations. The context menu system supports automatic positioning, keyboard navigation, and styled menu items.
+
+## Overview
+
+The context menu system consists of three main parts:
+
+1. **`useContextMenu`** - Hook for managing context menu state
+2. **`useContextMenuBinding`** - Hook for automatically binding context menu events to the canvas
+3. **`ContextMenu`, `ContextMenuItem`, `ContextMenuDivider`** - Components for rendering the menu
+
+## Basic Usage
+
+Here's a complete example showing how to add a context menu with common actions:
+
+```tsx
+import {
+  ContextMenu,
+  ContextMenuItem,
+  ContextMenuDivider,
+  useContextMenu,
+  useContextMenuBinding,
+  useAnnotator
+} from 'annota';
+
+function MyAnnotationViewer() {
+  const annotator = useAnnotator();
+  const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+
+  // Automatically bind context menu to canvas right-clicks
+  useContextMenuBinding(showViewerMenu, showAnnotationMenu);
+
+  const handleDelete = () => {
+    if (menuState.annotation) {
+      annotator.deleteAnnotation(menuState.annotation.id);
+      hideMenu();
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (menuState.annotation) {
+      const copy = { ...menuState.annotation, id: crypto.randomUUID() };
+      annotator.addAnnotation(copy);
+      hideMenu();
+    }
+  };
+
+  return (
+    <>
+      {/* Your viewer components */}
+
+      <ContextMenu position={menuState.position} onClose={hideMenu}>
+        {menuState.type === 'viewer' && (
+          <>
+            <ContextMenuItem label="Paste" onClick={() => console.log('Paste')} />
+            <ContextMenuItem label="Select All" onClick={() => console.log('Select all')} />
+          </>
+        )}
+
+        {menuState.type === 'annotation' && (
+          <>
+            <ContextMenuItem label="Edit" onClick={() => console.log('Edit')} />
+            <ContextMenuItem label="Duplicate" onClick={handleDuplicate} />
+            <ContextMenuDivider />
+            <ContextMenuItem
+              label="Delete"
+              onClick={handleDelete}
+              danger
+            />
+          </>
+        )}
+      </ContextMenu>
+    </>
+  );
+}
+```
+
+## Hooks
+
+### useContextMenu
+
+Manages the state of the context menu, including position and what was clicked.
+
+```tsx
+const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+```
+
+**Returns:**
+- `menuState` - Current menu state with `position`, `annotation`, and `type` ('viewer' or 'annotation')
+- `showViewerMenu(x, y)` - Show menu at position for viewer clicks
+- `showAnnotationMenu(annotation, x, y)` - Show menu at position for annotation clicks
+- `hideMenu()` - Close the menu
+
+### useContextMenuBinding
+
+Automatically binds context menu events to the viewer canvas. Handles right-click detection and determines whether to show a viewer or annotation menu based on what was clicked.
+
+```tsx
+useContextMenuBinding(showViewerMenu, showAnnotationMenu);
+```
+
+**Parameters:**
+- `showViewerMenu` - Function to show viewer context menu
+- `showAnnotationMenu` - Function to show annotation context menu
+
+The hook automatically:
+- Prevents the default browser context menu
+- Detects if an annotation was clicked (with the same hit tolerance as left-click)
+- Shows the appropriate menu type
+
+## Components
+
+### ContextMenu
+
+The main container for the context menu. Handles positioning, outside clicks, and escape key.
+
+```tsx
+<ContextMenu
+  position={menuState.position}
+  onClose={hideMenu}
+  className="my-custom-menu"
+  zIndex={10000}
+>
+  {/* Menu items */}
+</ContextMenu>
+```
+
+**Props:**
+- `position` - `{ x: number, y: number } | null` - Menu position in screen coordinates
+- `onClose?` - Callback when menu should close
+- `className?` - Custom CSS class for styling
+- `zIndex?` - Z-index for the menu (default: 10000)
+
+**Features:**
+- Automatically adjusts position to stay within viewport
+- Closes on outside click or Escape key
+- Prevents nested context menus
+
+### ContextMenuItem
+
+A pre-styled menu item with support for icons, disabled state, and danger styling.
+
+```tsx
+<ContextMenuItem
+  label="Delete"
+  onClick={handleDelete}
+  icon={<TrashIcon />}
+  danger
+  disabled={false}
+/>
+```
+
+**Props:**
+- `label` - Item text
+- `onClick?` - Click handler
+- `icon?` - Optional icon element
+- `disabled?` - Disabled state (default: false)
+- `danger?` - Danger/destructive styling (default: false)
+- `className?` - Custom CSS class
+
+### ContextMenuDivider
+
+A simple divider to separate menu sections.
+
+```tsx
+<ContextMenuDivider />
+```
+
+## Advanced Examples
+
+### Conditional Menu Items
+
+Show different menu items based on annotation properties:
+
+```tsx
+<ContextMenu position={menuState.position} onClose={hideMenu}>
+  {menuState.type === 'annotation' && (
+    <>
+      <ContextMenuItem
+        label="Edit Vertices"
+        onClick={handleEditVertices}
+        disabled={menuState.annotation?.shape.type === 'point'}
+      />
+      <ContextMenuItem
+        label="Change Color"
+        onClick={handleChangeColor}
+      />
+      {menuState.annotation?.locked ? (
+        <ContextMenuItem label="Unlock" onClick={handleUnlock} />
+      ) : (
+        <ContextMenuItem label="Lock" onClick={handleLock} />
+      )}
+      <ContextMenuDivider />
+      <ContextMenuItem
+        label="Delete"
+        onClick={handleDelete}
+        danger
+      />
+    </>
+  )}
+</ContextMenu>
+```
+
+### Custom Menu Items
+
+Create fully custom menu items without using `ContextMenuItem`:
+
+```tsx
+<ContextMenu position={menuState.position} onClose={hideMenu}>
+  <div className="custom-menu-item" onClick={handleAction}>
+    <span className="icon">🎨</span>
+    <div>
+      <div className="title">Custom Action</div>
+      <div className="subtitle">With subtitle</div>
+    </div>
+    <kbd>⌘K</kbd>
+  </div>
+</ContextMenu>
+```
+
+### Layer-Specific Actions
+
+Show menu items based on the annotation's layer:
+
+```tsx
+const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+const { getLayer } = useLayerManager();
+
+const handleMoveToLayer = (layerId: string) => {
+  if (menuState.annotation) {
+    annotator.updateAnnotation(menuState.annotation.id, {
+      ...menuState.annotation,
+      layerId,
+    });
+    hideMenu();
+  }
+};
+
+return (
+  <ContextMenu position={menuState.position} onClose={hideMenu}>
+    {menuState.type === 'annotation' && (
+      <>
+        <div className="annota-context-menu-header">Move to Layer</div>
+        <ContextMenuItem label="Layer 1" onClick={() => handleMoveToLayer('layer1')} />
+        <ContextMenuItem label="Layer 2" onClick={() => handleMoveToLayer('layer2')} />
+        <ContextMenuDivider />
+        <ContextMenuItem label="Delete" onClick={handleDelete} danger />
+      </>
+    )}
+  </ContextMenu>
+);
+```
+
+### Manual Menu Triggering
+
+You can also trigger the context menu manually without using `useContextMenuBinding`:
+
+```tsx
+const { showAnnotationMenu, hideMenu } = useContextMenu();
+
+const handleButtonClick = (annotation: Annotation, event: React.MouseEvent) => {
+  showAnnotationMenu(annotation, event.clientX, event.clientY);
+};
+
+return (
+  <button onClick={(e) => handleButtonClick(myAnnotation, e)}>
+    Show Menu
+  </button>
+);
+```
+
+## Styling
+
+The context menu components use CSS classes that you can customize:
+
+```css
+/* Main menu container */
+.annota-context-menu {
+  /* Your styles */
+}
+
+/* Menu item */
+.annota-context-menu-item {
+  /* Your styles */
+}
+
+/* Disabled item */
+.annota-context-menu-item[data-disabled="true"] {
+  /* Your styles */
+}
+
+/* Danger/destructive item */
+.annota-context-menu-item[data-danger="true"] {
+  /* Your styles */
+}
+
+/* Divider */
+.annota-context-menu-divider {
+  /* Your styles */
+}
+
+/* Header (for section labels) */
+.annota-context-menu-header {
+  /* Your styles */
+}
+```
+
+Default styles are included in `annota/dist/index.css` and provide a clean, modern look with dark mode support.
+
+## Best Practices
+
+1. **Always close the menu after actions** - Call `hideMenu()` in your click handlers
+2. **Use danger styling for destructive actions** - Set `danger={true}` for delete/remove actions
+3. **Disable unavailable actions** - Use `disabled={true}` instead of hiding items
+4. **Group related actions** - Use `ContextMenuDivider` to separate action groups
+5. **Keep menus concise** - Too many items make menus harder to use
+6. **Consider keyboard shortcuts** - Show keyboard shortcuts in menu items for advanced users
+
+## Related APIs
+
+- [`useAnnotator`](/api/hooks/use-annotator) - Access annotator instance for CRUD operations
+- [`useSelection`](/api/hooks/use-selection) - Manage selected annotations
+- [`useLayerManager`](/api/hooks/use-layer-manager) - Layer operations for context menu actions
+- [ContextMenu Component](/api/components#contextmenu) - Full API reference

@@ -1,0 +1,163 @@
+# Popup System
+
+Annota's popup system provides a flexible way to display and edit annotation properties with smart positioning and user-friendly interactions.
+
+## Basic Usage
+
+Use the `usePopup` hook and `AnnotationPopup` component:
+
+```tsx
+import { AnnotationPopup, usePopup, useAnnotationDoubleClick } from 'annota';
+
+function PopupEditor({ viewer }: { viewer: OpenSeadragon.Viewer | undefined }) {
+  const popup = usePopup({ autoShow: false });
+
+  // Show popup on double-click
+  useAnnotationDoubleClick(viewer, annotation => {
+    popup.show(annotation.id);
+  });
+
+  if (!popup.annotation) return null;
+
+  return (
+    <AnnotationPopup
+      viewer={viewer}
+      annotation={popup.annotation}
+      onClose={popup.hide}
+    >
+      <div className="popup-content">
+        <h3>Edit Annotation</h3>
+        <button onClick={() => popup.deleteAnnotation(popup.annotation!.id)}>
+          Delete
+        </button>
+      </div>
+    </AnnotationPopup>
+  );
+}
+```
+
+## Auto-show vs Manual Trigger
+
+### Auto-show (Legacy)
+
+Automatically show popup when an annotation is selected:
+
+```tsx
+const popup = usePopup({ autoShow: true });
+```
+
+### Manual Trigger (Recommended)
+
+Show popup only on specific user actions like double-click:
+
+```tsx
+const popup = usePopup({ autoShow: false });
+
+useAnnotationDoubleClick(viewer, annotation => {
+  popup.show(annotation.id);
+});
+```
+
+## Click-outside-to-close
+
+Popups automatically include an overlay that closes the popup when clicked outside:
+
+```tsx
+<AnnotationPopup
+  viewer={viewer}
+  annotation={popup.annotation}
+  onClose={popup.hide} // Called when overlay is clicked
+>
+  {/* Your popup content */}
+</AnnotationPopup>
+```
+
+The overlay has high z-index (10000) to ensure it captures all clicks outside the popup.
+
+## Adaptive Positioning
+
+Popups automatically adjust their position to stay within the viewport:
+
+```tsx
+<AnnotationPopup
+  viewer={viewer}
+  annotation={popup.annotation}
+  options={{
+    anchor: 'top-center',    // Preferred position
+    offset: { x: 0, y: -10 }, // Offset from anchor
+  }}
+>
+  {/* Content */}
+</AnnotationPopup>
+```
+
+Available anchor positions:
+- `top-left`, `top-center`, `top-right`
+- `bottom-left`, `bottom-center`, `bottom-right`
+- `center`
+
+The popup will automatically flip to the opposite side if there's not enough space.
+
+## Editing Annotation Properties
+
+Use the popup helper methods to update annotations:
+
+```tsx
+function PopupEditor({ viewer }: { viewer: OpenSeadragon.Viewer | undefined }) {
+  const popup = usePopup({ autoShow: false });
+
+  return (
+    <AnnotationPopup viewer={viewer} annotation={popup.annotation} onClose={popup.hide}>
+      <div>
+        <input
+          type="text"
+          value={(popup.annotation?.properties?.label as string) || ''}
+          onChange={(e) =>
+            popup.updateProperties(popup.annotation!.id, {
+              label: e.target.value,
+            })
+          }
+        />
+
+        <button
+          onClick={() =>
+            popup.updateStyle(popup.annotation!.id, {
+              fill: 'rgba(255, 0, 0, 0.3)',
+            })
+          }
+        >
+          Make Red
+        </button>
+      </div>
+    </AnnotationPopup>
+  );
+}
+```
+
+## Real-time Updates
+
+Popups automatically subscribe to annotation store changes, so property updates are immediately reflected:
+
+```tsx
+// Change category
+popup.updateProperties(annotationId, { category: 'negative' });
+
+// The popup immediately shows the new category value
+```
+
+## Styling Popups
+
+Annota provides unstyled popups by default. Add your own CSS:
+
+```css
+.popup-content {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 250px;
+}
+```
+
+Or use a UI library like Radix UI, shadcn/ui, or Material-UI for styled components.

@@ -1,0 +1,76 @@
+# useEditing
+
+Manage vertex editing mode for polygon annotations.
+
+## Signature
+
+```typescript
+interface UseEditingOptions {
+  exitOnClickOutside?: boolean;  // Default: true
+}
+
+interface UseEditingResult {
+  editingAnnotation: Annotation | null;
+  editingId: string | undefined;
+  editMode: 'vertices' | undefined;
+  startEditing: (annotationId: string, mode?: 'vertices') => void;
+  stopEditing: () => void;
+  isEditing: (annotationId: string) => boolean;
+}
+
+function useEditing(options?: UseEditingOptions): UseEditingResult
+```
+
+## Returns
+
+An object with editing state and control methods.
+
+## Example
+
+```tsx
+import { useEditing, useAnnotationDoubleClick } from 'annota';
+
+function PolygonEditor({ viewer }) {
+  const { editingId, startEditing, stopEditing, isEditing } = useEditing({
+    exitOnClickOutside: true,
+  });
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    if (annotation.shape.type === 'polygon') {
+      startEditing(annotation.id, 'vertices');
+    }
+  });
+
+  return (
+    <div>
+      {editingId && (
+        <button onClick={stopEditing}>Exit Editing Mode</button>
+      )}
+    </div>
+  );
+}
+```
+
+## Options
+
+### exitOnClickOutside (default: `true`)
+When enabled, provides smart click behavior:
+- Clicking empty space exits vertex editing mode
+- Clicking the same annotation stays in editing mode
+- Clicking a different annotation switches to editing the new annotation
+
+## Methods
+
+### startEditing(annotationId, mode?)
+Enter editing mode for the specified annotation.
+
+### stopEditing()
+Exit editing mode.
+
+### isEditing(annotationId)
+Check if a specific annotation is being edited.
+
+## Related
+
+- [Vertex Editing Guide](/docs/guides/vertex-editing) - Editing guide
+- [PolygonEditor Component](/api/components#polygoneditor) - Polygon editor

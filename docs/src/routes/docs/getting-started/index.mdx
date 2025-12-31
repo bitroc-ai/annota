@@ -1,0 +1,69 @@
+# Getting Started
+
+Welcome to Annota! This guide will help you integrate Annota into your application and start annotating medical images.
+
+## What You'll Learn
+
+This getting started section covers:
+
+1. **[Installation](/docs/getting-started/installation)** - Install Annota and its dependencies
+2. **[Quick Start](/docs/getting-started/quick-start)** - Build your first annotation viewer
+3. **[Core Concepts](/docs/getting-started/concepts)** - Understand annotations, layers, and tools
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Node.js** 16+ installed
+- **React** 18+ or 19+ in your project
+- Basic knowledge of React hooks
+- A whole slide image in a supported format (DZI, IIIF, etc.)
+
+## What is Annota?
+
+Annota is a high-performance annotation framework specifically designed for digital pathology and whole slide imaging. It provides:
+
+- **Interactive drawing tools** for creating annotations (points, rectangles, polygons)
+- **Layer management** for organizing annotations
+- **Event system** for responding to annotation changes
+- **Data loaders** for importing annotations from H5, JSON, and other formats
+- **High performance rendering** with PixiJS and WebGL
+
+## Architecture Overview
+
+Annota is built on three core technologies:
+
+- **OpenSeadragon**: For displaying gigapixel images
+- **PixiJS**: For hardware-accelerated annotation rendering
+- **React**: For component-based UI integration
+
+The framework follows a clean separation of concerns:
+
+```
+Your React App
+    ↓
+AnnotaProvider (Context)
+    ↓
+AnnotaViewer (OpenSeadragon)
+    ↓
+Annotator (Annotation Layer)
+    ↓
+Tools (Point, Rectangle, Polygon, etc.)
+```
+
+## Typical Workflow
+
+1. **Install** Annota and OpenSeadragon
+2. **Wrap** your app with `AnnotaProvider`
+3. **Add** `AnnotaViewer` component to display your image
+4. **Initialize** the `Annotator` overlay
+5. **Use** hooks like `useTool` to activate annotation tools
+6. **Access** annotations via `useAnnotations()` hook
+
+## Next Steps
+
+Ready to get started? Head over to the [Installation](/docs/getting-started/installation) guide.
+
+Already installed? Jump to the [Quick Start](/docs/getting-started/quick-start) guide.
+
+Want to understand the core concepts first? Check out [Core Concepts](/docs/getting-started/concepts).

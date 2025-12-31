@@ -1,0 +1,87 @@
+# useLayerManager
+
+Manage annotation layers with full CRUD operations.
+
+## Signature
+
+```typescript
+interface UseLayerManagerResult {
+  layers: Layer[];
+  createLayer(config: LayerConfig): void;
+  updateLayer(id: string, updates: Partial<Layer>): void;
+  deleteLayer(id: string, deleteAnnotations?: boolean): void;
+  getLayer(id: string): Layer | undefined;
+}
+
+function useLayerManager(): UseLayerManagerResult
+```
+
+## Returns
+
+An object with layer management methods and current layers.
+
+## Example
+
+```tsx
+import { useLayerManager } from 'annota';
+
+function LayerPanel() {
+  const { layers, createLayer, updateLayer, deleteLayer } = useLayerManager();
+
+  const handleCreateLayer = () => {
+    createLayer({
+      id: `layer-${Date.now()}`,
+      name: 'New Layer',
+      visible: true,
+      opacity: 1,
+    });
+  };
+
+  const toggleVisibility = (layerId: string, visible: boolean) => {
+    updateLayer(layerId, { visible });
+  };
+
+  return (
+    <div>
+      <button onClick={handleCreateLayer}>Add Layer</button>
+      <ul>
+        {layers.map(layer => (
+          <li key={layer.id}>
+            <input
+              type="checkbox"
+              checked={layer.visible}
+              onChange={(e) => toggleVisibility(layer.id, e.target.checked)}
+            />
+            <span>{layer.name}</span>
+            <button onClick={() => deleteLayer(layer.id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Methods
+
+### createLayer
+
+Create a new layer with the specified configuration.
+
+### updateLayer
+
+Update an existing layer's properties.
+
+### deleteLayer
+
+Delete a layer. If `deleteAnnotations` is true, also deletes all annotations on that layer.
+
+### getLayer
+
+Get a specific layer by ID.
+
+## Related
+
+- [useLayers](/api/hooks/use-layers) - Get all layers (read-only)
+- [useLayer](/api/hooks/use-layer) - Get single layer
+- [Layers Guide](/docs/guides/layers) - Layer management guide

@@ -1,0 +1,42 @@
+<script lang="ts">
+  import { cn } from "$lib/utils";
+  import type { HTMLButtonAttributes } from "svelte/elements";
+
+  interface Props extends HTMLButtonAttributes {
+    variant?: "default" | "ghost" | "secondary";
+    size?: "default" | "sm" | "icon";
+    children?: import("svelte").Snippet;
+  }
+
+  let {
+    variant = "default",
+    size = "default",
+    class: className,
+    children,
+    ...restProps
+  }: Props = $props();
+</script>
+
+<button
+  class={cn(
+    // Base styles
+    "inline-flex items-center justify-center rounded-md font-medium transition-colors",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    // Variants
+    variant === "default" &&
+      "bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200",
+    variant === "ghost" && "hover:bg-slate-100 dark:hover:bg-slate-800",
+    variant === "secondary" &&
+      "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-50 dark:hover:bg-slate-700",
+    // Sizes
+    size === "default" && "h-10 px-4 py-2",
+    size === "sm" && "h-8 px-3 text-sm",
+    size === "icon" && "h-10 w-10",
+    className
+  )}
+  {...restProps}
+>
+  {@render children?.()}
+</button>
+

@@ -1,0 +1,86 @@
+# H5 File Loading Example
+
+Load annotations from HDF5 files.
+
+## Loading H5 Masks
+
+```tsx
+import { loadH5Masks, useAnnotator } from 'annota';
+import { useState } from 'react';
+
+function H5MaskLoader() {
+  const [loading, setLoading] = useState(false);
+  const annotator = useAnnotator();
+
+  const handleLoad = async () => {
+    setLoading(true);
+    try {
+      const annotations = await loadH5Masks('/annotations/masks.h5', {
+        color: '#FF0000',
+        fillOpacity: 0.3,
+        properties: {
+          source: 'h5',
+          layer: 'masks',
+        },
+      });
+
+      annotator?.addAnnotations(annotations);
+      console.log(`Loaded ${annotations.length} mask annotations`);
+    } catch (error) {
+      console.error('Failed to load H5 masks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleLoad} disabled={loading}>
+      {loading ? 'Loading...' : 'Load H5 Masks'}
+    </button>
+  );
+}
+```
+
+## Loading H5 Coordinates
+
+```tsx
+import { loadH5Coordinates } from 'annota';
+
+async function loadCellAnnotations() {
+  const annotations = await loadH5Coordinates('/annotations/cells.h5', {
+    color: '#00FF00',
+    fillOpacity: 0.8,
+    strokeWidth: 2,
+    properties: {
+      type: 'cell',
+      source: 'detection-model',
+    },
+  });
+
+  return annotations;
+}
+```
+
+## Loading Multiple Files
+
+```tsx
+async function loadMultipleCategories() {
+  const [positive, negative] = await Promise.all([
+    loadH5Coordinates('/annotations/positive.h5', {
+      color: '#00FF00',
+      properties: { category: 'positive' },
+    }),
+    loadH5Coordinates('/annotations/negative.h5', {
+      color: '#FF0000',
+      properties: { category: 'negative' },
+    }),
+  ]);
+
+  return [...positive, ...negative];
+}
+```
+
+## Next Steps
+
+- [Data Loaders Guide](/docs/guides/loaders) - Complete loader documentation
+- [Event Handling](/docs/examples/event-handling) - Handle post-load events

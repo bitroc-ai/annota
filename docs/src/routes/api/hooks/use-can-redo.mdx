@@ -1,0 +1,38 @@
+# useCanRedo
+
+Check if redo is available.
+
+## Signature
+
+```typescript
+function useCanRedo(): boolean
+```
+
+## Returns
+
+`true` if redo is available, `false` otherwise.
+
+## Example
+
+```tsx
+import { useCanRedo, useAnnotator } from 'annota';
+
+function RedoButton() {
+  const canRedo = useCanRedo();
+  const annotator = useAnnotator();
+
+  return (
+    <button
+      disabled={!canRedo}
+      onClick={() => annotator?.redo()}
+    >
+      Redo
+    </button>
+  );
+}
+```
+
+## Related
+
+- [useHistory](/api/hooks/use-history) - Full history management
+- [useCanUndo](/api/hooks/use-can-undo) - Check undo availability

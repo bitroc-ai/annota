@@ -1,0 +1,175 @@
+# React Hooks
+
+React hooks for working with annotations, layers, tools, and UI state.
+
+## Overview
+
+Annota provides a comprehensive set of React hooks for building annotation interfaces. Hooks are organized into several categories:
+
+## Annotation Hooks
+
+Access and manage annotations:
+
+- **[useAnnotations](/api/hooks/use-annotations)** - Get all annotations
+- **[useAnnotation](/api/hooks/use-annotation)** - Get a specific annotation by ID
+- **[useSelection](/api/hooks/use-selection)** - Get currently selected annotations
+- **[useHover](/api/hooks/use-hover)** - Track hovered annotation
+- **[useAnnotationDoubleClick](/api/hooks/use-annotation-double-click)** - Listen for double-click events
+
+## Store & Instance Hooks
+
+Direct access to core instances:
+
+- **[useAnnotationStore](/api/hooks/use-annotation-store)** - Direct annotation store access
+- **[useAnnotator](/api/hooks/use-annotator)** - Get annotator instance
+- **[useViewer](/api/hooks/use-viewer)** - Get OpenSeadragon viewer instance
+
+## Layer Management Hooks
+
+Manage annotation layers:
+
+- **[useLayers](/api/hooks/use-layers)** - Get all layers
+- **[useLayer](/api/hooks/use-layer)** - Get a specific layer
+- **[useLayerManager](/api/hooks/use-layer-manager)** - Full layer CRUD operations
+- **[useImageLayerVisibility](/api/hooks/use-image-layer-visibility)** - Control image layer visibility
+
+## History & Undo/Redo Hooks
+
+Manage annotation history:
+
+- **[useHistory](/api/hooks/use-history)** - Full history management
+- **[useCanUndo](/api/hooks/use-can-undo)** - Check if undo is available
+- **[useCanRedo](/api/hooks/use-can-redo)** - Check if redo is available
+
+## Tool Management Hooks
+
+Manage annotation tools:
+
+- **[useTool](/api/hooks/use-tool)** - Manage tool lifecycle
+- **[usePushToolCursor](/api/hooks/use-push-tool-cursor)** - Track push tool cursor
+
+## UI & Interaction Hooks
+
+Manage UI state and user interactions:
+
+- **[usePopup](/api/hooks/use-popup)** - Manage annotation popup state
+- **[useEditing](/api/hooks/use-editing)** - Manage vertex editing mode
+- **[useContextMenu](/api/hooks/use-context-menu)** - Manage context menu state
+- **[useContextMenuBinding](/api/hooks/use-context-menu-binding)** - Auto-bind context menu events
+
+## Quick Example
+
+Here's a typical component using multiple hooks:
+
+```tsx
+import {
+  useAnnotations,
+  useSelection,
+  useLayerManager,
+  useHistory,
+  useTool,
+  PointTool,
+} from 'annota';
+import { useState } from 'react';
+
+function AnnotationInterface({ viewer }) {
+  const annotations = useAnnotations();
+  const selection = useSelection();
+  const { layers, createLayer } = useLayerManager();
+  const { canUndo, canRedo, undo, redo } = useHistory();
+  const [tool, setTool] = useState('point');
+
+  useTool({
+    viewer,
+    handler: tool === 'point' ? new PointTool() : null,
+    enabled: tool === 'point',
+  });
+
+  return (
+    <div>
+      {/* Toolbar */}
+      <div className="toolbar">
+        <button onClick={() => setTool('pan')}>Pan</button>
+        <button onClick={() => setTool('point')}>Point</button>
+        <button onClick={undo} disabled={!canUndo}>Undo</button>
+        <button onClick={redo} disabled={!canRedo}>Redo</button>
+      </div>
+
+      {/* Stats */}
+      <div className="stats">
+        <p>Total annotations: {annotations.length}</p>
+        <p>Selected: {selection.length}</p>
+        <p>Layers: {layers.length}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+## Hook Guidelines
+
+### 1. Always Check for undefined
+
+Many hooks return `undefined` during initialization:
+
+```tsx
+const annotator = useAnnotator();
+const viewer = useViewer();
+
+// ✅ Good
+if (annotator) {
+  annotator.addAnnotation(...);
+}
+
+// ❌ Bad - may crash
+annotator.addAnnotation(...);
+```
+
+### 2. Use Hooks at Component Top Level
+
+Follow React's Rules of Hooks:
+
+```tsx
+// ✅ Good
+function MyComponent() {
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  return <div>...</div>;
+}
+
+// ❌ Bad
+function MyComponent() {
+  if (someCondition) {
+    const annotations = useAnnotations(); // Conditional hook
+  }
+}
+```
+
+### 3. Combine Hooks for Complex Logic
+
+Use multiple hooks together for rich functionality:
+
+```tsx
+function AnnotationEditor({ viewer }) {
+  const popup = usePopup();
+  const editing = useEditing();
+  const selection = useSelection();
+
+  useAnnotationDoubleClick(viewer, (annotation) => {
+    if (annotation.shape.type === 'polygon') {
+      editing.startEditing(annotation.id);
+    } else {
+      popup.show(annotation.id);
+    }
+  });
+
+  // ...
+}
+```
+
+## Next Steps
+
+- [Components](/api/components) - React components for annotation UIs
+- [Annotator Instance](/api/annotator) - Programmatic API
+- [Examples](/docs/examples) - Practical usage examples

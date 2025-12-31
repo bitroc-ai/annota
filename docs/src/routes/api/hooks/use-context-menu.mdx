@@ -1,0 +1,54 @@
+# useContextMenu
+
+Manage context menu state and position.
+
+## Signature
+
+```typescript
+interface UseContextMenuResult {
+  visible: boolean;
+  position: { x: number; y: number };
+  annotation: Annotation | null;
+  show: (annotation: Annotation | null, x: number, y: number) => void;
+  hide: () => void;
+}
+
+function useContextMenu(): UseContextMenuResult
+```
+
+## Example
+
+```tsx
+import { useContextMenu, ContextMenu, ContextMenuItem } from 'annota';
+
+function MyContextMenu() {
+  const contextMenu = useContextMenu();
+
+  if (!contextMenu.visible) return null;
+
+  return (
+    <ContextMenu
+      position={contextMenu.position}
+      onClose={contextMenu.hide}
+    >
+      <ContextMenuItem onClick={() => {
+        console.log('Edit:', contextMenu.annotation?.id);
+        contextMenu.hide();
+      }}>
+        Edit
+      </ContextMenuItem>
+      <ContextMenuItem onClick={() => {
+        console.log('Delete:', contextMenu.annotation?.id);
+        contextMenu.hide();
+      }}>
+        Delete
+      </ContextMenuItem>
+    </ContextMenu>
+  );
+}
+```
+
+## Related
+
+- [useContextMenuBinding](/api/hooks/use-context-menu-binding) - Auto-bind to events
+- [ContextMenu Component](/api/components#contextmenu) - Context menu component

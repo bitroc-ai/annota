@@ -1,0 +1,50 @@
+# useAnnotation
+
+Get a specific annotation by ID.
+
+## Signature
+
+```typescript
+function useAnnotation(id: string): Annotation | undefined
+```
+
+## Parameters
+
+- `id` - The unique identifier of the annotation to retrieve
+
+## Returns
+
+The annotation with the given ID, or `undefined` if not found.
+
+## Example
+
+```tsx
+import { useAnnotation } from 'annota';
+
+function AnnotationDetails({ annotationId }: { annotationId: string }) {
+  const annotation = useAnnotation(annotationId);
+
+  if (!annotation) {
+    return <div>Annotation not found</div>;
+  }
+
+  return (
+    <div>
+      <h3>Annotation {annotation.id}</h3>
+      <p>Type: {annotation.shape.type}</p>
+      <p>Properties: {JSON.stringify(annotation.properties)}</p>
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- This hook subscribes to changes for the specific annotation and will re-render when it's updated or deleted
+- Returns `undefined` if the annotation doesn't exist
+- More efficient than `useAnnotations()` when you only need a single annotation
+
+## Related
+
+- [useAnnotations](/api/hooks/use-annotations) - Get all annotations
+- [useSelection](/api/hooks/use-selection) - Get currently selected annotations

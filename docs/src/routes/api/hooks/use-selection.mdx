@@ -1,0 +1,86 @@
+# useSelection
+
+Get currently selected annotations.
+
+## Signature
+
+```typescript
+function useSelection(): Annotation[]
+```
+
+## Returns
+
+An array of currently selected annotations.
+
+## Example
+
+```tsx
+import { useSelection } from 'annota';
+
+function SelectionInfo() {
+  const selection = useSelection();
+
+  return (
+    <div>
+      <h3>Selection</h3>
+      {selection.length === 0 ? (
+        <p>No annotations selected</p>
+      ) : (
+        <>
+          <p>{selection.length} annotation(s) selected</p>
+          <ul>
+            {selection.map(ann => (
+              <li key={ann.id}>{ann.id}</li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+## Usage with Selection Actions
+
+```tsx
+import { useSelection, useAnnotator } from 'annota';
+
+function SelectionToolbar() {
+  const selection = useSelection();
+  const annotator = useAnnotator();
+
+  const handleDelete = () => {
+    selection.forEach(ann => {
+      annotator?.deleteAnnotation(ann.id);
+    });
+  };
+
+  const handleClearSelection = () => {
+    annotator?.setSelected([]);
+  };
+
+  if (selection.length === 0) return null;
+
+  return (
+    <div className="toolbar">
+      <button onClick={handleDelete}>
+        Delete {selection.length} annotation(s)
+      </button>
+      <button onClick={handleClearSelection}>
+        Clear Selection
+      </button>
+    </div>
+  );
+}
+```
+
+## Usage Notes
+
+- This hook re-renders whenever the selection changes
+- To programmatically change selection, use the annotator's `setSelected()` method
+- Empty array when nothing is selected
+
+## Related
+
+- [useAnnotations](/api/hooks/use-annotations) - Get all annotations
+- [useAnnotator](/api/hooks/use-annotator) - Access annotator methods like `setSelected()`

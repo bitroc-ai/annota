@@ -1,0 +1,37 @@
+# useContextMenuBinding
+
+Automatically bind context menu to right-click events.
+
+## Signature
+
+```typescript
+function useContextMenuBinding(
+  viewer: OpenSeadragon.Viewer | undefined,
+  onContextMenu: (annotation: Annotation | null, x: number, y: number) => void
+): void
+```
+
+## Parameters
+
+- `viewer` - OpenSeadragon viewer instance
+- `onContextMenu` - Callback when right-click occurs
+
+## Example
+
+```tsx
+import { useContextMenu, useContextMenuBinding } from 'annota';
+
+function Editor({ viewer }) {
+  const contextMenu = useContextMenu();
+
+  useContextMenuBinding(viewer, (annotation, x, y) => {
+    contextMenu.show(annotation, x, y);
+  });
+
+  // Render context menu...
+}
+```
+
+## Related
+
+- [useContextMenu](/api/hooks/use-context-menu) - Context menu state
