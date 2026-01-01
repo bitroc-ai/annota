@@ -10,7 +10,7 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en" class="bg-white dark:bg-[#0a0f1a]">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content="Annota - High-performance annotation framework for digital pathology" />
@@ -32,7 +32,7 @@ const { title } = Astro.props;
       })();
     </script>
   </head>
-  <body class="min-h-screen bg-white dark:bg-[#0a0f1a] font-sans antialiased text-slate-900 dark:text-slate-100">
+  <body class="min-h-screen font-sans antialiased">
     <Navbar client:load />
     <slot />
   </body>

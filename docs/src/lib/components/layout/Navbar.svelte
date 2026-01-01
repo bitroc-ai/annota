@@ -14,25 +14,20 @@
           alt="Annota"
           class="h-6 w-auto brightness-0 dark:brightness-100 dark:invert transition-transform group-hover:scale-105"
         />
-        <span class="font-semibold text-lg text-slate-900 dark:text-white"
+        <span class="font-semibold text-lg" style="color: var(--foreground);"
           >Annota</span
         >
       </a>
 
       <div class="hidden md:flex items-center gap-1 text-sm font-medium">
-        <a
-          href="/docs"
-          class="px-3 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
+        <a href="/docs" class="px-3 py-1.5 rounded-md transition-all nav-link"
           >Docs</a
         >
         <a
           href="/playground"
-          class="px-3 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
-          >Playground</a
+          class="px-3 py-1.5 rounded-md transition-all nav-link">Playground</a
         >
-        <a
-          href="/api"
-          class="px-3 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
+        <a href="/api" class="px-3 py-1.5 rounded-md transition-all nav-link"
           >API</a
         >
       </div>
@@ -44,7 +39,7 @@
         href="https://github.com/bitroc-ai/annota"
         target="_blank"
         rel="noreferrer"
-        class="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
+        class="p-2 rounded-md transition-all nav-link"
         aria-label="GitHub"
       >
         <Github class="w-5 h-5" />

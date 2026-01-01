@@ -16,7 +16,7 @@ const currentPath = Astro.url.pathname;
 
 <BaseLayout title={displayTitle}>
   <DocsLayoutComponent client:load currentPath={currentPath}>
-    <div class="prose dark:prose-invert max-w-none">
+    <div class="prose max-w-none">
       <slot />
     </div>
   </DocsLayoutComponent>

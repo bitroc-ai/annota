@@ -14,14 +14,16 @@
 </script>
 
 <aside
-  class="hidden lg:block w-64 xl:w-72 h-[calc(100vh-4rem)] sticky top-16 sidebar-scroll border-r border-slate-200/60 dark:border-slate-800/60 py-6 px-4 bg-white dark:bg-[#0a0f1a]"
+  class="hidden lg:block w-64 xl:w-72 h-[calc(100vh-4rem)] sticky top-16 sidebar-scroll border-r border-slate-200/60 dark:border-slate-800/60 py-6 px-4"
+  style="background-color: var(--background);"
 >
   <div class="space-y-8">
     {#each docsConfig as group}
       <div class="space-y-2">
         {#if group.items}
           <h4
-            class="font-semibold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 mb-2"
+            class="font-semibold text-xs uppercase tracking-wider px-3 mb-2"
+            style="color: var(--muted-foreground);"
           >
             {group.title}
           </h4>
@@ -38,9 +40,7 @@
         {:else}
           <a
             href={group.href}
-            class="block font-semibold text-sm text-slate-900 dark:text-slate-100 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-900/50 rounded-md transition-colors {isActive(group.href)
-              ? 'text-sky-600 dark:text-sky-400'
-              : ''}"
+            class="block font-semibold text-sm px-3 py-1.5 rounded-md transition-colors sidebar-group-link {isActive(group.href) ? 'active' : ''}"
           >
             {group.title}
           </a>
