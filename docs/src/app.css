@@ -36,6 +36,7 @@
 
   html {
     scroll-behavior: smooth;
+    @apply bg-white dark:bg-[#0a0f1a];
   }
 }
 

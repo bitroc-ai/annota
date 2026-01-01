@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Github } from "lucide-svelte";
+  import ThemeSwitcher from "./ThemeSwitcher.svelte";
 </script>
 
 <nav
@@ -22,12 +23,7 @@
         <a
           href="/docs"
           class="px-3 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
-          >Documentation</a
-        >
-        <a
-          href="/docs/guides"
-          class="px-3 py-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-all"
-          >Guides</a
+          >Docs</a
         >
         <a
           href="/playground"
@@ -42,7 +38,8 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
+      <ThemeSwitcher />
       <a
         href="https://github.com/bitroc-ai/annota"
         target="_blank"
