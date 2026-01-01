@@ -1,5 +1,4 @@
-<script>
-  import { onMount } from "svelte";
+<script lang="ts">
 </script>
 
 <footer

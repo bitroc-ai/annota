@@ -6,32 +6,27 @@ Build your first annotation viewer in minutes with Annota.
 
 Here's the simplest possible annotation viewer:
 
-```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
-import { useState } from "react";
-import "annota/dist/index.css";
+```svelte
+<script lang="ts">
+  import { AnnotaProvider, Viewer as AnnotaViewer, Annotator } from "annota/svelte";
+  import type OpenSeadragon from "openseadragon";
 
-function App() {
-  const [viewer, setViewer] = useState(null);
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+</script>
 
-  return (
-    <AnnotaProvider slideId="my-slide">
-      <div style={{ width: "100vw", height: "100vh" }}>
-        <AnnotaViewer
-          options={{
-            tileSources: "/path/to/image.dzi",
-            prefixUrl:
-              "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
-          }}
-          onViewerReady={setViewer}
-        />
-        <Annotator viewer={viewer} />
-      </div>
-    </AnnotaProvider>
-  );
-}
-
-export default App;
+<AnnotaProvider slideId="my-slide">
+  <div style="width: 100vw; height: 100vh;">
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl:
+          "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+    <Annotator viewer={viewer} />
+  </div>
+</AnnotaProvider>
 ```
 
 That's it! You now have a working image viewer with annotation capabilities.
@@ -42,32 +37,32 @@ Let's break down what each component does:
 
 ### 1. AnnotaProvider
 
-```tsx
+```svelte
 <AnnotaProvider slideId="my-slide">
 ```
 
 The `AnnotaProvider` wraps your application and provides annotation context. The `slideId` prop identifies this slide's annotations (useful for multi-slide applications).
 
-### 2. AnnotaViewer
+### 2. Viewer
 
-```tsx
-<AnnotaViewer
+```svelte
+<Viewer
   options={{
     tileSources: "/path/to/image.dzi",
     prefixUrl: "...",
   }}
-  onViewerReady={setViewer}
+  onViewerReady={(v) => viewer = v}
 />
 ```
 
-The `AnnotaViewer` component creates and manages the OpenSeadragon viewer. It accepts:
+The `Viewer` component creates and manages the OpenSeadragon viewer. It accepts:
 
 - `options`: OpenSeadragon configuration options
 - `onViewerReady`: Callback when the viewer is initialized
 
 ### 3. Annotator
 
-```tsx
+```svelte
 <Annotator viewer={viewer} />
 ```
 
@@ -77,99 +72,83 @@ The `Annotator` component creates the annotation overlay layer. It must receive 
 
 Let's add tools for creating annotations:
 
-```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from "annota";
-import { PointTool, RectangleTool, PolygonTool } from "annota";
-import { useState } from "react";
+```svelte
+<script lang="ts">
+  import { AnnotaProvider, Viewer as AnnotaViewer, Annotator, tool } from "annota/svelte";
+  import { PointTool, RectangleTool, PolygonTool } from "annota";
+  import type OpenSeadragon from "openseadragon";
 
-function App() {
-  const [viewer, setViewer] = useState(null);
-  const [tool, setTool] = useState("point");
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  let currentTool = $state("point");
 
-  return (
-    <AnnotaProvider slideId="my-slide">
-      <div style={{ width: "100vw", height: "100vh" }}>
-        <Toolbar tool={tool} onToolChange={setTool} />
-
-        <AnnotaViewer
-          options={{
-            tileSources: "/path/to/image.dzi",
-            prefixUrl:
-              "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
-          }}
-          onViewerReady={setViewer}
-        />
-
-        <Annotator viewer={viewer}>
-          <ToolController viewer={viewer} tool={tool} />
-        </Annotator>
-      </div>
-    </AnnotaProvider>
-  );
-}
-
-function Toolbar({ tool, onToolChange }) {
-  return (
-    <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
-      <button onClick={() => onToolChange("point")}>Point</button>
-      <button onClick={() => onToolChange("rectangle")}>Rectangle</button>
-      <button onClick={() => onToolChange("polygon")}>Polygon</button>
-      <button onClick={() => onToolChange("pan")}>Pan</button>
-    </div>
-  );
-}
-
-function ToolController({ viewer, tool }) {
   const tools = {
     point: new PointTool(),
     rectangle: new RectangleTool(),
     polygon: new PolygonTool(),
   };
 
-  useTool({
-    viewer,
-    handler: tool === "pan" ? null : tools[tool],
-    enabled: tool !== "pan",
+  tool({
+    viewer: () => viewer,
+    handler: () => currentTool === "pan" ? null : tools[currentTool],
+    enabled: () => currentTool !== "pan",
   });
+</script>
 
-  return null;
-}
+<AnnotaProvider slideId="my-slide">
+  <div style="width: 100vw; height: 100vh; position: relative;">
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 10;">
+      <button onclick={() => currentTool = "point"}>Point</button>
+      <button onclick={() => currentTool = "rectangle"}>Rectangle</button>
+      <button onclick={() => currentTool = "polygon"}>Polygon</button>
+      <button onclick={() => currentTool = "pan"}>Pan</button>
+    </div>
+
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl:
+          "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+
+    <Annotator viewer={viewer} />
+  </div>
+</AnnotaProvider>
 ```
 
 Now you have a complete annotation interface with multiple tools!
 
 ## Accessing Annotations
 
-Use hooks to access and display annotations:
+Use functions to access and display annotations:
 
-```tsx
-import { useAnnotations, useSelection } from "annota";
+```svelte
+<script lang="ts">
+  import { annotations, selection } from "annota/svelte";
 
-function AnnotationList() {
-  const annotations = useAnnotations();
-  const selection = useSelection();
+  const annotationsList = annotations();
+  const selected = selection();
+</script>
 
-  return (
-    <div style={{ position: "absolute", top: 20, right: 20, zIndex: 10 }}>
-      <h3>Annotations ({annotations.length})</h3>
-      <ul>
-        {annotations.map((ann) => (
-          <li key={ann.id}>
-            {ann.shape.type}
-            {selection.some((s) => s.id === ann.id) && " (selected)"}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+<div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+  <h3>Annotations ({annotationsList.length})</h3>
+  <ul>
+    {#each annotationsList as ann (ann.id)}
+      <li>
+        {ann.shape.type}
+        {selected.some((s) => s.id === ann.id) && " (selected)"}
+      </li>
+    {/each}
+  </ul>
+</div>
 ```
 
 Add this component inside `AnnotaProvider`:
 
-```tsx
+```svelte
 <AnnotaProvider slideId="my-slide">
-  {/* ... other components ... */}
+  <!-- ... other components ... -->
   <AnnotationList />
 </AnnotaProvider>
 ```
@@ -178,34 +157,26 @@ Add this component inside `AnnotaProvider`:
 
 Here's a complete, production-ready example:
 
-```tsx
-import {
-  AnnotaProvider,
-  AnnotaViewer,
-  Annotator,
-  useAnnotations,
-  useSelection,
-  useTool,
-  PointTool,
-  RectangleTool,
-  PolygonTool,
-} from "annota";
-import { useState } from "react";
-import "annota/dist/index.css";
+```svelte
+<script lang="ts">
+  import {
+    AnnotaProvider,
+    Viewer as AnnotaViewer,
+    Annotator,
+    annotations,
+    selection,
+    tool,
+    PointTool,
+    RectangleTool,
+    PolygonTool,
+  } from "annota/svelte";
+  import type OpenSeadragon from "openseadragon";
 
-export default function AnnotationApp() {
-  return (
-    <AnnotaProvider slideId="slide-001">
-      <ViewerWithTools />
-    </AnnotaProvider>
-  );
-}
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  let currentTool = $state("pan");
 
-function ViewerWithTools() {
-  const [viewer, setViewer] = useState(null);
-  const [tool, setTool] = useState("pan");
-  const annotations = useAnnotations();
-  const selection = useSelection();
+  const annotationsList = annotations();
+  const selected = selection();
 
   // Tool instances
   const tools = {
@@ -215,44 +186,44 @@ function ViewerWithTools() {
   };
 
   // Activate the selected tool
-  useTool({
-    viewer,
-    handler: tool === "pan" ? null : tools[tool],
-    enabled: tool !== "pan",
+  tool({
+    viewer: () => viewer,
+    handler: () => currentTool === "pan" ? null : tools[currentTool],
+    enabled: () => currentTool !== "pan",
   });
+</script>
 
-  return (
-    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
-      {/* Toolbar */}
-      <div style={{ position: "absolute", top: 20, left: 20, zIndex: 10 }}>
-        <button onClick={() => setTool("pan")}>Pan</button>
-        <button onClick={() => setTool("point")}>Point</button>
-        <button onClick={() => setTool("rectangle")}>Rectangle</button>
-        <button onClick={() => setTool("polygon")}>Polygon</button>
-      </div>
-
-      {/* Info panel */}
-      <div style={{ position: "absolute", top: 20, right: 20, zIndex: 10 }}>
-        <div>Annotations: {annotations.length}</div>
-        <div>Selected: {selection.length}</div>
-      </div>
-
-      {/* Viewer */}
-      <AnnotaViewer
-        options={{
-          tileSources: "/path/to/image.dzi",
-          prefixUrl:
-            "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
-          showNavigationControl: false,
-        }}
-        onViewerReady={setViewer}
-      />
-
-      {/* Annotation overlay */}
-      <Annotator viewer={viewer} />
+<AnnotaProvider slideId="slide-001">
+  <div style="width: 100vw; height: 100vh; position: relative;">
+    <!-- Toolbar -->
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 10;">
+      <button onclick={() => currentTool = "pan"}>Pan</button>
+      <button onclick={() => currentTool = "point"}>Point</button>
+      <button onclick={() => currentTool = "rectangle"}>Rectangle</button>
+      <button onclick={() => currentTool = "polygon"}>Polygon</button>
     </div>
-  );
-}
+
+    <!-- Info panel -->
+    <div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+      <div>Annotations: {annotationsList.length}</div>
+      <div>Selected: {selected.length}</div>
+    </div>
+
+    <!-- Viewer -->
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl:
+          "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+        showNavigationControl: false,
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+
+    <!-- Annotation overlay -->
+    <Annotator viewer={viewer} />
+  </div>
+</AnnotaProvider>
 ```
 
 ## Next Steps
@@ -269,14 +240,14 @@ Now that you have a working annotation viewer:
 
 ### Loading Existing Annotations
 
-```tsx
-import { useAnnotator } from "annota";
-import { useEffect } from "react";
+```svelte
+<script lang="ts">
+  import { getAnnotator } from "annota/svelte";
 
-function LoadAnnotations() {
-  const annotator = useAnnotator();
+  const getAnnotatorFn = getAnnotator();
 
-  useEffect(() => {
+  $effect(() => {
+    const annotator = getAnnotatorFn();
     if (!annotator) return;
 
     // Load annotations from your API
@@ -285,35 +256,33 @@ function LoadAnnotations() {
       .then((annotations) => {
         annotator.addAnnotations(annotations);
       });
-  }, [annotator]);
-
-  return null;
-}
+  });
+</script>
 ```
 
 ### Saving Annotations
 
-```tsx
-import { useAnnotations } from "annota";
+```svelte
+<script lang="ts">
+  import { annotations } from "annota/svelte";
 
-function SaveButton() {
-  const annotations = useAnnotations();
+  const annotationsList = annotations();
 
-  const handleSave = () => {
+  function handleSave() {
     fetch("/api/annotations/slide-001", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(annotations),
+      body: JSON.stringify(annotationsList),
     });
-  };
+  }
+</script>
 
-  return <button onClick={handleSave}>Save</button>;
-}
+<button onclick={handleSave}>Save</button>
 ```
 
 ### Custom Styling
 
-```tsx
+```svelte
 <Annotator
   viewer={viewer}
   style={(annotation) => ({
@@ -339,8 +308,8 @@ Make sure:
 
 Check that:
 
-1. `useTool` hook receives a valid `viewer` prop
-2. The `enabled` prop is `true`
+1. `tool` function receives a valid `viewer` function
+2. The `enabled` function returns `true`
 3. The tool handler is properly instantiated
 
 ### TypeScript errors

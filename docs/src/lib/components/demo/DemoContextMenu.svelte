@@ -1,8 +1,8 @@
 <script lang="ts">
   import {
-    useAnnotator,
-    useContextMenu,
-    useContextMenuBinding,
+    getAnnotator,
+    contextMenu,
+    contextMenuBinding,
     ContextMenu,
     ContextMenuItem,
     ContextMenuDivider,
@@ -10,14 +10,14 @@
   import { SquareCheck, CircleCheck, Trash2 } from "lucide-svelte";
   import type { Annotation } from "annota";
 
-  const getAnnotator = useAnnotator();
+  const getAnnotatorFn = getAnnotator();
   const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } =
-    useContextMenu();
+    contextMenu();
 
-  useContextMenuBinding(showViewerMenu, showAnnotationMenu);
+  contextMenuBinding(showViewerMenu, showAnnotationMenu);
 
   function handleSetPositive() {
-    const annotator = getAnnotator();
+    const annotator = getAnnotatorFn();
     if (!menuState.annotation || !annotator) return;
 
     const updated: Annotation = {
@@ -33,7 +33,7 @@
   }
 
   function handleSetNegative() {
-    const annotator = getAnnotator();
+    const annotator = getAnnotatorFn();
     if (!menuState.annotation || !annotator) return;
 
     const updated: Annotation = {
@@ -49,7 +49,7 @@
   }
 
   function handleDelete() {
-    const annotator = getAnnotator();
+    const annotator = getAnnotatorFn();
     if (!menuState.annotation || !annotator) return;
 
     annotator.deleteAnnotation(menuState.annotation.id);

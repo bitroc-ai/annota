@@ -4,11 +4,11 @@ import { mdsvex } from 'mdsvex';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-	extensions: ['.svelte', '.md', '.svx'],
+	extensions: ['.svelte', '.md', '.svx', '.mdx'],
 	preprocess: [
 		vitePreprocess(),
 		mdsvex({
-			extensions: ['.md', '.svx']
+			extensions: ['.md', '.svx', '.mdx']
 		})
 	],
 
@@ -19,7 +19,11 @@ const config = {
 			fallback: 'index.html',
 			precompress: false,
 			strict: true
-		})
+		}),
+		alias: {
+			'annota/svelte': '../src/svelte/index.ts',
+			'annota': '../dist/index.mjs'
+		}
 	}
 };
 

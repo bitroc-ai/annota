@@ -1,26 +1,30 @@
-import Cards from '$lib/components/md/Cards.svelte';
-import Callout from '$lib/components/md/Callout.svelte';
-import Steps from '$lib/components/md/Steps.svelte';
-import Card from '$lib/components/md/Card.svelte';
-import {
-  Zap,
-  Palette,
-  Plug,
-  Layers,
-  Database,
-  Atom,
-  BookOpen,
-  GraduationCap,
-  FileText,
-  Lightbulb,
-  Gamepad2,
-  Building,
-} from 'lucide-svelte';
-import ExampleViewer from '$lib/components/examples/ExampleViewer.svelte';
+<script>
+  import Cards from '$lib/components/md/Cards.svelte';
+  import Callout from '$lib/components/md/Callout.svelte';
+  import Steps from '$lib/components/md/Steps.svelte';
+  import Card from '$lib/components/md/Card.svelte';
+  import Tabs from '$lib/components/md/Tabs.svelte';
+  import Tab from '$lib/components/md/Tab.svelte';
+  import {
+    Zap,
+    Palette,
+    Plug,
+    Layers,
+    Database,
+    Atom,
+    BookOpen,
+    GraduationCap,
+    FileText,
+    Lightbulb,
+    Gamepad2,
+    Building,
+  } from 'lucide-svelte';
+  import ExampleViewer from '$lib/components/examples/ExampleViewer.svelte';
+</script>
 
 # Introduction
 
-Annota is a **high-performance annotation framework** designed specifically for whole slide imaging (WSI) and digital pathology applications. Built with TypeScript and React, it provides a comprehensive solution for creating, editing, and managing annotations on large-scale medical images.
+Annota is a **high-performance annotation framework** designed specifically for whole slide imaging (WSI) and digital pathology applications. Built with TypeScript and Svelte, it provides a comprehensive solution for creating, editing, and managing annotations on large-scale medical images.
 
 <Callout type="info">
   **Performance at Scale**: Annota handles over 10,000 annotations at 60 FPS
@@ -31,32 +35,28 @@ Annota is a **high-performance annotation framework** designed specifically for 
 ## Why Annota?
 
 <Cards num={3}>
+  <Card icon={Zap} title="High Performance" href="/docs/guides/tools" />
   <Card
-    icon={<Zap />}
-    title="High Performance"
-    href="/docs/guides/tools"
-  />
-  <Card
-    icon={<Palette />}
+    icon={Palette}
     title="Purpose-Built for Pathology"
     href="/docs/guides/tools"
   />
   <Card
-    icon={<Plug />}
+    icon={Plug}
     title="Event-Driven Architecture"
     href="/docs/guides/events"
   />
   <Card
-    icon={<Layers />}
+    icon={Layers}
     title="Multi-Layer Organization"
     href="/docs/guides/layers"
   />
   <Card
-    icon={<Database />}
+    icon={Database}
     title="Flexible Data Loading"
     href="/docs/guides/loaders"
   />
-  <Card icon={<Atom />} title="React First" href="/api/hooks" />
+  <Card icon={Atom} title="Svelte First" href="/api/hooks" />
 </Cards>
 
 ## Try It Now
@@ -66,7 +66,9 @@ Annota is a **high-performance annotation framework** designed specifically for 
 <ExampleViewer type="rectangle" height={500} />
 
 <Callout>
-  This is a fully interactive annotation viewer. You can create, select, move, and resize annotations in real-time. The same viewer powers production pathology workflows.
+  This is a fully interactive annotation viewer. You can create, select, move,
+  and resize annotations in real-time. The same viewer powers production
+  pathology workflows.
 </Callout>
 
 ## Quick Start
@@ -75,27 +77,10 @@ Annota is a **high-performance annotation framework** designed specifically for 
 
 ### Install Annota
 
-import Tabs from '$lib/components/md/Tabs.svelte';
-import Tab from '$lib/components/md/Tab.svelte';
-
-### Install Annota
-
-<Tabs items={['npm', 'pnpm', 'yarn']}>
-  <Tab>
-    ```bash
-    npm install annota openseadragon
-    ```
-  </Tab>
-  <Tab>
-    ```bash
-    pnpm add annota openseadragon
-    ```
-  </Tab>
-  <Tab>
-    ```bash
-    yarn add annota openseadragon
-    ```
-  </Tab>
+<Tabs items={["npm", "pnpm", "yarn"]}>
+  <Tab>```bash npm install annota openseadragon ```</Tab>
+  <Tab>```bash pnpm add annota openseadragon ```</Tab>
+  <Tab>```bash yarn add annota openseadragon ```</Tab>
 </Tabs>
 
 ### Create Your First Viewer
@@ -290,28 +275,16 @@ graph TB
 ## Next Steps
 
 <Cards num={3}>
+  <Card icon={BookOpen} title="Getting Started" href="/docs/getting-started" />
+  <Card icon={GraduationCap} title="Guides" href="/docs/guides/tools" />
+  <Card icon={FileText} title="API" href="/api" />
   <Card
-    icon={<BookOpen />}
-    title="Getting Started"
-    href="/docs/getting-started"
-  />
-  <Card
-    icon={<GraduationCap />}
-    title="Guides"
-    href="/docs/guides/tools"
-  />
-  <Card icon={<FileText />} title="API" href="/api" />
-  <Card
-    icon={<Lightbulb />}
+    icon={Lightbulb}
     title="Use Cases"
     href="/docs/use-cases/basic-viewer"
   />
-  <Card icon={<Gamepad2 />} title="Playground" href="/playground" />
-  <Card
-    icon={<Building />}
-    title="Architecture"
-    href="/docs/architecture"
-  />
+  <Card icon={Gamepad2} title="Playground" href="/playground" />
+  <Card icon={Building} title="Architecture" href="/docs/architecture" />
 </Cards>
 
 <Callout type="warning">

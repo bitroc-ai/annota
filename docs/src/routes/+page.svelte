@@ -17,9 +17,11 @@
   } from "lucide-svelte";
   import FeatureCard from "$lib/components/landing/FeatureCard.svelte";
   import Footer from "$lib/components/landing/Footer.svelte";
-  
-  let AnnotaDemo: typeof import("$lib/components/demo/AnnotaDemo.svelte").default | null = $state(null);
-  
+
+  let AnnotaDemo:
+    | typeof import("$lib/components/demo/AnnotaDemo.svelte").default
+    | null = $state(null);
+
   onMount(async () => {
     const module = await import("$lib/components/demo/AnnotaDemo.svelte");
     AnnotaDemo = module.default;
@@ -153,7 +155,9 @@ import { AnnotaProvider, Annotator, Viewer, RectangleTool } from 'annota/svelte'
                 {#if AnnotaDemo}
                   <AnnotaDemo />
                 {:else}
-                  <div class="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+                  <div
+                    class="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-900"
+                  >
                     <div class="text-slate-400 text-sm">Loading demo...</div>
                   </div>
                 {/if}
@@ -183,30 +187,42 @@ import { AnnotaProvider, Annotator, Viewer, RectangleTool } from 'annota/svelte'
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <FeatureCard
-          icon={Zap}
           title="High Performance"
           description="Efficient spatial indexing and rendering for handling thousands of annotations on gigapixel images"
-        />
+        >
+          {#snippet children()}
+            <Zap class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
-          icon={Code2}
           title="React & Svelte"
           description="Modern hooks and runes API with TypeScript support for intuitive integration in React and Svelte apps"
-        />
+        >
+          {#snippet children()}
+            <Code2 class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
-          icon={Layers}
           title="Layer System"
           description="Organize annotations into multiple layers with independent styling and visibility control"
-        />
+        >
+          {#snippet children()}
+            <Layers class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
-          icon={Package}
           title="Extensible Tools"
           description="Built-in point, rectangle, and polygon tools with support for custom annotation types"
-        />
+        >
+          {#snippet children()}
+            <Package class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           title="OpenSeadragon Integration"
           description="Seamless integration with OpenSeadragon for professional whole slide image viewing"
         >
-          {#snippet icon()}
+          {#snippet children()}
             <svg
               class="w-6 h-6"
               fill="none"
@@ -223,10 +239,13 @@ import { AnnotaProvider, Annotator, Viewer, RectangleTool } from 'annota/svelte'
           {/snippet}
         </FeatureCard>
         <FeatureCard
-          icon={BookOpen}
           title="Well Documented"
           description="Comprehensive documentation with examples and API reference for all features"
-        />
+        >
+          {#snippet children()}
+            <BookOpen class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
       </div>
     </div>
   </section>
@@ -234,8 +253,8 @@ import { AnnotaProvider, Annotator, Viewer, RectangleTool } from 'annota/svelte'
   <!-- Quick Start -->
   <section class="py-24 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
     <div
-      class="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-800/50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]"
-    />
+      class="absolute inset-0 bg-grid-slate-200/50 dark:bg-grid-slate-800/50 mask-[linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0.5))]"
+    ></div>
     <div class="container mx-auto px-6 relative z-10">
       <div class="max-w-4xl mx-auto">
         <div class="text-center mb-10">
@@ -310,40 +329,58 @@ import { AnnotaProvider, Annotator, Viewer, RectangleTool } from 'annota/svelte'
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <FeatureCard
           variant="ghost"
-          icon={Microscope}
           title="Diagnostic Pathology"
           description="Enable pathologists to annotate regions of interest on WSI for diagnostic review and consultation"
-        />
+        >
+          {#snippet children()}
+            <Microscope class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           variant="ghost"
-          icon={Brain}
           title="AI Model Training"
           description="Create high-quality labeled datasets for training deep learning models in computational pathology"
-        />
+        >
+          {#snippet children()}
+            <Brain class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           variant="ghost"
-          icon={FlaskConical}
           title="Research & Analysis"
           description="Quantify and analyze tissue features, cell populations, and morphological patterns"
-        />
+        >
+          {#snippet children()}
+            <FlaskConical class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           variant="ghost"
-          icon={Hash}
           title="Cell Detection & Counting"
           description="Precisely mark nuclei, tumor cells, and immune cells for quantitative analysis"
-        />
+        >
+          {#snippet children()}
+            <Hash class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           variant="ghost"
-          icon={Target}
           title="Tumor Delineation"
           description="Outline tumor regions, invasion fronts, and microenvironments with polygon tools"
-        />
+        >
+          {#snippet children()}
+            <Target class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
         <FeatureCard
           variant="ghost"
-          icon={Hospital}
           title="Multi-User Collaboration"
           description="Support team-based annotation workflows with layer management and concurrent editing"
-        />
+        >
+          {#snippet children()}
+            <Hospital class="w-6 h-6" />
+          {/snippet}
+        </FeatureCard>
       </div>
     </div>
   </section>

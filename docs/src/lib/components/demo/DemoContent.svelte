@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import {
-    useAnnotator,
-    useTool,
+    getAnnotator,
+    tool,
     Annotator,
     AnnotaProvider,
-    AnnotaContext,
     Viewer as AnnotaViewer,
   } from "annota/svelte";
   import { PointTool, RectangleTool, CurveTool, SamTool } from "annota";
@@ -35,7 +34,7 @@
     embeddingUrl = "/playground/embeddings/test/0.npy",
   }: Props = $props();
 
-  const getAnnotator = useAnnotator();
+  const getAnnotatorFn = getAnnotator();
   let viewer = $state<any>(undefined);
   let activeToolId = $state<
     "pan" | "point" | "rectangle" | "curve" | "segment"
@@ -87,23 +86,23 @@
       .catch(console.error);
   });
 
-  // Activate Tools using hook
-  useTool({
+  // Activate Tools using function
+  tool({
     viewer: () => viewer,
     handler: () => pointTool,
     enabled: () => activeToolId === "point",
   });
-  useTool({
+  tool({
     viewer: () => viewer,
     handler: () => rectangleTool,
     enabled: () => activeToolId === "rectangle",
   });
-  useTool({
+  tool({
     viewer: () => viewer,
     handler: () => curveTool,
     enabled: () => activeToolId === "curve",
   });
-  useTool({
+  tool({
     viewer: () => viewer,
     handler: () => segmentTool,
     enabled: () => activeToolId === "segment" && !!segmentTool,
@@ -112,7 +111,7 @@
   // Initial Annotations
   let annotationsAdded = false;
   $effect(() => {
-    const annotator = getAnnotator();
+    const annotator = getAnnotatorFn();
     if (!annotator || !viewer || annotationsAdded) return;
 
     annotationsAdded = true;

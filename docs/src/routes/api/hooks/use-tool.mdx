@@ -1,33 +1,38 @@
-# useTool
+# tool
 
 Manage tool lifecycle and enable/disable annotation tools.
 
 ## Signature
 
 ```typescript
-interface UseToolOptions {
-  viewer: OpenSeadragon.Viewer | undefined;
-  handler: ToolHandler | null;
-  enabled: boolean;
+interface ToolOptions {
+  viewer: () => OpenSeadragon.Viewer | undefined;
+  handler: () => ToolHandler | null;
+  enabled: () => boolean;
 }
 
-function useTool(options: UseToolOptions): void
+function tool(options: ToolOptions): void;
 ```
 
 ## Parameters
 
-- `viewer` - The OpenSeadragon viewer instance
-- `handler` - The tool handler instance (or null for pan mode)
-- `enabled` - Whether the tool is enabled
+- `viewer` - A function that returns the OpenSeadragon viewer instance
+- `handler` - A function that returns the tool handler instance (or null for pan mode)
+- `enabled` - A function that returns whether the tool is enabled
 
 ## Example
 
-```tsx
-import { useTool, PointTool, RectangleTool, PolygonTool } from 'annota';
-import { useState } from 'react';
+```svelte
+<script lang="ts">
+  import { tool, PointTool, RectangleTool, PolygonTool } from 'annota/svelte';
+  import type OpenSeadragon from 'openseadragon';
 
-function ToolManager({ viewer }) {
-  const [currentTool, setCurrentTool] = useState<string>('point');
+  interface Props {
+    viewer: OpenSeadragon.Viewer | undefined;
+  }
+
+  let { viewer }: Props = $props();
+  let currentTool = $state<string>('point');
 
   const tools = {
     point: new PointTool(),
@@ -35,28 +40,27 @@ function ToolManager({ viewer }) {
     polygon: new PolygonTool(),
   };
 
-  useTool({
-    viewer,
-    handler: currentTool === 'pan' ? null : tools[currentTool],
-    enabled: currentTool !== 'pan',
+  tool({
+    viewer: () => viewer,
+    handler: () => currentTool === 'pan' ? null : tools[currentTool],
+    enabled: () => currentTool !== 'pan',
   });
+</script>
 
-  return (
-    <div className="toolbar">
-      <button onClick={() => setCurrentTool('pan')}>Pan</button>
-      <button onClick={() => setCurrentTool('point')}>Point</button>
-      <button onClick={() => setCurrentTool('rectangle')}>Rectangle</button>
-      <button onClick={() => setCurrentTool('polygon')}>Polygon</button>
-    </div>
-  );
-}
+<div class="toolbar">
+  <button onclick={() => currentTool = 'pan'}>Pan</button>
+  <button onclick={() => currentTool = 'point'}>Point</button>
+  <button onclick={() => currentTool = 'rectangle'}>Rectangle</button>
+  <button onclick={() => currentTool = 'polygon'}>Polygon</button>
+</div>
 ```
 
 ## Usage Notes
 
 - Automatically manages tool lifecycle (enable/disable/destroy)
-- Pass `null` for handler to enable pan mode
+- Pass a function returning `null` for handler to enable pan mode
 - Tools are properly cleaned up when component unmounts
+- All parameters are functions to ensure reactivity with Svelte's reactivity system
 
 ## Related
 

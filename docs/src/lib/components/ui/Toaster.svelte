@@ -46,11 +46,11 @@
     <div
       class="pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm min-w-[300px] max-w-md {styles}"
     >
-      <Icon class="w-5 h-5 flex-shrink-0" />
+      <Icon class="w-5 h-5 shrink-0" />
       <p class="flex-1 text-sm font-medium">{toast.message}</p>
       <button
         onclick={() => dismiss(toast.id)}
-        class="flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity"
+        class="shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity"
         aria-label="Dismiss notification"
       >
         <X class="w-4 h-4" />
