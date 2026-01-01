@@ -1,13 +1,44 @@
 <script lang="ts">
-  import { Github } from "lucide-svelte";
+  import { Github, Menu, X } from "lucide-svelte";
   import ThemeSwitcher from "./ThemeSwitcher.svelte";
+  import { sidebarOpen } from "../../stores/sidebar";
+
+  function toggleSidebar() {
+    sidebarOpen.update((open) => !open);
+  }
+
+  // Use $state.runes for store subscription in Svelte 5
+  let isOpen = $state(false);
+
+  $effect(() => {
+    const unsubscribe = sidebarOpen.subscribe((value) => {
+      isOpen = value;
+    });
+    return () => unsubscribe();
+  });
 </script>
 
 <nav
-  class="sticky top-0 z-50 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-[#0a0f1a]/80 backdrop-blur-xl"
+  class="sticky top-0 z-50 w-full border-b backdrop-blur-xl"
+  style="border-color: var(--border); background-color: color-mix(in srgb, var(--background) 80%, transparent);"
 >
   <div class="w-full px-6 h-16 flex items-center justify-between">
-    <div class="flex items-center gap-8">
+    <div class="flex items-center gap-4">
+      <!-- Hamburger menu for mobile -->
+      <button
+        type="button"
+        onclick={toggleSidebar}
+        class="lg:hidden p-2 rounded-md transition-all nav-link"
+        aria-label="Toggle sidebar"
+        aria-expanded={isOpen}
+      >
+        {#if isOpen}
+          <X class="w-5 h-5" />
+        {:else}
+          <Menu class="w-5 h-5" />
+        {/if}
+      </button>
+
       <a href="/" class="flex items-center gap-2.5 group">
         <img
           src="/logo.svg"

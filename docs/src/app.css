@@ -196,6 +196,17 @@ nav {
   scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
 }
 
+/* Mobile sidebar overlay */
+@media (max-width: 1023px) {
+  aside[class*="sidebar"] {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark aside[class*="sidebar"] {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
 .sidebar-scroll::-webkit-scrollbar {
   width: 6px;
 }
