@@ -4,6 +4,7 @@ layout: ../../layouts/DocsLayout.astro
 # Annota vs Annotorious
 
 import Callout from '../../lib/components/md/Callout.astro';
+import Mermaid from '../../lib/components/md/Mermaid.tsx';
 
 This document provides an objective comparison between Annota and Annotorious, two annotation frameworks for web-based image annotation.
 
@@ -131,14 +132,16 @@ graph TB
 | PDF | ❌ | ✅ |
 | IIIF | ❌ | ✅ |
 
-### React Integration
+### Framework Integration
 
 | Feature | Annota | Annotorious |
 |---------|--------|-------------|
+| Svelte support | ✅ Svelte 5 with runes | ❌ |
 | React hooks | ✅ 20+ hooks | ✅ Basic hooks |
 | Context provider | ✅ | ✅ |
 | TypeScript support | ✅ Full | ✅ Full |
 | React 19 support | ✅ | ✅ (v3.1.0+) |
+| Svelte 5 support | ✅ | ❌ |
 
 ## Technical Design Differences
 
@@ -187,7 +190,7 @@ Store change → DOM update → SVG manipulation → Browser rendering
 - Need **high performance** with complex polygon operations
 - Require **specialized pathology tools** (split, merge, mask polarity)
 - Loading data from **HDF5 or PGM formats**
-- Building **React-first** applications
+- Building **Svelte-first** or **React-first** applications
 - Need **framework flexibility** (potential Vue/Svelte support)
 
 ### Choose Annotorious When:

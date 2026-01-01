@@ -3,6 +3,8 @@ title: Context Menu
 description: Add custom right-click context menus to annotations and the viewer
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
 
 # Context Menu
 
@@ -12,11 +14,83 @@ Annota provides a flexible context menu system that allows you to add custom rig
 
 The context menu system consists of three main parts:
 
+**Svelte:**
+1. **`contextMenu`** - Function for managing context menu state
+2. **`contextMenuBinding`** - Function for automatically binding context menu events to the canvas
+3. **`ContextMenu`, `ContextMenuItem`, `ContextMenuDivider`** - Components for rendering the menu
+
+**React:**
 1. **`useContextMenu`** - Hook for managing context menu state
 2. **`useContextMenuBinding`** - Hook for automatically binding context menu events to the canvas
 3. **`ContextMenu`, `ContextMenuItem`, `ContextMenuDivider`** - Components for rendering the menu
 
 ## Basic Usage
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Here's a complete example showing how to add a context menu with common actions:
+
+```svelte
+<script lang="ts">
+  import {
+    ContextMenu,
+    ContextMenuItem,
+    ContextMenuDivider,
+    contextMenu,
+    contextMenuBinding,
+    getAnnotator
+  } from 'annota/svelte';
+
+  const annotator = getAnnotator();
+  const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = contextMenu();
+
+  // Automatically bind context menu to canvas right-clicks
+  contextMenuBinding(showViewerMenu, showAnnotationMenu);
+
+  function handleDelete() {
+    if ($menuState.annotation) {
+      annotator?.deleteAnnotation($menuState.annotation.id);
+      hideMenu();
+    }
+  }
+
+  function handleDuplicate() {
+    if ($menuState.annotation) {
+      const copy = { ...$menuState.annotation, id: crypto.randomUUID() };
+      annotator?.addAnnotation(copy);
+      hideMenu();
+    }
+  };
+
+  return (
+    <>
+      <!-- Your viewer components -->
+
+      <ContextMenu position={$menuState.position} onClose={hideMenu}>
+        {#if $menuState.type === 'viewer'}
+          <ContextMenuItem label="Paste" onclick={() => console.log('Paste')} />
+          <ContextMenuItem label="Select All" onclick={() => console.log('Select all')} />
+        {/if}
+
+        {#if $menuState.type === 'annotation'}
+          <ContextMenuItem label="Edit" onclick={() => console.log('Edit')} />
+          <ContextMenuItem label="Duplicate" onclick={handleDuplicate} />
+          <ContextMenuDivider />
+          <ContextMenuItem
+            label="Delete"
+            onclick={handleDelete}
+            danger
+          />
+        {/if}
+      </ContextMenu>
+    </>
+  );
+</script>
+```
+
+</Tab>
+<Tab>
 
 Here's a complete example showing how to add a context menu with common actions:
 
@@ -82,14 +156,20 @@ function MyAnnotationViewer() {
 }
 ```
 
-## Hooks
+</Tab>
+</Tabs>
 
-### useContextMenu
+## Functions & Hooks
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+### contextMenu
 
 Manages the state of the context menu, including position and what was clicked.
 
-```tsx
-const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+```svelte
+const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = contextMenu();
 ```
 
 **Returns:**

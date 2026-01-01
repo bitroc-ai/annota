@@ -8,6 +8,7 @@ import Steps from '../../lib/components/md/Steps.astro';
 import Card from '../../lib/components/md/Card.astro';
 import Tabs from '../../lib/components/md/Tabs.astro';
 import Tab from '../../lib/components/md/Tab.astro';
+import Mermaid from '../../lib/components/md/Mermaid.tsx';
 import {
   Zap,
   Palette,
@@ -324,8 +325,8 @@ Annota follows a clean, layered architecture separating concerns:
 
 ```mermaid
 graph TB
-    subgraph React["React Layer"]
-        Components["Components & Hooks<br/>AnnotaProvider, Viewer<br/>useAnnotator, useTool"]
+    subgraph UI["UI Layer"]
+        Svelte["Svelte<br/>Provider, Viewer<br/>tool(), annotations()"] ~~~ React["React<br/>AnnotaProvider, AnnotaViewer<br/>useTool(), useAnnotations()"]
     end
 
     subgraph Core["Core Engine"]
@@ -340,7 +341,7 @@ graph TB
         Viewport["Viewport Integration"] ~~~ Transform["Coordinate Transform"] ~~~ EventHandling["Event Handling"]
     end
 
-    Components --> Core
+    UI --> Core
     Core --> Rendering
     Rendering --> Adapter
 ```

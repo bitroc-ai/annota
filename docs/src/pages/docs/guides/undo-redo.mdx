@@ -1,6 +1,9 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Undo/Redo
 
 Annota provides a complete undo/redo system for annotation operations using the Command Pattern. This allows users to reverse and replay their annotation changes with full history tracking.
@@ -13,6 +16,7 @@ The undo/redo system automatically tracks all annotation changes (create, update
 - **Command merging**: Consecutive similar commands are merged automatically
 - **Batch operations**: Group multiple changes into a single undoable action
 - **History limits**: Configurable maximum history size to manage memory
+- **Svelte functions**: Easy integration with Svelte components
 - **React hooks**: Easy integration with React components
 
 ## Quick Start
@@ -54,9 +58,86 @@ const keyboard = initKeyboardCommands(annotator, {
 // - Press Delete/Backspace to delete selected annotations
 ```
 
-## React Integration
+## Framework Integration
 
-### Using the useHistory Hook
+### Svelte Integration
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+#### Using the history function
+
+The `history()` function provides complete history state and controls:
+
+```svelte
+<script lang="ts">
+  import { history, getAnnotator } from "annota/svelte";
+
+  const annotator = getAnnotator();
+  const historyState = history();
+
+  function handleUndo() {
+    annotator?.undo();
+  }
+
+  function handleRedo() {
+    annotator?.redo();
+  }
+
+  function handleClear() {
+    annotator?.clearHistory();
+  }
+</script>
+
+<div class="history-controls">
+  <button
+    onclick={handleUndo}
+    disabled={!$historyState.canUndo}
+    title="Undo (Ctrl/Cmd+Z)"
+  >
+    ↶ Undo
+  </button>
+
+  <button
+    onclick={handleRedo}
+    disabled={!$historyState.canRedo}
+    title="Redo (Ctrl/Cmd+Shift+Z)"
+  >
+    ↷ Redo
+  </button>
+
+  <span class="history-info">
+    {$historyState.undoSize} undos, {$historyState.redoSize} redos
+  </span>
+
+  <button onclick={handleClear}>Clear History</button>
+</div>
+```
+
+#### Simple Undo/Redo Checks
+
+For simple use cases, check history state:
+
+```svelte
+<script lang="ts">
+  import { history } from "annota/svelte";
+
+  const historyState = history();
+</script>
+
+{#if $historyState.canUndo}
+  <button onclick={() => getAnnotator()?.undo()}>Undo</button>
+{/if}
+
+{#if $historyState.canRedo}
+  <button onclick={() => getAnnotator()?.redo()}>Redo</button>
+{/if}
+```
+
+</Tab>
+<Tab>
+
+#### Using the useHistory Hook
 
 The `useHistory` hook provides complete history state and controls:
 
@@ -94,7 +175,7 @@ function HistoryControls() {
 }
 ```
 
-### Simple Undo/Redo Hooks
+#### Simple Undo/Redo Hooks
 
 For simple use cases, use `useCanUndo` and `useCanRedo`:
 

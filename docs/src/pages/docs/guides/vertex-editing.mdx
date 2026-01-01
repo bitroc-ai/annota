@@ -1,6 +1,9 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Vertex Editing
 
 Annota provides a vertex editing mode for polygon annotations, allowing users to modify the shape by adding, moving, and deleting vertices.
@@ -19,6 +22,38 @@ By default, polygon annotations display only their outline and body drag area. T
 ## Entry Methods
 
 ### Double-Click
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Double-click a polygon to enter vertex editing mode:
+
+```svelte
+<script lang="ts">
+  import { getAnnotator, editing } from 'annota/svelte';
+  import { getEditorConfig } from 'annota';
+
+  const annotator = getAnnotator();
+  const { startEditing } = editing();
+
+  // Enter vertex editing mode on double-click
+  annotator?.viewer?.addHandler('canvas-double-click', (event) => {
+    const annotation = annotator?.getAnnotationAt(event.position);
+    if (annotation) {
+      const editorConfig = getEditorConfig(annotation);
+      if (editorConfig?.supportsVertexEditing) {
+        startEditing(annotation.id);
+        // Show toast notification
+      }
+    }
+  });
+</script>
+
+<AnnotationEditor viewer={annotator?.viewer} />
+```
+
+</Tab>
+<Tab>
 
 Double-click a polygon to enter vertex editing mode:
 
@@ -42,7 +77,44 @@ function MyApp() {
 }
 ```
 
+</Tab>
+</Tabs>
+
 ### Context Menu
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Add an "Edit Vertices" option to your context menu:
+
+```svelte
+<script lang="ts">
+  import { contextMenu, editing, getAnnotator } from 'annota/svelte';
+  import { getEditorConfig } from 'annota';
+
+  const annotator = getAnnotator();
+  const { startEditing } = editing();
+  const { menuState } = contextMenu();
+
+  function handleEditVertices() {
+    if ($menuState.annotation) {
+      const editorConfig = getEditorConfig($menuState.annotation);
+      if (editorConfig?.supportsVertexEditing) {
+        startEditing($menuState.annotation.id);
+      }
+    }
+  }
+</script>
+
+<ContextMenu>
+  {#if $menuState.annotation}
+    <ContextMenuItem label="Edit Vertices" onclick={handleEditVertices} />
+  {/if}
+</ContextMenu>
+```
+
+</Tab>
+<Tab>
 
 Add an "Edit Vertices" option to your context menu:
 

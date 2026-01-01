@@ -4,6 +4,7 @@ layout: ../../layouts/DocsLayout.astro
 # Architecture
 
 import Callout from '../../lib/components/md/Callout.astro';
+import Mermaid from '../../lib/components/md/Mermaid.tsx';
 
 Annota follows a clean, layered architecture designed for **performance at scale** and **framework independence**.
 
@@ -11,8 +12,8 @@ Annota follows a clean, layered architecture designed for **performance at scale
 
 ```mermaid
 graph TB
-    subgraph React["React Layer"]
-        Provider["AnnotaProvider"] ~~~ Hooks["20+ React Hooks"] ~~~ Components["UI Components"]
+    subgraph UI["UI Layer"]
+        Svelte["Svelte Layer<br/>Provider, Viewer<br/>tool(), annotations()"] ~~~ React["React Layer<br/>AnnotaProvider, AnnotaViewer<br/>useTool(), useAnnotations()"]
     end
 
     subgraph Adapter["Adapter Layer"]
@@ -27,7 +28,7 @@ graph TB
         Store["Observable Store"] ~~~ Spatial["R-tree Spatial Index"] ~~~ Layers["Layer Manager"] ~~~ History["History Manager"]
     end
 
-    React --> Adapter
+    UI --> Adapter
     Adapter --> Rendering
     Adapter --> Core
     Rendering --> Core
@@ -72,15 +73,21 @@ Bridges OpenSeadragon viewer with the core engine:
 
 **Why separate?** Different viewers (Leaflet, OpenLayers) have different APIs. Adapters isolate these differences.
 
-### React Layer
+### UI Layer (Svelte & React)
 
-Thin wrapper providing React-friendly access to core APIs:
+Thin wrappers providing framework-friendly access to core APIs:
 
+**Svelte Integration:**
+- **Functions**: `tool()`, `annotations()`, `selection()`, `getAnnotator()` subscribe to store changes
+- **Components**: `<Viewer>`, `<Annotator>`, `<ContextMenu>`
+- **Provider**: `<AnnotaProvider>` for dependency injection
+
+**React Integration:**
 - **Hooks**: `useAnnotations()`, `useSelection()`, `useTool()` subscribe to store changes
 - **Components**: `<AnnotaViewer>`, `<Annotator>`, `<AnnotationPopup>`
 - **Context**: `AnnotaProvider` for dependency injection
 
-**Why separate?** React is just one possible UI binding. Core logic lives in framework-agnostic modules.
+**Why separate?** Svelte and React are just two possible UI bindings. Core logic lives in framework-agnostic modules.
 
 ## Data Flow
 
@@ -165,6 +172,7 @@ State is managed in observable stores. Components and renderers subscribe to cha
 
 ```typescript
 store.observe((event) => {
+  // Svelte functions update reactively
   // React hooks re-render
   // PixiJS renderer updates
   // Tools respond to state
@@ -179,6 +187,6 @@ Each layer has one job:
 - **Core**: Manage annotation data
 - **Rendering**: Draw to screen
 - **Adapter**: Bridge viewer framework
-- **React**: Provide UI bindings
+- **UI**: Provide Svelte/React bindings
 
 **Benefits**: Easy to test, maintain, and extend. Swap any layer without affecting others.

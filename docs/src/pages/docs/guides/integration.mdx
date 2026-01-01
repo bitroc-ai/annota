@@ -177,12 +177,61 @@ if (result) {
 }
 ```
 
-## React Integration
+## Framework Integration
 
-### Provider Setup
+### Svelte Integration
 
-```typescript
-import { AnnotaProvider, OSDAnnotator, useAnnotations } from "annota";
+#### Provider Setup
+
+```svelte
+<script lang="ts">
+  import { AnnotaProvider, Viewer as AnnotaViewer, Annotator, annotations, getAnnotator } from "annota/svelte";
+  import { onMount } from "svelte";
+  import type { Annotation } from "annota";
+
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  let loadedAnnotations = $state<Annotation[]>([]);
+
+  onMount(async () => {
+    // Load annotations from your API
+    loadedAnnotations = await loadAnnotations();
+  });
+
+  const allAnnotations = annotations();
+  const annotator = getAnnotator();
+</script>
+
+<AnnotaProvider slideId="my-slide">
+  <AnnotaViewer
+    options={{ tileSources: "..." }}
+    onViewerReady={(v) => viewer = v}
+  />
+  {#if viewer}
+    <Annotator {viewer} />
+  {/if}
+  
+  <div>
+    <h3>Annotations: {$allAnnotations.length}</h3>
+    {#each $allAnnotations as annotation (annotation.id)}
+      <div
+        onclick={() => {
+          annotator?.state.selection.select(annotation.id);
+        }}
+      >
+        {annotation.properties?.class}: {annotation.shape.type}
+      </div>
+    {/each}
+  </div>
+</AnnotaProvider>
+```
+
+### React Integration
+
+#### Provider Setup
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator, useAnnotations } from "annota";
+import { useState, useEffect } from "react";
 
 function App() {
   const [viewer, setViewer] = useState<OpenSeadragon.Viewer>();
@@ -194,32 +243,21 @@ function App() {
   }, []);
 
   return (
-    <AnnotaProvider>
-      <OSDAnnotator
-        viewer={viewer}
-        annotations={annotations}
-        style={(annotation) => ({
-          fill: annotation.properties?.class === "tumor" ? "red" : "blue",
-          fillOpacity: 0.3,
-          stroke: "white",
-          strokeWidth: 2,
-        })}
-      >
-        <OpenSeadragonViewer
-          options={{ tileSources: "..." }}
-          onViewerReady={setViewer}
-        />
-
-        <AnnotationList />
-      </OSDAnnotator>
+    <AnnotaProvider slideId="my-slide">
+      <AnnotaViewer
+        options={{ tileSources: "..." }}
+        onViewerReady={setViewer}
+      />
+      {viewer && <Annotator viewer={viewer} />}
+      <AnnotationList />
     </AnnotaProvider>
   );
 }
 ```
 
-### Using Hooks
+#### Using Hooks
 
-```typescript
+```tsx
 import { useAnnotations, useAnnotation, useAnnotator } from "annota";
 
 function AnnotationList() {
@@ -245,7 +283,7 @@ function AnnotationItem({ id }: { id: string }) {
     <div
       onClick={() => {
         // Select annotation
-        annotator.state.selection.select(id);
+        annotator?.state.selection.select(id);
       }}
     >
       {annotation.properties?.class}: {annotation.shape.type}

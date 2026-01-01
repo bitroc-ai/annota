@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { remarkMermaid } from './src/lib/utils/remark-mermaid.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,6 +19,7 @@ export default defineConfig({
         wrap: true,
       },
       optimize: true,
+      remarkPlugins: [remarkMermaid],
     }),
     svelte(),
     react(),

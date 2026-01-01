@@ -1,6 +1,9 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Event System
 
 Annota provides a comprehensive event system to respond to annotation lifecycle changes.
@@ -20,6 +23,59 @@ type AnnotatorEvent =
 ## Listening to Events
 
 ### Using the Annotator Instance
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Access the annotator instance and register event handlers:
+
+```svelte
+<script lang="ts">
+  import { getAnnotator } from "annota/svelte";
+  import { onMount, onDestroy } from "svelte";
+
+  const annotator = getAnnotator();
+
+  onMount(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      console.log("Annotation created:", annotation);
+    };
+
+    const handleUpdate = (annotation) => {
+      console.log("Annotation updated:", annotation);
+    };
+
+    const handleDelete = (annotation) => {
+      console.log("Annotation deleted:", annotation);
+    };
+
+    const handleSelection = ({ selected }) => {
+      console.log("Selection changed:", selected);
+    };
+
+    // Register handlers
+    annotator.on("createAnnotation", handleCreate);
+    annotator.on("updateAnnotation", handleUpdate);
+    annotator.on("deleteAnnotation", handleDelete);
+    annotator.on("selectionChanged", handleSelection);
+
+    // Cleanup
+    return () => {
+      annotator.off("createAnnotation", handleCreate);
+      annotator.off("updateAnnotation", handleUpdate);
+      annotator.off("deleteAnnotation", handleDelete);
+      annotator.off("selectionChanged", handleSelection);
+    };
+  }, [annotator]);
+
+  return null;
+}
+```
+
+</Tab>
+<Tab>
 
 Access the annotator instance and register event handlers:
 
@@ -67,6 +123,9 @@ function AnnotationLogger() {
   return null;
 }
 ```
+
+</Tab>
+</Tabs>
 
 ## createAnnotation Event
 

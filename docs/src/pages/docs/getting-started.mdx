@@ -18,8 +18,8 @@ This getting started section covers:
 Before you begin, make sure you have:
 
 - **Node.js** 16+ installed
-- **React** 18+ or 19+ in your project
-- Basic knowledge of React hooks
+- **Svelte** 5+ or **React** 18+ or 19+ in your project
+- Basic knowledge of Svelte runes or React hooks
 - A whole slide image in a supported format (DZI, IIIF, etc.)
 
 ## What is Annota?
@@ -38,16 +38,16 @@ Annota is built on three core technologies:
 
 - **OpenSeadragon**: For displaying gigapixel images
 - **PixiJS**: For hardware-accelerated annotation rendering
-- **React**: For component-based UI integration
+- **Svelte** or **React**: For component-based UI integration
 
 The framework follows a clean separation of concerns:
 
 ```
-Your React App
+Your Svelte/React App
     ↓
 AnnotaProvider (Context)
     ↓
-AnnotaViewer (OpenSeadragon)
+AnnotaViewer / Viewer (OpenSeadragon)
     ↓
 Annotator (Annotation Layer)
     ↓
@@ -58,10 +58,10 @@ Tools (Point, Rectangle, Polygon, etc.)
 
 1. **Install** Annota and OpenSeadragon
 2. **Wrap** your app with `AnnotaProvider`
-3. **Add** `AnnotaViewer` component to display your image
+3. **Add** `AnnotaViewer` (React) or `Viewer` (Svelte) component to display your image
 4. **Initialize** the `Annotator` overlay
-5. **Use** hooks like `useTool` to activate annotation tools
-6. **Access** annotations via `useAnnotations()` hook
+5. **Use** `tool()` (Svelte) or `useTool()` (React) to activate annotation tools
+6. **Access** annotations via `annotations()` (Svelte) or `useAnnotations()` (React)
 
 ## Next Steps
 

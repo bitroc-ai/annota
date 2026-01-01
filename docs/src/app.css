@@ -254,26 +254,104 @@ nav {
   background-color: var(--muted);
 }
 
-/* Card styles - consistent theming */
+/* Card styles - consistent theming with enhanced hover effects */
 .card-link {
   background-color: var(--background);
   border-color: var(--border);
   color: var(--foreground);
+  position: relative;
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--primary) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .card-link:hover {
   background-color: var(--muted);
   border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--primary) 20%, transparent),
+              0 4px 6px -2px color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+.card-link:hover::before {
+  opacity: 0.05;
+}
+
+.card-link:hover .card-icon {
+  transform: scale(1.1) rotate(5deg);
+  color: var(--primary);
+}
+
+.card-link:hover .card-icon-wrapper {
+  color: var(--primary);
+}
+
+.card-link:hover .card-title {
+  color: var(--primary);
+}
+
+.card-link:hover .card-description {
+  color: var(--foreground);
 }
 
 .card-link-active {
   background-color: var(--muted);
   border-color: var(--primary);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.card-link-active .card-icon {
+  color: var(--primary);
+}
+
+.card-link-active .card-title {
+  color: var(--primary);
 }
 
 .card-link:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+}
+
+.card-link:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
+}
+
+/* Card icon animation */
+.card-icon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              color 0.3s ease;
+}
+
+.card-icon-wrapper {
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.card-title {
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.card-description {
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+  color: var(--muted-foreground);
 }
 
 /* Custom Component Styles */
@@ -354,4 +432,42 @@ nav {
 /* Focus styles */
 :focus-visible {
   @apply outline-none ring-2 ring-sky-500/50 ring-offset-2 ring-offset-white dark:ring-offset-[#0a0f1a];
+}
+
+/* Mermaid diagram styles */
+.mermaid-container {
+  @apply my-6 rounded-lg overflow-x-auto p-4 border;
+  background-color: var(--muted);
+  border-color: var(--border);
+}
+
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Tabs styling - theme-aware */
+.tab-list {
+  border-color: var(--border);
+}
+
+.tab-button {
+  color: var(--muted-foreground) !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.tab-button:hover:not([aria-selected="true"]) {
+  background-color: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+
+.tab-button[aria-selected="true"] {
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
 }

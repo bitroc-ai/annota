@@ -1,6 +1,9 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Data Loaders
 
 Annota provides built-in loaders for importing annotations from various file formats.
@@ -21,6 +24,32 @@ Load instance segmentation masks from PNG or PGM files and convert them to polyg
 
 ### Basic Usage
 
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+```svelte
+<script lang="ts">
+  import { loadMaskPolygons, getAnnotator } from "annota/svelte";
+
+  const annotator = getAnnotator();
+
+  async function handleLoad() {
+    const annotations = await loadMaskPolygons("/masks/instances.png", {
+      color: "#FFFF00",
+      fillOpacity: 0.3,
+      strokeWidth: 2,
+    });
+
+    annotator?.addAnnotations(annotations);
+  }
+</script>
+
+<button onclick={handleLoad}>Load Mask</button>
+```
+
+</Tab>
+<Tab>
+
 ```tsx
 import { loadMaskPolygons, useAnnotator } from "annota";
 
@@ -40,6 +69,9 @@ function LoadMasks() {
   return <button onClick={handleLoad}>Load Mask</button>;
 }
 ```
+
+</Tab>
+</Tabs>
 
 ### Expected File Format
 

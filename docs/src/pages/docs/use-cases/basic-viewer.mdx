@@ -1,11 +1,109 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Basic Viewer Example
 
 A complete, minimal annotation viewer with point, rectangle, and polygon tools.
 
 ## Full Example
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+```svelte
+<script lang="ts">
+  import {
+    AnnotaProvider,
+    Viewer as AnnotaViewer,
+    Annotator,
+    annotations,
+    tool,
+    PointTool,
+    RectangleTool,
+    PolygonTool,
+  } from 'annota/svelte';
+  import 'annota/dist/index.css';
+  import type OpenSeadragon from 'openseadragon';
+
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  let activeTool = $state('pan');
+
+  // Tool instances
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  // Activate selected tool
+  tool({
+    viewer: () => viewer,
+    handler: () => activeTool === 'pan' ? null : tools[activeTool],
+    enabled: () => !!viewer && activeTool !== 'pan',
+  });
+
+  const allAnnotations = annotations();
+</script>
+
+<AnnotaProvider slideId="slide-001">
+  <div style="width: 100vw; height: 100vh; position: relative;">
+    <!-- Toolbar -->
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 10; display: flex; gap: 8px;">
+      <button
+        onclick={() => activeTool = 'pan'}
+        style="font-weight: {activeTool === 'pan' ? 'bold' : 'normal'}"
+      >
+        Pan
+      </button>
+      <button
+        onclick={() => activeTool = 'point'}
+        style="font-weight: {activeTool === 'point' ? 'bold' : 'normal'}"
+      >
+        Point
+      </button>
+      <button
+        onclick={() => activeTool = 'rectangle'}
+        style="font-weight: {activeTool === 'rectangle' ? 'bold' : 'normal'}"
+      >
+        Rectangle
+      </button>
+      <button
+        onclick={() => activeTool = 'polygon'}
+        style="font-weight: {activeTool === 'polygon' ? 'bold' : 'normal'}"
+      >
+        Polygon
+      </button>
+    </div>
+
+    <!-- Info panel -->
+    <div style="position: absolute; top: 20px; right: 20px; z-index: 10; background: white; padding: 12px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <h3 style="margin: 0; margin-bottom: 8px;">Annotations</h3>
+      <div>Total: {$allAnnotations.length}</div>
+    </div>
+
+    <!-- Viewer -->
+    <AnnotaViewer
+      options={{
+        tileSources: '/path/to/image.dzi',
+        prefixUrl: 'https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/',
+        showNavigationControl: false,
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+
+    <!-- Annotation overlay -->
+    {#if viewer}
+      <Annotator {viewer} />
+    {/if}
+  </div>
+</AnnotaProvider>
+```
+
+</Tab>
+<Tab>
 
 ```tsx
 import {
@@ -116,6 +214,9 @@ function ViewerInterface() {
   );
 }
 ```
+
+</Tab>
+</Tabs>
 
 ## Key Features
 

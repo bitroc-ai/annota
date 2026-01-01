@@ -22,6 +22,30 @@ Tools enable users to interact with the image and create annotations. Each tool 
 
 ### Basic Usage
 
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Activate a tool using the `tool()` function:
+
+```svelte
+<script lang="ts">
+  import { tool } from "annota/svelte";
+  import { PointTool } from "annota";
+
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  const pointTool = new PointTool();
+
+  tool({
+    viewer: () => viewer,
+    handler: () => pointTool,
+    enabled: () => !!viewer,
+  });
+</script>
+```
+
+</Tab>
+<Tab>
+
 Activate a tool using the `useTool` hook:
 
 ```tsx
@@ -40,7 +64,47 @@ function MyComponent({ viewer }) {
 }
 ```
 
+</Tab>
+</Tabs>
+
 ### Tool Switching
+
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+Allow users to switch between tools:
+
+```svelte
+<script lang="ts">
+  import { tool } from "annota/svelte";
+  import { PointTool, RectangleTool, PolygonTool } from "annota";
+
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  let activeTool = $state("point");
+
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  tool({
+    viewer: () => viewer,
+    handler: () => activeTool === "pan" ? null : tools[activeTool],
+    enabled: () => !!viewer && activeTool !== "pan",
+  });
+</script>
+
+<div>
+  <button onclick={() => activeTool = "pan"}>Pan</button>
+  <button onclick={() => activeTool = "point"}>Point</button>
+  <button onclick={() => activeTool = "rectangle"}>Rectangle</button>
+  <button onclick={() => activeTool = "polygon"}>Polygon</button>
+</div>
+```
+
+</Tab>
+<Tab>
 
 Allow users to switch between tools:
 
@@ -73,6 +137,9 @@ function ToolController({ viewer }) {
   );
 }
 ```
+
+</Tab>
+</Tabs>
 
 ## Point Tool
 

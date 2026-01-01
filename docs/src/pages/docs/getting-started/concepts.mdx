@@ -1,6 +1,9 @@
 ---
 layout: ../../../layouts/DocsLayout.astro
 ---
+import Tabs from '../../../lib/components/md/Tabs.astro';
+import Tab from '../../../lib/components/md/Tab.astro';
+
 # Core Concepts
 
 Understanding the core concepts of Annota will help you build powerful annotation applications.
@@ -270,6 +273,27 @@ Tools enable users to create and edit annotations. Annota provides built-in tool
 
 Create point annotations with a single click:
 
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+```svelte
+<script lang="ts">
+  import { PointTool, tool } from "annota/svelte";
+
+  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
+  const pointTool = new PointTool();
+
+  tool({
+    viewer: () => viewer,
+    handler: () => pointTool,
+    enabled: () => !!viewer,
+  });
+</script>
+```
+
+</Tab>
+<Tab>
+
 ```tsx
 import { PointTool, useTool } from "annota";
 
@@ -281,6 +305,9 @@ useTool({
   enabled: true,
 });
 ```
+
+</Tab>
+</Tabs>
 
 ### Rectangle Tool
 
@@ -357,6 +384,53 @@ type AnnotatorEvent =
 
 ### Listening to Events
 
+<Tabs items={["Svelte", "React"]}>
+<Tab>
+
+```svelte
+<script lang="ts">
+  import { getAnnotator } from "annota/svelte";
+  import { onMount } from "svelte";
+
+  const annotator = getAnnotator();
+
+  onMount(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      console.log("Created:", annotation);
+    };
+
+    const handleUpdate = (annotation) => {
+      console.log("Updated:", annotation);
+    };
+
+    const handleDelete = (annotation) => {
+      console.log("Deleted:", annotation);
+    };
+
+    const handleSelection = ({ selected }) => {
+      console.log("Selection:", selected);
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    annotator.on("updateAnnotation", handleUpdate);
+    annotator.on("deleteAnnotation", handleDelete);
+    annotator.on("selectionChanged", handleSelection);
+
+    return () => {
+      annotator.off("createAnnotation", handleCreate);
+      annotator.off("updateAnnotation", handleUpdate);
+      annotator.off("deleteAnnotation", handleDelete);
+      annotator.off("selectionChanged", handleSelection);
+    };
+  });
+</script>
+```
+
+</Tab>
+<Tab>
+
 ```tsx
 import { useAnnotator } from "annota";
 import { useEffect } from "react";
@@ -399,6 +473,9 @@ function AnnotationLogger() {
   return null;
 }
 ```
+
+</Tab>
+</Tabs>
 
 ## Selection
 
