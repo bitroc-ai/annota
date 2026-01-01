@@ -108,9 +108,20 @@
 
   .prose code {
     @apply !relative !rounded !px-1.5 !py-0.5 !font-mono !text-[0.875em] !font-medium !border;
-    background-color: var(--muted);
-    color: var(--foreground);
-    border-color: var(--border);
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+  }
+
+  /* Hide backticks from embedded code blocks */
+  .prose code:not(pre code)::before,
+  .prose code:not(pre code)::after {
+    content: none !important;
+  }
+
+  /* Override Tailwind Typography default code colors */
+  .prose code:not(pre code) {
+    color: var(--foreground) !important;
   }
 
   .prose pre {
@@ -122,7 +133,20 @@
   .prose pre code {
     @apply !relative !rounded-none !bg-transparent !p-0 !font-mono !text-[0.875rem] !font-normal !border-none;
     line-height: 1.6;
-    color: var(--foreground);
+    color: var(--foreground) !important;
+  }
+
+  /* Ensure all code elements use theme colors */
+  .prose code,
+  .prose pre code,
+  .prose td code,
+  .prose p code,
+  .prose li code,
+  .prose h1 code,
+  .prose h2 code,
+  .prose h3 code,
+  .prose h4 code {
+    color: var(--foreground) !important;
   }
 
   .prose blockquote {
@@ -134,20 +158,86 @@
   }
 
   .prose table {
-    @apply !w-full !border-collapse !text-left !text-sm !mt-6 !mb-6;
+    @apply !w-full !border-collapse !text-left !text-sm !mt-6 !mb-6 !rounded-lg !overflow-hidden;
+    border: 1px solid var(--border);
+    background-color: var(--background);
+  }
+
+  .prose thead {
+    background-color: var(--muted) !important;
+  }
+
+  .prose thead th {
+    color: var(--foreground) !important;
   }
 
   .prose th {
-    @apply !border-b !py-3 !px-4 !font-semibold;
-    border-color: var(--border);
+    @apply !py-3.5 !px-4 !font-semibold !text-xs !uppercase !tracking-wider;
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground) !important;
+    background-color: var(--muted) !important;
+  }
+
+  .prose th:first-child {
+    @apply !pl-6;
+  }
+
+  .prose th:last-child {
+    @apply !pr-6;
+  }
+
+  .prose tbody tr {
+    transition: background-color 0.15s ease;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .prose tbody tr:hover {
     background-color: var(--muted);
-    color: var(--foreground);
+  }
+
+  .prose tbody tr:last-child {
+    border-bottom: none;
   }
 
   .prose td {
-    @apply !border-b !py-3 !px-4;
+    @apply !py-3.5 !px-4;
     border-color: var(--border);
     color: var(--muted-foreground);
+  }
+
+  .prose td:first-child {
+    @apply !pl-6;
+  }
+
+  .prose td:last-child {
+    @apply !pr-6;
+  }
+
+  /* Code blocks within table cells */
+  .prose td code {
+    @apply !px-2 !py-1 !text-xs !font-mono;
+    background-color: var(--muted) !important;
+    color: var(--foreground) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 4px;
+  }
+
+  /* Hide backticks in all code contexts */
+  .prose td code::before,
+  .prose td code::after,
+  .prose p code::before,
+  .prose p code::after,
+  .prose li code::before,
+  .prose li code::after,
+  .prose h1 code::before,
+  .prose h1 code::after,
+  .prose h2 code::before,
+  .prose h2 code::after,
+  .prose h3 code::before,
+  .prose h3 code::after,
+  .prose h4 code::before,
+  .prose h4 code::after {
+    content: none !important;
   }
 
   .prose ul {
