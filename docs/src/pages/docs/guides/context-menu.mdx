@@ -173,6 +173,40 @@ const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = contextMenu(
 ```
 
 **Returns:**
+- `menuState` - Reactive store with `position`, `annotation`, and `type` ('viewer' or 'annotation')
+- `showViewerMenu(x, y)` - Show menu at position for viewer clicks
+- `showAnnotationMenu(annotation, x, y)` - Show menu at position for annotation clicks
+- `hideMenu()` - Close the menu
+
+### contextMenuBinding
+
+Automatically binds context menu events to the viewer canvas. Handles right-click detection and determines whether to show a viewer or annotation menu based on what was clicked.
+
+```svelte
+contextMenuBinding(showViewerMenu, showAnnotationMenu);
+```
+
+**Parameters:**
+- `showViewerMenu` - Function to show viewer context menu
+- `showAnnotationMenu` - Function to show annotation context menu
+
+The function automatically:
+- Prevents the default browser context menu
+- Detects if an annotation was clicked (with the same hit tolerance as left-click)
+- Shows the appropriate menu type
+
+</Tab>
+<Tab>
+
+### useContextMenu
+
+Manages the state of the context menu, including position and what was clicked.
+
+```tsx
+const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } = useContextMenu();
+```
+
+**Returns:**
 - `menuState` - Current menu state with `position`, `annotation`, and `type` ('viewer' or 'annotation')
 - `showViewerMenu(x, y)` - Show menu at position for viewer clicks
 - `showAnnotationMenu(annotation, x, y)` - Show menu at position for annotation clicks
@@ -194,6 +228,9 @@ The hook automatically:
 - Prevents the default browser context menu
 - Detects if an annotation was clicked (with the same hit tolerance as left-click)
 - Shows the appropriate menu type
+
+</Tab>
+</Tabs>
 
 ## Components
 
