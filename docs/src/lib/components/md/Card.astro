@@ -1,0 +1,27 @@
+---
+import DynamicIcon from "./DynamicIcon.svelte";
+
+interface Props {
+  title: string;
+  iconName?: string;
+  href: string;
+}
+
+const { title, iconName, href } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group flex flex-col justify-start overflow-hidden rounded-lg border border-gray-200 bg-transparent text-current no-underline shadow-sm shadow-gray-100 transition-all duration-200 hover:border-gray-300 hover:bg-slate-50 hover:shadow-md dark:border-neutral-700 dark:shadow-none dark:hover:border-neutral-500 dark:hover:bg-neutral-900"
+>
+  {iconName && (
+    <div class="p-4 text-gray-700 dark:text-neutral-200">
+      <DynamicIcon client:load name={iconName} class="w-6 h-6" />
+    </div>
+  )}
+  <div class="flex-1 p-4 pt-0">
+    <div class="font-semibold">{title}</div>
+    <slot />
+  </div>
+</a>
+

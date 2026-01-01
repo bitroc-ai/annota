@@ -1,17 +1,20 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
+  import * as LucideIcons from "lucide-svelte";
 
   interface Props {
     icon?: Component<any>;
+    iconName?: string;
     title: string;
     description: string;
     variant?: "default" | "ghost";
     children?: Snippet;
   }
 
-  let { icon, title, description, variant = "default", children }: Props = $props();
+  let { icon, iconName, title, description, variant = "default", children }: Props = $props();
 
   let isGhost = $derived(variant === "ghost");
+  let resolvedIcon = $derived(icon || (iconName && (LucideIcons[iconName as keyof typeof LucideIcons] as Component<any>)));
 </script>
 
 <div
@@ -19,7 +22,7 @@
     ? 'bg-transparent border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
     : 'bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1'}"
 >
-  {#if icon || children}
+  {#if resolvedIcon || children}
     <div
       class="mb-4 inline-flex p-3 rounded-xl transition-colors duration-300 {isGhost
         ? 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700'
@@ -27,8 +30,8 @@
     >
       {#if children}
         {@render children()}
-      {:else if icon}
-        {@const Icon = icon}
+      {:else if resolvedIcon}
+        {@const Icon = resolvedIcon}
         <Icon class="w-6 h-6" />
       {/if}
     </div>

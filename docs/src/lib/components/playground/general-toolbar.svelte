@@ -9,7 +9,7 @@
     Eraser,
   } from "lucide-svelte";
   import { toastSuccess, toastInfo } from "$lib/services/toast";
-  import { getAnnotator, viewer as viewerUtil, history } from "annota/svelte";
+  import { getAnnotator, viewer as viewerUtils, history } from "annota/svelte";
   import { downloadJson, exportJson } from "annota";
   import Button from "$lib/components/ui/Button.svelte";
   import Card from "$lib/components/ui/Card.svelte";
@@ -22,7 +22,7 @@
 
   const getAnnotatorFn = getAnnotator();
   const annotator = $derived(getAnnotatorFn());
-  const viewerControls = $derived(viewerUtil(viewer));
+  const viewerControls = $derived(viewerUtils(viewer));
   const historyInstance = history();
 
   function handleExportJson() {

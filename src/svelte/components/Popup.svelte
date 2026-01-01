@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type OpenSeadragon from "openseadragon";
+  import OpenSeadragon from "openseadragon";
   import type { Annotation, Bounds } from "../../core/types";
   import type {
     PopupPosition,

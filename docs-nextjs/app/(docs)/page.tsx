@@ -76,17 +76,18 @@ export default function HomePage() {
                   </span>
                   v0.8.3 is now available
                 </div>
-                
+
                 <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight leading-[1.1]">
-                  High-Performance <br/>
+                  High-Performance <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                     Image Annotation
                   </span>
                 </h1>
 
                 <p className="text-xl text-slate-600 dark:text-slate-300 mb-8 font-light leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                  A framework designed for whole slide imaging and digital pathology. 
-                  Handle thousands of annotations with 60 FPS performance.
+                  A framework designed for whole slide imaging and digital
+                  pathology. Handle thousands of annotations with 60 FPS
+                  performance.
                 </p>
               </div>
 
@@ -190,7 +191,8 @@ export default function HomePage() {
                 Get Started in Seconds
               </h2>
               <p className="text-lg text-slate-600 dark:text-slate-400">
-                Simple, intuitive API that feels right at home in your React application
+                Simple, intuitive API that feels right at home in your React
+                application
               </p>
             </div>
 
@@ -208,7 +210,12 @@ export default function HomePage() {
                     background: "#1e1e1e",
                   }}
                   showLineNumbers={true}
-                  lineNumberStyle={{ minWidth: "2.5em", paddingRight: "1em", color: "#6e7681", textAlign: "right" }}
+                  lineNumberStyle={{
+                    minWidth: "2.5em",
+                    paddingRight: "1em",
+                    color: "#6e7681",
+                    textAlign: "right",
+                  }}
                 >
                   {`// npm install annota openseadragon react react-dom
 
@@ -388,7 +395,9 @@ function FeatureCard({
         }`}
       >
         {/* @ts-ignore - cloneElement is safe here given the icon prop type */}
-        {React.cloneElement(icon as React.ReactElement, { className: "w-6 h-6" })}
+        {React.cloneElement(icon as React.ReactElement, {
+          className: "w-6 h-6",
+        })}
       </div>
       <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
         {title}
@@ -412,7 +421,7 @@ function Footer() {
               className="h-8 w-auto opacity-80 hover:opacity-100 transition-opacity brightness-0 dark:brightness-100 dark:invert"
             />
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              © {new Date().getFullYear()} Annota Team. Open Source MIT.
+              © {new Date().getFullYear()} BitRoc AI.
             </p>
           </div>
           <div className="flex gap-8">

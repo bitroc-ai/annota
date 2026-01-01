@@ -1,6 +1,6 @@
-import type OpenSeadragon from 'openseadragon';
-import type { ToolHandler } from '../tools/types';
-import { getAnnotator } from './annotator';
+import OpenSeadragon from "openseadragon";
+import type { ToolHandler } from "../tools/types";
+import { getAnnotator } from "./annotator";
 
 interface ToolOptions {
   viewer: () => OpenSeadragon.Viewer | undefined;
@@ -46,4 +46,3 @@ export function tool({ viewer, handler, enabled }: ToolOptions): void {
     };
   });
 }
-

@@ -2,7 +2,7 @@
  * Function for controlling the viewer (zoom, pan, etc.)
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 
 /**
  * Viewport metrics for scale calculations and measurements
@@ -51,7 +51,7 @@ export interface ViewerResult {
   getViewportMetrics: () => ViewportMetrics;
 }
 
-export function viewer(viewerInstance: OpenSeadragon.Viewer | undefined): ViewerResult {
+export function viewerUtils(viewerInstance: OpenSeadragon.Viewer | undefined): ViewerResult {
   function zoomIn(factor = 1.2) {
     if (!viewerInstance) return;
     const currentZoom = viewerInstance.viewport.getZoom();

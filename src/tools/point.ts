@@ -2,7 +2,7 @@
  * Point Tool - Add point annotations by clicking
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';

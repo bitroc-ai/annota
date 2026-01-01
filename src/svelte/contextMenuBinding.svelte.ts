@@ -1,4 +1,4 @@
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
 import { getAnnotator } from './annotator';
 

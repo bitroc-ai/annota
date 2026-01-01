@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import type OpenSeadragon from "openseadragon";
+  import OpenSeadragon from "openseadragon";
 
   interface Props {
     class?: string;

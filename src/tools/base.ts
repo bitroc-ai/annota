@@ -159,7 +159,7 @@ export abstract class BaseTool implements ToolHandler {
     }
 
     const imageCoords = this.viewer.viewport.viewerElementToImageCoordinates(
-      new OpenSeadragon.Point(offsetX, offsetY)
+      ({ x: offsetX, y: offsetY } as any as OpenSeadragon.Point)
     );
     return { x: imageCoords.x, y: imageCoords.y };
   }

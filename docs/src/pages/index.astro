@@ -1,0 +1,201 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import FeatureCard from "../lib/components/landing/FeatureCard.svelte";
+import Footer from "../lib/components/landing/Footer.svelte";
+import AnnotaDemo from "../lib/components/demo/AnnotaDemo.svelte";
+import { ChevronRight, MonitorPlay } from "lucide-svelte";
+---
+
+<BaseLayout title="Annota - High-performance annotation framework">
+  <!-- Hero Section -->
+  <section
+    class="relative overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20 lg:py-32"
+  >
+    <div class="container mx-auto px-6">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1
+          class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent"
+        >
+          Annota
+        </h1>
+        <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-300 mb-8">
+          High-performance annotation framework
+        </p>
+        <p
+          class="text-lg text-slate-500 dark:text-slate-400 mb-12 max-w-2xl mx-auto"
+        >
+          Build powerful annotation tools with support for both{" "}
+          <strong>Svelte</strong> and <strong>React</strong>. Handle thousands
+          of annotations at 60 FPS with hardware-accelerated rendering.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/docs"
+            class="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-slate-900 dark:bg-slate-100 dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors duration-200"
+          >
+            Get Started
+            <ChevronRight class="ml-2 w-5 h-5" />
+          </a>
+          <a
+            href="/playground"
+            class="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-slate-900 dark:text-slate-100 border-2 border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors duration-200"
+          >
+            Playground
+            <MonitorPlay class="ml-2 w-5 h-5" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-20 bg-white dark:bg-slate-950">
+    <div class="container mx-auto px-6">
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
+        Why Choose Annota?
+      </h2>
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"
+      >
+        <FeatureCard
+          client:load
+          iconName="Zap"
+          title="High Performance"
+          description="60 FPS rendering with hardware acceleration, viewport culling, and R-tree spatial indexing"
+        />
+        <FeatureCard
+          client:load
+          iconName="Code2"
+          title="Svelte & React"
+          description="Works seamlessly with both Svelte 5 and React 18+. Choose the framework that fits your stack"
+        />
+        <FeatureCard
+          client:load
+          iconName="Layers"
+          title="Multi-Layer Support"
+          description="Organize annotations into layers with independent visibility, opacity, and styling controls"
+        />
+        <FeatureCard
+          client:load
+          iconName="Package"
+          title="Comprehensive Tools"
+          description="Point, rectangle, polygon, freehand, and SAM segmentation tools out of the box"
+        />
+        <FeatureCard
+          client:load
+          iconName="Microscope"
+          title="Pathology-Focused"
+          description="Built specifically for whole slide imaging and digital pathology workflows"
+        />
+        <FeatureCard
+          client:load
+          iconName="Brain"
+          title="Event-Driven"
+          description="Comprehensive event system for responding to annotation changes in real-time"
+        />
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Demo Section -->
+  <section class="py-20 bg-slate-50 dark:bg-slate-900">
+    <div class="container mx-auto px-6">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">
+          Try It Now
+        </h2>
+        <p class="text-center text-slate-600 dark:text-slate-400 mb-8">
+          Interactive demo: Click and drag to draw a rectangle annotation, or
+          select and resize the existing one.
+        </p>
+        <div
+          class="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-4 h-[500px]"
+        >
+          <AnnotaDemo client:only="svelte" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start Section -->
+  <section class="py-20 bg-white dark:bg-slate-950">
+    <div class="container mx-auto px-6">
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-bold text-center mb-8">
+          Quick Start
+        </h2>
+        <div class="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 mb-8">
+          <h3 class="text-lg font-semibold mb-4">Svelte</h3>
+          <pre
+            class="bg-slate-900 dark:bg-slate-800 text-slate-100 p-4 rounded overflow-x-auto"><code>{`npm install annota openseadragon
+
+import { AnnotaProvider, Viewer, Annotator, tool } from 'annota/svelte';
+import { RectangleTool } from 'annota';
+
+&lt;AnnotaProvider slideId="my-slide"&gt;
+  &lt;Viewer options={{ tileSources: "/image.dzi" }} /&gt;
+  &lt;Annotator viewer={viewer} /&gt;
+&lt;/AnnotaProvider&gt;`}</code></pre>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-900 rounded-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">React</h3>
+          <pre
+            class="bg-slate-900 dark:bg-slate-800 text-slate-100 p-4 rounded overflow-x-auto"><code>{`npm install annota openseadragon
+
+import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
+import { useTool } from 'annota';
+
+function App() {
+  return (
+    &lt;AnnotaProvider slideId="my-slide"&gt;
+      &lt;AnnotaViewer options={{ tileSources: "/image.dzi" }} /&gt;
+      &lt;Annotator viewer={viewer} /&gt;
+    &lt;/AnnotaProvider&gt;
+  );
+}`}</code></pre>
+        </div>
+        <div class="text-center mt-8">
+          <a
+            href="/docs/getting-started/quick-start"
+            class="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+          >
+            Read the full guide
+            <ChevronRight class="ml-1 w-4 h-4" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section
+    class="py-16 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white"
+  >
+    <div class="container mx-auto px-6 text-center">
+      <h2 class="text-3xl md:text-4xl font-semibold mb-4">
+        Ready to Start Annotating?
+      </h2>
+      <p class="text-base mb-8 max-w-xl mx-auto text-slate-300">
+        Build powerful annotation tools for digital pathology with Annota's
+        comprehensive framework
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a
+          href="/docs"
+          class="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-slate-900 bg-white rounded-lg hover:bg-slate-100 transition-colors duration-200"
+        >
+          Read Documentation
+          <ChevronRight class="ml-2 w-4 h-4" />
+        </a>
+        <a
+          href="/api"
+          class="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white border border-slate-600 rounded-lg hover:bg-slate-800 transition-colors duration-200"
+        >
+          API
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <Footer client:load />
+</BaseLayout>

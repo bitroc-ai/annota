@@ -4,7 +4,7 @@
  */
 
 import { useEffect, ReactNode } from 'react';
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import {
   createOpenSeadragonAnnotator,
   type OpenSeadragonAnnotatorOptions,

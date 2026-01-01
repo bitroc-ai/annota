@@ -3,7 +3,7 @@
  * Main annotator factory for OpenSeadragon integration
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import {
   createAnnotationStore,
   type AnnotationStore,

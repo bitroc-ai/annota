@@ -10,17 +10,17 @@ export { default as ContextMenuDivider } from "./components/ContextMenuDivider.s
 
 // Utilities
 export { getAnnotator, setAnnotator } from "./annotator";
-export * from "./tool.svelte";
-export * from "./pushToolCursor.svelte";
-export * from "./contextMenu.svelte";
-export * from "./contextMenuBinding.svelte";
-export * from "./selection.svelte";
-export * from "./editing.svelte";
-export * from "./viewer.svelte";
-export * from "./history.svelte";
-export * from "./layers.svelte";
-export * from "./layerManager.svelte";
-export * from "./annotations.svelte";
+export { tool } from "./tool.svelte";
+export { pushToolCursor } from "./pushToolCursor.svelte";
+export { contextMenu } from "./contextMenu.svelte";
+export { contextMenuBinding } from "./contextMenuBinding.svelte";
+export { selection } from "./selection.svelte";
+export { editing } from "./editing.svelte";
+export { viewer } from "./viewer-utils.svelte";
+export { history } from "./history.svelte";
+export { layers } from "./layers.svelte";
+export { layerManager } from "./layerManager.svelte";
+export { annotations } from "./annotations.svelte";
 
 // Re-export core types that are shared
 export type {

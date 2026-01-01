@@ -2,7 +2,7 @@
  * Polygon Tool - Draw polygon annotations by clicking vertices
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation, Point } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';

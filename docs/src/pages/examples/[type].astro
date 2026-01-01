@@ -1,0 +1,19 @@
+---
+import BareLayout from '../../layouts/BareLayout.astro';
+import ExampleContent from '../../lib/components/examples/ExampleContent.svelte';
+
+export function getStaticPaths() {
+  return [
+    { params: { type: 'rectangle' } },
+    { params: { type: 'polygon' } },
+    { params: { type: 'points' } },
+  ];
+}
+
+const { type } = Astro.params;
+---
+
+<BareLayout title={`Annota Example - ${type}`}>
+  <ExampleContent client:only="svelte" type={type} />
+</BareLayout>
+

@@ -1,0 +1,81 @@
+---
+interface Props {
+  items: string[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="nextra-tabs mt-4" data-tabs>
+  <div class="overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px mb-2 -ml-2">
+    <div class="flex gap-2 border-b border-gray-200 dark:border-neutral-800 pb-px" role="tablist">
+      {items.map((item, i) => (
+        <button
+          type="button"
+          class="px-4 py-2 text-sm font-medium rounded-t-md transition-colors border-b-2 -mb-px hover:bg-gray-100 hover:text-black dark:hover:bg-neutral-800 dark:hover:text-white border-transparent text-gray-600 dark:text-gray-400"
+          data-tab-button
+          data-index={i}
+          role="tab"
+          aria-selected={i === 0}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div class="mt-2">
+    <slot />
+  </div>
+</div>
+
+<script>
+  function setupTabs() {
+    console.log('Setting up tabs...');
+    const tabContainers = document.querySelectorAll('[data-tabs]');
+    
+    tabContainers.forEach(container => {
+      const buttons = container.querySelectorAll('[data-tab-button]');
+      const panels = container.querySelectorAll('[data-tab-panel]');
+      
+      console.log(`Found ${buttons.length} buttons and ${panels.length} panels`);
+      
+      function setTab(index) {
+        buttons.forEach((btn, i) => {
+          const isSelected = i === index;
+          btn.setAttribute('aria-selected', isSelected.toString());
+          if (isSelected) {
+            btn.classList.add('border-blue-500', 'text-blue-600', 'dark:border-blue-500', 'dark:text-blue-500', 'bg-blue-50/50', 'dark:bg-blue-900/20');
+            btn.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+          } else {
+            btn.classList.remove('border-blue-500', 'text-blue-600', 'dark:border-blue-500', 'dark:text-blue-500', 'bg-blue-50/50', 'dark:bg-blue-900/20');
+            btn.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+          }
+        });
+        
+        panels.forEach((panel, i) => {
+          if (i === index) {
+            panel.classList.remove('hidden');
+          } else {
+            panel.classList.add('hidden');
+          }
+        });
+      }
+      
+      buttons.forEach((btn, i) => {
+        btn.addEventListener('click', () => setTab(i));
+      });
+      
+      // Initialize first tab
+      if (buttons.length > 0) {
+        setTab(0);
+      }
+    });
+  }
+
+  // Run on initial load
+  setupTabs();
+  // Run on View Transitions navigation
+  document.addEventListener('astro:after-swap', setupTabs);
+</script>
+

@@ -1,0 +1,22 @@
+---
+interface Props {
+  type: string;
+  height?: number;
+  title?: string;
+}
+
+const { type, height = 400, title } = Astro.props;
+
+const defaultTitles: Record<string, string> = {
+  rectangle: "Interactive Rectangle Annotation Example",
+  polygon: "Interactive Polygon Annotation Example",
+  points: "Interactive Points Annotation Example",
+};
+---
+
+<iframe
+  src={`/examples/${type}`}
+  style={`width: 100%; height: ${height}px; border: 0;`}
+  title={title || defaultTitles[type] || "Example"}
+></iframe>
+

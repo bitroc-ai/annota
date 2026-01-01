@@ -5,7 +5,7 @@
  * Uses Svelte's reactivity to automatically track changes to viewer, handler, and enabled state.
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 
 export function pushToolCursor(
   viewer: () => OpenSeadragon.Viewer | undefined,

@@ -2,7 +2,7 @@
  * Curve Tool - Draw smooth closed curves by freehand drawing
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation, Point, ControlPoint } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';

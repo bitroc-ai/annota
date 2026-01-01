@@ -2,7 +2,7 @@
  * Split Tool - Cut annotations into multiple pieces with a line
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation, Point } from '../core/types';
 import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';

@@ -1,0 +1,49 @@
+---
+layout: ../../../layouts/DocsLayout.astro
+---
+# annotations
+
+Get all annotations in the store.
+
+## Signature
+
+```typescript
+function annotations(): Annotation[];
+```
+
+## Returns
+
+A reactive array of all annotations currently in the annotation store.
+
+## Example
+
+```svelte
+<script lang="ts">
+  import { annotations } from 'annota/svelte';
+
+  const annotationsList = annotations();
+</script>
+
+<div>
+  <h3>Annotations ({annotationsList.length})</h3>
+  <ul>
+    {#each annotationsList as ann (ann.id)}
+      <li>
+        {ann.shape.type} - ID: {ann.id}
+      </li>
+    {/each}
+  </ul>
+</div>
+```
+
+## Usage Notes
+
+- This function subscribes to annotation store changes and will automatically update when annotations are added, updated, or deleted
+- For large annotation sets, consider using filtering or pagination to avoid performance issues
+- To get a specific annotation, use [useAnnotation](/api/hooks/use-annotation) instead
+
+## Related
+
+- [useAnnotation](/api/hooks/use-annotation) - Get a specific annotation by ID
+- [selection](/api/hooks/use-selection) - Get currently selected annotations
+- [useAnnotationStore](/api/hooks/use-annotation-store) - Direct access to the annotation store

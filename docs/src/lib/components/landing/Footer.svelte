@@ -13,7 +13,7 @@
           class="h-8 w-auto opacity-80 hover:opacity-100 transition-opacity brightness-0 dark:brightness-100 dark:invert"
         />
         <p class="text-sm text-slate-500 dark:text-slate-400">
-          © {new Date().getFullYear()} Annota Team. Open Source MIT.
+          © {new Date().getFullYear()} BitRoc AI.
         </p>
       </div>
       <div class="flex gap-8">
