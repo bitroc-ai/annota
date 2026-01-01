@@ -19,16 +19,14 @@
 
   // Get or assign tab index
   let tabIndex = $state(
-    index !== undefined
-      ? index
-      : tabsContext
-        ? tabsContext.registerTab()
-        : -1
+    index !== undefined ? index : tabsContext ? tabsContext.registerTab() : -1
   );
 
   // Determine if this tab should be visible
   let isActive = $derived(
-    tabsContext && tabIndex >= 0 ? tabIndex === tabsContext.selectedIndex : false
+    tabsContext && tabIndex >= 0
+      ? tabIndex === tabsContext.selectedIndex
+      : false
   );
 </script>
 

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { getToasts } from "$lib/services/toast";
-  import { CheckCircle2, XCircle, Info, AlertTriangle, X } from "lucide-svelte";
+  import { CircleCheck, CircleX, Info, TriangleAlert, X } from "lucide-svelte";
 
   const toasts = getToasts();
 
   function getIcon(type: string) {
     switch (type) {
       case "success":
-        return CheckCircle2;
+        return CircleCheck;
       case "error":
-        return XCircle;
+        return CircleX;
       case "warning":
-        return AlertTriangle;
+        return TriangleAlert;
       default:
         return Info;
     }
@@ -40,7 +40,7 @@
   role="region"
   aria-label="Notifications"
 >
-  {#each toasts as toast (toast.id)}
+  {#each $toasts as toast (toast.id)}
     {@const Icon = getIcon(toast.type)}
     {@const styles = getStyles(toast.type)}
     <div

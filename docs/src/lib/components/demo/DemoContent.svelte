@@ -1,13 +1,12 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { getAnnotator, tool, Viewer as AnnotaViewer } from "annota/svelte";
   import {
-    getAnnotator,
-    tool,
-    Annotator,
-    AnnotaProvider,
-    Viewer as AnnotaViewer,
-  } from "annota/svelte";
-  import { PointTool, RectangleTool, CurveTool, SamTool } from "annota";
+    PointTool,
+    RectangleTool,
+    CurveTool,
+    SamTool,
+    type SamTool as SamToolType,
+  } from "annota";
   import {
     Hand,
     CircleDot,
@@ -19,10 +18,7 @@
   import Tooltip from "../ui/Tooltip.svelte";
   import DemoContextMenu from "./DemoContextMenu.svelte";
   import { createInitialAnnotations } from "./utils";
-  import {
-    createApiPredictFn,
-    createMockPredictFn,
-  } from "$lib/services/sam-predict";
+  import { createMockPredictFn } from "$lib/services/sam-predict";
 
   interface Props {
     imageUrl?: string;
@@ -46,7 +42,7 @@
   const rectangleTool = new RectangleTool();
   const curveTool = new CurveTool();
 
-  let segmentTool = $state<SamTool | null>(null);
+  let segmentTool = $state<InstanceType<typeof SamTool> | null>(null);
 
   // Init Segment Tool
   $effect(() => {

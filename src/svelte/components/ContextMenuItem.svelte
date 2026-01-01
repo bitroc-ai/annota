@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import type { Snippet, Component } from "svelte";
 
   interface Props {
     label: string;
     onClick?: () => void;
-    icon?: Snippet; // Or generic snippet
+    icon?: Snippet | Component<any> | any; // Accept Snippet, Component, or lucide-svelte icon
     disabled?: boolean;
     danger?: boolean;
     class?: string;
@@ -35,7 +35,14 @@
   data-danger={danger}
 >
   {#if icon}
-    <span class="menu-item-icon">{@render icon()}</span>
+    <span class="menu-item-icon">
+      {#if typeof icon === "function" && "render" in icon}
+        {@render icon()}
+      {:else}
+        {@const Icon = icon}
+        <Icon class="w-4 h-4" />
+      {/if}
+    </span>
   {/if}
   <span class="menu-item-label">{label}</span>
 </div>

@@ -8,7 +8,7 @@
     ContextMenuDivider,
   } from "annota/svelte";
   import { SquareCheck, CircleCheck, Trash2 } from "lucide-svelte";
-  import type { Annotation } from "annota";
+  import type { Annotation } from "annota/svelte";
 
   const getAnnotatorFn = getAnnotator();
   const { menuState, showViewerMenu, showAnnotationMenu, hideMenu } =
@@ -57,10 +57,10 @@
   }
 
   let isPositive = $derived(
-    menuState.annotation?.properties?.classification === "positive",
+    menuState.annotation?.properties?.classification === "positive"
   );
   let isNegative = $derived(
-    menuState.annotation?.properties?.classification === "negative",
+    menuState.annotation?.properties?.classification === "negative"
   );
 </script>
 
