@@ -43,7 +43,7 @@
         <img
           src="/logo.svg"
           alt="Annota"
-          class="h-6 w-auto brightness-0 dark:brightness-100 dark:invert transition-transform group-hover:scale-105"
+          class="h-6 w-auto transition-transform group-hover:scale-105"
         />
         <span class="font-semibold text-lg" style="color: var(--foreground);"
           >Annota</span
