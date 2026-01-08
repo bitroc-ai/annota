@@ -7,6 +7,7 @@ export { default as Popup } from "./components/Popup.svelte";
 export { default as ContextMenu } from "./components/ContextMenu.svelte";
 export { default as ContextMenuItem } from "./components/ContextMenuItem.svelte";
 export { default as ContextMenuDivider } from "./components/ContextMenuDivider.svelte";
+export { default as AnnotationEditor } from "./components/AnnotationEditor.svelte";
 
 // Utilities
 export { getAnnotator, setAnnotator } from "./annotator";

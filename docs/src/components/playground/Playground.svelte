@@ -3,6 +3,7 @@
     AnnotaProvider,
     Annotator,
     Viewer as AnnotaViewer,
+    AnnotationEditor,
   } from "annota/svelte";
   import type { Annotation, AnnotationStyle } from "annota/svelte";
   import OpenSeadragon from "openseadragon";
@@ -137,6 +138,7 @@
           <AnnotationContextMenu />
           <DemoContent {currentImage} />
         </Annotator>
+        <AnnotationEditor {viewer} />
       {/if}
 
       <!-- Annotation Toolbar - Left side -->
