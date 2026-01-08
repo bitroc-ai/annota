@@ -1,0 +1,33 @@
+---
+title: Svelte API
+description: Complete Svelte API documentation
+---
+
+Svelte-specific API documentation for Annota.
+
+## Svelte Stores
+
+| Store | Description |
+| --- | --- |
+| [getAnnotator](./stores/get-annotator) | Access the annotator instance |
+| [annotations](./stores/annotations) | Get all annotations |
+| [selection](./stores/selection) | Get selected annotations |
+| [tool](./stores/tool) | Activate annotation tools |
+| [history](./stores/history) | Access undo/redo history |
+| [layers](./stores/layers) | Get all layers |
+| [layerManager](./stores/layer-manager) | Manage layers |
+| [viewer](./stores/viewer) | Viewer utilities |
+
+## Svelte Components
+
+| Component | Description |
+| --- | --- |
+| [AnnotaProvider](./components/provider) | Provides annotation context |
+| [Viewer](./components/viewer) | OpenSeadragon viewer wrapper |
+| [Annotator](./components/annotator) | Annotation overlay layer |
+| [Popup](./components/popup) | Display annotation information |
+| [ContextMenu](./components/context-menu) | Context menu for annotations |
+
+<aside type="note">
+  All Svelte stores must be used within an `AnnotaProvider` component.
+</aside>
