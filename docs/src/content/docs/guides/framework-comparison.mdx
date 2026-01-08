@@ -1,0 +1,389 @@
+---
+title: Framework Comparison
+description: Compare React and Svelte APIs in Annota
+sidebar:
+  order: -1
+---
+
+import { Tabs, TabItem, Card, CardGrid } from '@astrojs/starlight/components';
+
+This guide helps you understand the differences between React and Svelte when using Annota.
+
+## Quick Reference
+
+### Imports
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import {
+      AnnotaProvider,
+      AnnotaViewer,
+      Annotator,
+      AnnotationPopup,
+    } from "annota";
+
+    import {
+      useAnnotator,
+      useAnnotations,
+      useSelection,
+      useTool,
+    } from "annota";
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import {
+        AnnotaProvider,
+        Viewer as AnnotaViewer,
+        Annotator,
+        Popup,
+      } from "annota/svelte";
+
+      import {
+        getAnnotator,
+        annotations,
+        selection,
+        tool,
+      } from "annota/svelte";
+    </script>
+    ```
+  </TabItem>
+</Tabs>
+
+## State Management
+
+### Accessing the Annotator
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { useAnnotator } from "annota";
+
+    function MyComponent() {
+      const annotator = useAnnotator();
+
+      if (!annotator) return null;
+
+      return <div>Annotations: {annotator.state.store.all().length}</div>;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { getAnnotator } from "annota/svelte";
+
+      const getAnnotatorFn = getAnnotator();
+      const annotator = $derived(getAnnotatorFn());
+    </script>
+
+    {#if annotator}
+      <div>Annotations: {annotator.state.store.all().length}</div>
+    {/if}
+    ```
+  </TabItem>
+</Tabs>
+
+### Getting All Annotations
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { useAnnotations } from "annota";
+
+    function AnnotationList() {
+      const annotations = useAnnotations();
+
+      return (
+        <ul>
+          {annotations.map((ann) => (
+            <li key={ann.id}>{ann.shape.type}</li>
+          ))}
+        </ul>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { annotations } from "annota/svelte";
+
+      const allAnnotations = annotations();
+    </script>
+
+    <ul>
+      {#each allAnnotations as ann (ann.id)}
+        <li>{ann.shape.type}</li>
+      {/each}
+    </ul>
+    ```
+  </TabItem>
+</Tabs>
+
+### Getting Selection
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { useSelection } from "annota";
+
+    function SelectionInfo() {
+      const selection = useSelection();
+
+      return <p>Selected: {selection.length}</p>;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { selection } from "annota/svelte";
+
+      const selectedAnnotations = selection();
+    </script>
+
+    <p>Selected: {selectedAnnotations.length}</p>
+    ```
+  </TabItem>
+</Tabs>
+
+## Tools
+
+### Activating a Tool
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { useTool } from "annota";
+    import { RectangleTool } from "annota";
+
+    function ToolController({ viewer }) {
+      const tool = new RectangleTool();
+
+      useTool({
+        viewer,
+        handler: tool,
+        enabled: true,
+      });
+
+      return null;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { tool } from "annota/svelte";
+      import { RectangleTool } from "annota";
+
+      let viewer = $state(null);
+
+      const rectTool = $derived(new RectangleTool());
+
+      $effect(() => {
+        if (!viewer) return;
+
+        tool({
+          viewer: () => viewer,
+          handler: () => rectTool,
+          enabled: () => true,
+        });
+      });
+    </script>
+    ```
+  </TabItem>
+</Tabs>
+
+## Component Structure
+
+### Provider Setup
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+
+    function App() {
+      const [viewer, setViewer] = useState(null);
+
+      return (
+        <AnnotaProvider slideId="my-slide">
+          <AnnotaViewer onViewerReady={setViewer} />
+          <Annotator viewer={viewer} />
+        </AnnotaProvider>
+      );
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+
+      let viewer = $state(null);
+    </script>
+
+    <AnnotaProvider slideId="my-slide">
+      <AnnotaViewer onViewerReady={(v) => viewer = v} />
+      {#if viewer}
+        <Annotator {viewer} />
+      {/if}
+    </AnnotaProvider>
+    ```
+  </TabItem>
+</Tabs>
+
+## Syntax Differences
+
+### Conditional Rendering
+
+| React | Svelte |
+|-------|--------|
+| `{condition && <Component />}` | `{#if condition}<Component />{/if}` |
+| `{condition ? <A /> : <B />}` | `{#if condition}<A />{:else}<B />{/if}` |
+| `{!condition && <Component />}` | `{#if !condition}<Component />{/if}` |
+
+### Lists
+
+| React | Svelte |
+|-------|--------|
+| `{items.map(item => <div key={item.id}>{item.name}</div>)}` | `{#each items as item (item.id)}<div>{item.name}</div>{/each}` |
+| Use `key` prop for keys | Use `(item.id)` for keys |
+
+### State
+
+| React | Svelte |
+|-------|--------|
+| `const [state, setState] = useState()` | `let state = $state()` |
+| `const memo = useMemo(() => ..., [deps])` | `const memo = $derived(...)` |
+| `useEffect(() => ..., [deps])` | `$effect(() => ...)` |
+| `useCallback(fn, [deps])` | Function declarations (no deps) |
+
+## Common Patterns
+
+### Loading Annotations on Mount
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    import { useAnnotator } from "annota";
+    import { useEffect } from "react";
+
+    function LoadAnnotations({ slideId }) {
+      const annotator = useAnnotator();
+
+      useEffect(() => {
+        if (!annotator) return;
+
+        fetch(`/api/annotations/${slideId}`)
+          .then(res => res.json())
+          .then(anns => annotator.addAnnotations(anns));
+      }, [annotator, slideId]);
+
+      return null;
+    }
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      import { onMount } from "svelte";
+      import { getAnnotator } from "annota/svelte";
+
+      const { slideId } = $props();
+      const getAnnotatorFn = getAnnotator();
+      const annotator = $derived(getAnnotatorFn());
+
+      onMount(() => {
+        if (!$annotator) return;
+
+        fetch(`/api/annotations/${slideId}`)
+          .then(res => res.json())
+          .then(anns => $annotator.addAnnotations(anns));
+      });
+    </script>
+    ```
+  </TabItem>
+</Tabs>
+
+### Custom Styling Function
+
+<Tabs>
+  <TabItem label="React">
+    ```tsx
+    <Annotator
+      viewer={viewer}
+      style={(annotation) => ({
+        fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
+        fillOpacity: 0.3,
+      })}
+    />
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```svelte
+    <script>
+      function getStyle(annotation) {
+        return {
+          fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
+          fillOpacity: 0.3,
+        };
+      }
+    </script>
+
+    <Annotator {viewer} style={getStyle} />
+    ```
+  </TabItem>
+</Tabs>
+
+## Migration Guide
+
+### From React to Svelte
+
+1. **Replace hooks with stores:**
+   - `useAnnotator()` → `getAnnotator()()` with `$derived`
+   - `useAnnotations()` → `annotations()`
+   - `useSelection()` → `selection()`
+
+2. **Update state syntax:**
+   - `useState()` → `$state()`
+   - `useMemo()` → `$derived()`
+   - `useEffect()` → `$effect()`
+
+3. **Change JSX to Svelte syntax:**
+   - `className` → `class`
+   - `style={{...}}` → `style="..."`
+   - `onClick={...}` → `onclick={...}`
+
+4. **Update imports:**
+   - `from "annota"` → `from "annota/svelte"`
+
+### From Svelte to React
+
+1. **Replace stores with hooks:**
+   - `annotations()` → `useAnnotations()`
+   - `selection()` → `useSelection()`
+   - `getAnnotator()()` → `useAnnotator()`
+
+2. **Update state syntax:**
+   - `$state()` → `useState()`
+   - `$derived()` → `useMemo()`
+   - `$effect()` → `useEffect()`
+
+3. **Change Svelte syntax to JSX:**
+   - `class` → `className`
+   - `onclick` → `onClick`
+   - `{#if}` → `{&&}` or ternary
+
+4. **Update imports:**
+   - `from "annota/svelte"` → `from "annota"`
+
+## See Also
+
+- [React Quick Start](../getting-started/quick-start/react)
+- [Svelte Quick Start](../getting-started/quick-start/svelte)
+- [React Hooks API](../api/react/hooks)
+- [Svelte Stores API](../api/svelte/stores)

@@ -35,14 +35,17 @@ export default defineConfig({
         {
           label: 'Getting Started',
           items: [
+            { label: 'Framework Selection', slug: 'framework-selection' },
             { label: 'Installation', slug: 'getting-started/installation' },
-            { label: 'Quick Start', slug: 'getting-started/quick-start' },
+            { label: 'React Quick Start', slug: 'getting-started/quick-start/react' },
+            { label: 'Svelte Quick Start', slug: 'getting-started/quick-start/svelte' },
             { label: 'Core Concepts', slug: 'getting-started/concepts' },
           ],
         },
         {
           label: 'Guides',
           items: [
+            { label: 'Framework Comparison', slug: 'guides/framework-comparison' },
             { label: 'Annotation Tools', slug: 'guides/tools' },
             { label: 'Layer System', slug: 'guides/layers' },
             { label: 'Events', slug: 'guides/events' },
@@ -71,18 +74,24 @@ export default defineConfig({
           label: 'API Reference',
           items: [
             { label: 'Overview', slug: 'api' },
-            { label: 'Components', slug: 'api/components' },
             { label: 'Annotator', slug: 'api/annotator' },
             { label: 'Types', slug: 'api/types' },
             {
-              label: 'Hooks',
+              label: 'React API',
               collapsed: true,
               items: [
-                { label: 'Overview', slug: 'api/hooks' },
-                { label: 'useAnnotator', slug: 'api/hooks/use-annotator' },
-                { label: 'useAnnotations', slug: 'api/hooks/use-annotations' },
-                { label: 'useSelection', slug: 'api/hooks/use-selection' },
-                { label: 'useTool', slug: 'api/hooks/use-tool' },
+                { label: 'React Overview', slug: 'api/react' },
+                { label: 'React Hooks', slug: 'api/react/hooks' },
+                { label: 'React Components', slug: 'api/react/components' },
+              ],
+            },
+            {
+              label: 'Svelte API',
+              collapsed: true,
+              items: [
+                { label: 'Svelte Overview', slug: 'api/svelte' },
+                { label: 'Svelte Stores', slug: 'api/svelte/stores' },
+                { label: 'Svelte Components', slug: 'api/svelte/components' },
               ],
             },
           ],

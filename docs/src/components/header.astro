@@ -10,57 +10,69 @@ import Default from '@astrojs/starlight/components/Header.astro';
   :global(header.header) {
     position: relative;
   }
+
+  /* Prevent header flickering during transitions */
+  :global(header.header) {
+    view-transition-name: header;
+  }
 </style>
 
 <script>
-  // Add navigation links to the header
+  // Add navigation links to the header (only creates if doesn't exist)
   function addNavLinks() {
     const header = document.querySelector('header.header');
     if (!header) return;
-    
-    // Check if nav already exists
-    if (header.querySelector('.custom-nav')) return;
-    
+
     const siteTitle = header.querySelector('.site-title');
     if (!siteTitle) return;
-    
-    // Create nav element
-    const nav = document.createElement('nav');
-    nav.className = 'custom-nav';
-    nav.setAttribute('aria-label', 'Main navigation');
-    
-    const links = [
-      { href: '/', label: 'Home' },
-      { href: '/getting-started/installation', label: 'Docs' },
-      { href: '/playground', label: 'Playground' },
-      { href: '/api', label: 'API' },
-    ];
-    
-    links.forEach(({ href, label }) => {
-      const link = document.createElement('a');
-      link.href = href;
-      link.textContent = label;
-      link.className = 'nav-link';
-      
-      // Check if current page
-      const currentPath = window.location.pathname;
+
+    // Check if nav already exists
+    let nav = header.querySelector('.custom-nav');
+
+    // If nav doesn't exist, create it
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'custom-nav';
+      nav.setAttribute('aria-label', 'Main navigation');
+
+      const links = [
+        { href: '/', label: 'Home' },
+        { href: '/getting-started/installation', label: 'Docs' },
+        { href: '/playground', label: 'Playground' },
+        { href: '/api', label: 'API' },
+      ];
+
+      links.forEach(({ href, label }) => {
+        const link = document.createElement('a');
+        link.href = href;
+        link.textContent = label;
+        link.className = 'nav-link';
+        link.dataset.href = href; // Store href for updating active state
+        nav.appendChild(link);
+      });
+
+      // Insert after site title
+      siteTitle.parentNode?.insertBefore(nav, siteTitle.nextSibling);
+    }
+
+    // Update active state for existing nav
+    const currentPath = window.location.pathname;
+    nav.querySelectorAll('.nav-link').forEach(link => {
+      const href = link.dataset.href || link.getAttribute('href');
+      link.removeAttribute('aria-current');
+
       if (href === '/' && currentPath === '/') {
         link.setAttribute('aria-current', 'page');
       } else if (href !== '/' && currentPath.startsWith(href.replace(/\/$/, ''))) {
         link.setAttribute('aria-current', 'page');
       }
-      
-      nav.appendChild(link);
     });
-    
-    // Insert after site title
-    siteTitle.parentNode?.insertBefore(nav, siteTitle.nextSibling);
   }
-  
+
   // Run on page load
   addNavLinks();
-  
-  // Run on Astro page transitions
+
+  // Run on Astro page transitions (updates active state without recreation)
   document.addEventListener('astro:page-load', addNavLinks);
 </script>
 

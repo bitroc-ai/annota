@@ -1,0 +1,133 @@
+---
+title: Svelte Components
+description: Complete Svelte components reference
+---
+
+Svelte components for building annotation UIs.
+
+## Core Components
+
+### AnnotaProvider
+
+Provides annotation context to all child components.
+
+**Usage:**
+```svelte
+<AnnotaProvider slideId="my-slide">
+  <!-- Other components -->
+</AnnotaProvider>
+```
+
+**Props:**
+- `slideId?: string` - Identifier for this slide's annotations
+
+### Viewer
+
+OpenSeadragon viewer wrapper.
+
+**Usage:**
+```svelte
+<Viewer
+  options={viewerOptions}
+  onViewerReady={(viewer) => {
+    // Store viewer instance
+  }}
+/>
+```
+
+**Props:**
+- `options: OpenSeadragon.Options` - OpenSeadragon configuration
+- `onViewerReady: (viewer: OpenSeadragon.Viewer) => void` - Callback when viewer initializes
+
+### Annotator
+
+Annotation overlay layer that renders annotations on top of the viewer.
+
+**Usage:**
+```svelte
+{#if viewer}
+  <Annotator
+    {viewer}
+    style={(annotation) => ({
+      fill: "#FF0000",
+      fillOpacity: 0.3,
+    })}
+  />
+{/if}
+```
+
+**Props:**
+- `viewer: OpenSeadragon.Viewer` - The viewer instance
+- `style?: (annotation: Annotation) => AnnotationStyle` - Custom style function
+
+## UI Components
+
+### Popup
+
+Display information about an annotation.
+
+**Usage:**
+```svelte
+<Popup
+  {viewer}
+  annotation={annotation}
+>
+  <div>
+    <h3>{annotation.properties?.label}</h3>
+    <p>Type: {annotation.shape.type}</p>
+  </div>
+</Popup>
+```
+
+**Props:**
+- `viewer: OpenSeadragon.Viewer` - The viewer instance
+- `annotation: Annotation` - The annotation to display
+- `offset?: [number, number]` - Offset from annotation position
+
+### ContextMenu
+
+Context menu for annotation actions.
+
+**Usage:**
+```svelte
+<ContextMenu position={menuState.position} onClose={hideMenu}>
+  <ContextMenuItem label="Delete" onclick={handleDelete} />
+  <ContextMenuDivider />
+  <ContextMenuItem label="Edit" onclick={handleEdit} />
+</ContextMenu>
+```
+
+**Props:**
+- `position: { x: number; y: number } | null` - Menu position
+- `onClose?: () => void` - Callback when menu closes
+- `children: Snippet` - Menu items
+
+## Editor Components
+
+### AnnotationEditor
+
+Provides vertex editing controls for selected annotations.
+
+**Usage:**
+```svelte
+<AnnotationEditor {viewer} />
+```
+
+**Props:**
+- `viewer: OpenSeadragon.Viewer` - The viewer instance
+
+## Component Comparison
+
+| Feature | React | Svelte |
+| --- | --- | --- |
+| Provider | `AnnotaProvider` | `AnnotaProvider` |
+| Viewer | `AnnotaViewer` | `Viewer` |
+| Annotator | `Annotator` | `Annotator` |
+| Popup | `AnnotationPopup` | `Popup` |
+| Context Menu | `ContextMenu` | `ContextMenu` |
+| Editor | `AnnotationEditor` | `AnnotationEditor` |
+
+## See Also
+
+- [React Components](../react/components) - For comparison with React
+- [Component Patterns](../../guides/integration) - Integration examples

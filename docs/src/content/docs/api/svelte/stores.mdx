@@ -1,0 +1,274 @@
+---
+title: Svelte Stores
+description: Reactive stores for accessing annotations and tools
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+Svelte stores provide reactive access to Annota's state. Unlike React hooks, Svelte stores are called as functions and return reactive values using Svelte 5 runes.
+
+## Overview
+
+<Tabs>
+  <TabItem label="React vs Svelte">
+    ### React Hooks → Svelte Stores
+
+    | React Hook | Svelte Store | Notes |
+    | --- | --- | --- |
+    | `useAnnotator()` | `getAnnotator()()` | Returns annotator (needs $derived) |
+    | `useAnnotations()` | `annotations()` | Returns reactive array |
+    | `useSelection()` | `selection()` | Returns reactive array |
+    | `useTool()` | `tool()` | Tool activation function |
+    | `useHistory()` | `history()` | Returns history object |
+    | `useLayers()` | `layers()` | Returns reactive array |
+    | `useLayerManager()` | `layerManager()` | Returns manager instance |
+
+  </TabItem>
+  <TabItem label="Pattern">
+    ### Usage Pattern
+
+    **React Hooks:**
+    ```tsx
+    const annotator = useAnnotator();
+    const annotations = useAnnotations();
+    ```
+
+    **Svelte Stores:**
+    ```svelte
+    <script>
+      const getAnnotatorFn = getAnnotator();
+      const annotator = $derived(getAnnotatorFn());
+      const allAnnotations = annotations();
+    </script>
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Available Stores
+
+### annotations()
+
+Get all annotations as a reactive array.
+
+```typescript
+function annotations(): Annotation[];
+```
+
+**Usage:**
+```svelte
+<script>
+  import { annotations } from "annota/svelte";
+
+  const allAnnotations = annotations();
+
+  const count = $derived(allAnnotations.length);
+</script>
+
+<p>Annotations: {count}</p>
+```
+
+### selection()
+
+Get currently selected annotations as a reactive array.
+
+```typescript
+function selection(): Annotation[];
+```
+
+**Usage:**
+```svelte
+<script>
+  import { selection } from "annota/svelte";
+
+  const selectedAnnotations = selection();
+  const hasSelection = $derived(selectedAnnotations.length > 0);
+</script>
+
+{#if hasSelection}
+  <p>{selectedAnnotations.length} annotations selected</p>
+{/if}
+```
+
+### tool()
+
+Activate annotation tools.
+
+```typescript
+function tool(config: ToolConfig): void;
+```
+
+**Usage:**
+```svelte
+<script>
+  import { tool } from "annota/svelte";
+  import { RectangleTool } from "annota";
+
+  let viewer = $state(null);
+  let activeTool = $state("rectangle");
+
+  const rectTool = $derived(new RectangleTool());
+
+  $effect(() => {
+    if (!viewer) return;
+
+    tool({
+      viewer: () => viewer,
+      handler: () => activeTool === "rectangle" ? rectTool : null,
+      enabled: () => activeTool === "rectangle",
+    });
+  });
+</script>
+```
+
+### getAnnotator()
+
+Access the annotator instance.
+
+```typescript
+function getAnnotator(): () => Annotator | undefined;
+```
+
+**Usage:**
+```svelte
+<script>
+  import { getAnnotator } from "annota/svelte";
+
+  const getAnnotatorFn = getAnnotator();
+  const annotator = $derived(getAnnotatorFn());
+
+  function handleClear() {
+    if ($annotator) {
+      $annotator.clearAnnotations();
+    }
+  }
+</script>
+```
+
+### history()
+
+Access undo/redo history.
+
+```typescript
+function history(): {
+  canUndo: boolean;
+  canRedo: boolean;
+  undoSize: number;
+  redoSize: number;
+  undo: () => void;
+  redo: () => void;
+};
+```
+
+**Usage:**
+```svelte
+<script>
+  import { history } from "annota/svelte";
+
+  const historyInstance = history();
+</script>
+
+<button disabled={!historyInstance.canUndo} onclick={historyInstance.undo}>
+  Undo
+</button>
+<button disabled={!historyInstance.canRedo} onclick={historyInstance.redo}>
+  Redo
+</button>
+```
+
+### layers()
+
+Get all layers.
+
+```typescript
+function layers(): Layer[];
+```
+
+**Usage:**
+```svelte
+<script>
+  import { layers } from "annota/svelte";
+
+  const allLayers = layers();
+</script>
+
+{#each allLayers as layer (layer.id)}
+  <div>{layer.name}</div>
+{/each}
+```
+
+### layerManager()
+
+Manage layers.
+
+```typescript
+function layerManager(): LayerManager;
+```
+
+**Usage:**
+```svelte
+<script>
+  import { layerManager } from "annota/svelte";
+
+  const manager = layerManager();
+
+  function addLayer() {
+    manager.addLayer({
+      id: "layer-1",
+      name: "New Layer",
+      visible: true,
+    });
+  }
+</script>
+```
+
+## Advanced Patterns
+
+### Combining Multiple Stores
+
+```svelte
+<script>
+  import { annotations, selection, getAnnotator } from "annota/svelte";
+
+  const allAnnotations = annotations();
+  const selectedAnnotations = selection();
+  const getAnnotatorFn = getAnnotator();
+  const annotator = $derived(getAnnotatorFn());
+
+  // Derived: Count selected vs total
+  const selectionRatio = $derived(
+    selectedAnnotations.length / allAnnotations.length
+  );
+
+  // Derived: Get selected annotation IDs
+  const selectedIds = $derived(
+    selectedAnnotations.map(a => a.id)
+  );
+</script>
+```
+
+### Reactive Updates
+
+```svelte
+<script>
+  import { annotations } from "annota/svelte";
+
+  const allAnnotations = annotations();
+
+  // Automatically updates when annotations change
+  $effect(() => {
+    console.log("Annotations count:", allAnnotations.length);
+    // Save to local storage, etc.
+  });
+</script>
+```
+
+<Aside type="tip">
+  **Svelte 5 Runes**: Unlike React hooks, Svelte stores don't need dependency arrays. The `$effect` automatically tracks reactive dependencies.
+</Aside>
+
+## See Also
+
+- [React Hooks API](../react/hooks) - For comparison with React
+- [Core Concepts](../../getting-started/concepts) - Framework-agnostic concepts
+- [Annotator API](../annotator) - Programmatic API

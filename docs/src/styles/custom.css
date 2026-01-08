@@ -2,14 +2,28 @@
 
 /* Only customize specific components, let Starlight handle the rest */
 
-/* Ensure header is sticky */
+/* Remove redundant mobile TOC padding but keep navbar spacing */
+.main-frame {
+  padding-top: 0 !important;
+}
+
+/* Ensure hero section has minimal spacing */
+.hero {
+  margin-block: 0 !important;
+}
+
+.hero .sl-container {
+  padding-top: 0 !important;
+  padding-bottom: 1rem !important;
+}
+
+/* Ensure header is sticky and solid (no blur to prevent flashing) */
 header.header {
   position: sticky !important;
   top: 0 !important;
   z-index: 50 !important;
   background-color: var(--sl-color-bg-nav) !important;
-  backdrop-filter: blur(12px);
-  /* Reset max-width to full width */
+  /* Remove backdrop-filter to prevent navbar flashing during transitions */
   max-width: 100% !important;
 }
 

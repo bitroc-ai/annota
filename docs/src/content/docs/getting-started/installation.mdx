@@ -13,7 +13,7 @@ Before installing Annota, ensure you have:
 - **React 18+ / 19+** OR **Svelte 5**
 - A package manager (npm, pnpm, or yarn)
 
-## Choose Your Framework {#react-vs-svelte}
+## Choose Your Framework
 
 Annota provides identical functionality for both React and Svelte. The only difference is the reactive API (hooks vs stores).
 
@@ -40,7 +40,7 @@ Annota provides identical functionality for both React and Svelte. The only diff
   </TabItem>
 </Tabs>
 
-## Install Core Package {#install-core}
+## Install Core Package
 
 <Tabs>
   <TabItem label="npm">
@@ -64,7 +64,7 @@ Annota provides identical functionality for both React and Svelte. The only diff
   **OpenSeadragon** is a required peer dependency for viewport management and image display.
 </Aside>
 
-## TypeScript Support {#typescript}
+## TypeScript Support
 
 Annota is written in TypeScript and includes full type definitions. For OpenSeadragon types:
 
@@ -86,7 +86,7 @@ Annota is written in TypeScript and includes full type definitions. For OpenSead
   </TabItem>
 </Tabs>
 
-## Import Styles {#import-styles}
+## Import Styles
 
 Import the required CSS in your app entry point:
 
@@ -108,7 +108,7 @@ Or in your global CSS:
 @import "annota/dist/index.css";
 ```
 
-## Verify Installation {#verify}
+## Verify Installation
 
 ### React Verification
 
@@ -166,7 +166,7 @@ Create a simple test component:
       }}
       onViewerReady={(v) => viewer = v}
     />
-    {#if viewer}
+   
       <Annotator {viewer} />
     {/if}
   </div>
@@ -175,9 +175,9 @@ Create a simple test component:
 
 If you see an image viewer in either case, Annota is installed correctly!
 
-## Optional Dependencies {#optional}
+## Optional Dependencies
 
-### H5 File Support {#h5-support}
+### H5 File Support
 
 For loading HDF5 annotation files:
 
@@ -199,7 +199,7 @@ For loading HDF5 annotation files:
   </TabItem>
 </Tabs>
 
-### SAM Tool (AI-Assisted Segmentation) {#sam-tool}
+### SAM Tool (AI-Assisted Segmentation)
 
 For the Segment Anything Model tool, you'll need ONNX Runtime:
 

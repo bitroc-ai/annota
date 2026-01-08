@@ -67,7 +67,7 @@ These APIs are identical for both React and Svelte:
   </Card>
 </CardGrid>
 
-## Core Types {#core-types}
+## Core Types
 
 These types are shared between React and Svelte.
 
@@ -95,13 +95,19 @@ type Shape =
   | FreehandShape
   | PathShape
   | ImageShape;
+```
 
+**PointShape:**
+```typescript
 interface PointShape {
   type: "point";
   point: { x: number; y: number };
   bounds: Bounds;
 }
+```
 
+**RectangleShape:**
+```typescript
 interface RectangleShape {
   type: "rectangle";
   x: number;
@@ -110,7 +116,10 @@ interface RectangleShape {
   height: number;
   bounds: Bounds;
 }
+```
 
+**PolygonShape:**
+```typescript
 interface PolygonShape {
   type: "polygon";
   points: Array<{ x: number; y: number }>;
@@ -145,7 +154,7 @@ interface Layer {
 }
 ```
 
-## Built-in Tools {#built-in-tools}
+## Built-in Tools
 
 Annota includes several annotation tools (shared between frameworks):
 
@@ -172,7 +181,7 @@ Annota includes several annotation tools (shared between frameworks):
 
 See the [Tools Guide](/guides/tools) for detailed usage.
 
-## Data Loaders {#data-loaders}
+## Data Loaders
 
 ### H5 Files
 
