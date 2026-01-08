@@ -20,7 +20,7 @@
     Activity, // LineSquiggle replacement
   } from "lucide-svelte";
 
-  import Tooltip from "../ui/Tooltip.svelte";
+  import Tooltip from "../ui/tooltip.svelte";
   import DemoContextMenu from "./demo-context-menu.svelte";
   import { createInitialAnnotations } from "./utils";
   import { createMockPredictFn } from "$lib/services/sam-predict";
