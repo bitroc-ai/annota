@@ -1,0 +1,101 @@
+---
+title: Context Menu
+description: Add right-click context menus to annotations
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Add contextual menus that appear when right-clicking on annotations.
+
+## Basic Usage
+
+```tsx
+import { useContextMenu, useContextMenuBinding } from "annota";
+
+function ContextMenuHandler() {
+  const { position, visible, annotation, hide } = useContextMenu();
+  
+  useContextMenuBinding(); // Enables right-click handling
+  
+  if (!visible) return null;
+  
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: position.x,
+        top: position.y,
+        background: "white",
+        border: "1px solid #ccc",
+        borderRadius: 4,
+        padding: 8,
+      }}
+    >
+      <button onClick={() => { /* edit */ hide(); }}>Edit</button>
+      <button onClick={() => { /* delete */ hide(); }}>Delete</button>
+    </div>
+  );
+}
+```
+
+## Hook Reference
+
+### useContextMenu
+
+```typescript
+const {
+  visible,     // boolean - whether menu is shown
+  position,    // { x, y } - screen coordinates
+  annotation,  // Annotation | null - right-clicked annotation
+  show,        // (position, annotation) => void
+  hide,        // () => void
+} = useContextMenu();
+```
+
+### useContextMenuBinding
+
+Automatically shows context menu on right-click:
+
+```typescript
+useContextMenuBinding({
+  enabled: true, // Enable/disable
+});
+```
+
+## Complete Example
+
+```tsx
+function AnnotationContextMenu() {
+  const { visible, position, annotation, hide } = useContextMenu();
+  const annotator = useAnnotator();
+  
+  useContextMenuBinding();
+  
+  if (!visible || !annotation) return null;
+  
+  const handleDelete = () => {
+    annotator?.deleteAnnotation(annotation.id);
+    hide();
+  };
+  
+  const handleChangeColor = (color: string) => {
+    annotator?.updateAnnotation(annotation.id, {
+      style: { fill: color },
+    });
+    hide();
+  };
+  
+  return (
+    <div className="context-menu" style={{ left: position.x, top: position.y }}>
+      <button onClick={handleDelete}>Delete</button>
+      <button onClick={() => handleChangeColor("#FF0000")}>Red</button>
+      <button onClick={() => handleChangeColor("#00FF00")}>Green</button>
+    </div>
+  );
+}
+```
+
+<Aside type="tip">
+  Remember to call `hide()` after handling menu actions to close the menu.
+</Aside>
+

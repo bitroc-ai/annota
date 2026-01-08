@@ -2,111 +2,302 @@
 @import "nextra-theme-docs/style.css";
 @variant dark (&:where(.dark *));
 
-/* Nextra-specific overrides */
-:root {
-  --nextra-content-width: 100vw !important;
-  --nextra-sidebar-width: 320px !important;
-  --nextra-bg: 255 255 255;
-  /* Light mode background: white */
+/* ========================================
+   MINTLIFY-INSPIRED THEME FOR ANNOTA DOCS
+   ======================================== */
+
+/* Override Nextra's primary color CSS variables */
+:root, :host {
+  --nextra-primary-hue: 158deg !important;
+  --nextra-primary-saturation: 64% !important;
+  --nextra-primary-lightness: 52% !important;
+  --nextra-bg: 250 250 250 !important;
 }
 
-.dark {
-  --nextra-bg: 17 24 39;
-  /* Dark mode background: dark gray (#111827) */
+html.dark, .dark, :host(.dark) {
+  --nextra-primary-hue: 160deg !important;
+  --nextra-primary-saturation: 84% !important;
+  --nextra-primary-lightness: 45% !important;
+  --nextra-bg: 10 10 10 !important;
 }
 
-/* Simplified sidebar width override */
-aside[data-nextra-sidebar] {
-  width: 320px !important;
+/* ========================================
+   SIDEBAR - DARK MINTLIFY STYLE
+   Target Nextra's actual class patterns
+   ======================================== */
+
+/* Override x:bg-gray-100 and similar classes */
+[class*="x\:bg-gray-100"],
+[class*="bg-gray-100"],
+aside[class*="bg-gray"],
+aside > div[class*="bg-gray"],
+.x\:bg-gray-100 {
+  background-color: #0f0f0f !important;
 }
 
-/* Smooth scrolling and stable scrollbar */
+/* Force sidebar dark */
+aside,
+aside > div,
+[data-nextra-sidebar] {
+  background: #0f0f0f !important;
+  border-right: 1px solid #262626 !important;
+}
+
+.dark aside,
+.dark aside > div,
+.dark [data-nextra-sidebar] {
+  background: #0a0a0a !important;
+}
+
+/* Sidebar links */
+aside a,
+[data-nextra-sidebar] a {
+  color: #a3a3a3 !important;
+  transition: all 0.15s ease !important;
+}
+
+aside a:hover,
+[data-nextra-sidebar] a:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Active link - override primary-100 background */
+[class*="bg-primary-100"],
+[class*="x\:bg-primary-100"],
+aside a[aria-current="page"],
+aside a[data-active="true"] {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.dark [class*="bg-primary-100"],
+.dark [class*="x\:bg-primary-100"],
+.dark aside a[aria-current="page"],
+.dark aside a[data-active="true"] {
+  color: #34d399 !important;
+  background: rgba(52, 211, 153, 0.1) !important;
+}
+
+/* Sidebar group headers */
+aside h3,
+aside button > span:first-child {
+  color: #525252 !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* ========================================
+   PRIMARY COLOR OVERRIDES
+   ======================================== */
+
+/* Override all primary-600 text */
+[class*="text-primary-600"],
+[class*="x\:text-primary-600"],
+.x\:text-primary-600 {
+  color: #10b981 !important;
+}
+
+.dark [class*="text-primary-600"],
+.dark [class*="x\:text-primary-600"],
+.dark .x\:text-primary-600 {
+  color: #34d399 !important;
+}
+
+/* Override primary border colors */
+[class*="border-primary"],
+[class*="x\:border-primary"] {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark [class*="border-primary"],
+.dark [class*="x\:border-primary"] {
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+/* ========================================
+   NAVBAR
+   ======================================== */
+
+header,
+nav:first-of-type {
+  background: rgba(250, 250, 250, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.dark header,
+.dark nav:first-of-type {
+  background: rgba(10, 10, 10, 0.95) !important;
+}
+
+/* ========================================
+   CONTENT AREA
+   ======================================== */
+
+main {
+  background: #fafafa !important;
+}
+
+.dark main {
+  background: #0a0a0a !important;
+}
+
+/* Headings */
+h1 {
+  font-size: 2.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  color: #171717 !important;
+}
+
+.dark h1 {
+  color: #fafafa !important;
+}
+
+h2 {
+  font-size: 1.75rem !important;
+  font-weight: 600 !important;
+  margin-top: 2.5rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  color: #171717 !important;
+}
+
+.dark h2 {
+  border-bottom-color: #262626 !important;
+  color: #fafafa !important;
+}
+
+h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  color: #171717 !important;
+}
+
+.dark h3 {
+  color: #fafafa !important;
+}
+
+/* Paragraphs */
+main p {
+  color: #525252 !important;
+  line-height: 1.75 !important;
+}
+
+.dark main p {
+  color: #a3a3a3 !important;
+}
+
+/* Content links - mint color */
+main a:not(aside a):not(nav a):not(header a):not([class*="x\:"]),
+article a {
+  color: #10b981 !important;
+}
+
+.dark main a:not(aside a):not(nav a):not(header a):not([class*="x\:"]),
+.dark article a {
+  color: #34d399 !important;
+}
+
+/* Lists */
+main li::marker {
+  color: #10b981 !important;
+}
+
+.dark main li::marker {
+  color: #34d399 !important;
+}
+
+/* ========================================
+   CODE
+   ======================================== */
+
+code:not(pre code) {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #047857 !important;
+  padding: 0.15rem 0.4rem !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.875em !important;
+}
+
+.dark code:not(pre code) {
+  background: rgba(52, 211, 153, 0.15) !important;
+  color: #6ee7b7 !important;
+}
+
+pre {
+  background: #1a1a1a !important;
+  border: 1px solid #262626 !important;
+  border-radius: 0.75rem !important;
+}
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: #333 !important;
+}
+
+/* ========================================
+   MISC
+   ======================================== */
+
 html {
   scroll-behavior: smooth;
-  /* Always show scrollbar gutter to prevent navbar shift */
   scrollbar-gutter: stable;
 }
 
-/* Fallback for browsers that don't support scrollbar-gutter */
-@supports not (scrollbar-gutter: stable) {
-  html {
-    overflow-y: scroll;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Enhanced button hover effects */
-.transform {
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+article {
+  animation: fadeIn 0.3s ease;
 }
 
-/* Custom card styling */
-.nextra-card {
-  padding: 1rem;
+footer {
+  background: #fafafa !important;
+  border-top: 1px solid #e5e5e5 !important;
 }
 
-.nextra-card:hover {
-  transform: translateY(-2px);
-  transition: all 0.2s ease-in-out;
+.dark footer {
+  background: #0a0a0a !important;
+  border-top-color: #262626 !important;
 }
 
-/* Gradient text animation */
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient 8s ease infinite;
-}
-
-/* Custom callout styling */
-.nextra-callout {
-  border-radius: 12px;
-  border-width: 1px;
-}
-
-/* Remove underlines from all links */
 a {
   text-decoration: none !important;
 }
 
-/* Specifically target button-style links */
-a.inline-flex {
-  text-decoration: none !important;
-}
+/* ========================================
+   CONTEXT MENU
+   ======================================== */
 
-/* Override Nextra link styles */
-.nextra-content a {
-  text-decoration: none !important;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .text-5xl {
-    font-size: 2.5rem;
-  }
-
-  .text-6xl {
-    font-size: 3rem;
-  }
-}
-
-/* Context Menu Styles */
 .annota-context-menu {
-  @apply fixed min-w-[150px] rounded-xl border bg-white p-1 shadow-md;
-  @apply dark:bg-slate-900 dark:border-slate-700;
+  @apply fixed min-w-37.5 rounded-xl border bg-white p-1 shadow-lg;
+  @apply dark:bg-neutral-900 dark:border-neutral-700;
   pointer-events: auto;
   z-index: var(--menu-z-index, 10000);
 }
@@ -117,58 +308,35 @@ a.inline-flex {
   z-index: calc(var(--menu-z-index, 10000) - 1);
 }
 
+/* Tailwind @apply directives - these are valid and will be processed by Tailwind */
 .annota-context-menu-item {
-  @apply flex items-center gap-2 px-4 py-2 text-sm cursor-pointer select-none rounded-sm;
+  @apply flex items-center gap-2 px-4 py-2 text-sm cursor-pointer select-none rounded-lg;
   @apply transition-colors duration-150;
-  @apply hover:bg-slate-100 dark:hover:bg-slate-800;
+  @apply hover:bg-neutral-100 dark:hover:bg-neutral-800;
 }
 
 .annota-context-menu-item[data-disabled="true"] {
   @apply opacity-50 cursor-not-allowed;
-  @apply hover:bg-transparent dark:hover:bg-transparent;
 }
 
 .annota-context-menu-item[data-danger="true"] {
   @apply text-red-600 dark:text-red-400;
-  @apply hover:bg-red-50 dark:hover:bg-red-950/30;
 }
 
 .annota-context-menu-divider {
-  @apply h-px bg-slate-200 dark:bg-slate-700 my-1;
+  @apply h-px bg-neutral-200 dark:bg-neutral-700 my-1;
 }
 
 .annota-context-menu-header {
-  @apply px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400;
+  @apply px-3 py-2 text-xs font-semibold text-neutral-500 dark:text-neutral-400;
 }
 
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  /* slate-300 */
-  border-radius: 3px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-  /* slate-600 */
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-  /* slate-400 */
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-  /* slate-500 */
+@media (max-width: 768px) {
+  aside { width: 100% !important; }
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.5rem !important; }
 }

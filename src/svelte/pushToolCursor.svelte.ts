@@ -17,11 +17,11 @@ export function pushToolCursor(
 
   $effect(() => {
     if (typeof window === 'undefined') return;
-    
+
     const v = viewer();
     const h = handler();
     const e = enabled();
-    
+
     if (!e || !h || !v) {
       cursorPos = null;
       radiusInPixels = 0;
@@ -29,20 +29,25 @@ export function pushToolCursor(
     }
 
     let interval: ReturnType<typeof setInterval> | null = null;
-    
+
     // Dynamic import to avoid SSR issues
     import('openseadragon').then((OSD) => {
       if (!e || !h || !v) return; // Check again after async import
-      
+
       // Poll cursor position (simple approach - could be improved with events)
       interval = setInterval(() => {
-        const pos = h.getCursorPosition();
+        const currentHandler = handler();
+        const currentViewer = viewer();
+
+        if (!currentHandler || !currentViewer) return;
+
+        const pos = currentHandler.getCursorPosition();
         cursorPos = pos;
 
-        if (pos && v) {
+        if (pos) {
           // Calculate radius in screen pixels
-          const radius = h.getPushRadius();
-          const radiusPixels = v.viewport.deltaPixelsFromPointsNoRotate(
+          const radius = currentHandler.getPushRadius();
+          const radiusPixels = currentViewer.viewport.deltaPixelsFromPointsNoRotate(
             new OSD.default.Point(radius, 0)
           ).x;
           radiusInPixels = radiusPixels;

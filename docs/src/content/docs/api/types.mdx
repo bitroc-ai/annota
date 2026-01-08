@@ -1,0 +1,279 @@
+---
+title: TypeScript Types
+description: Complete type definitions for Annota
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Complete TypeScript type definitions for Annota.
+
+## Core Types
+
+### Annotation
+
+```typescript
+interface Annotation {
+  id: string;
+  shape: Shape;
+  properties?: Record<string, unknown>;
+  style?: AnnotationStyle;
+  layerId?: string;
+}
+```
+
+### Shape
+
+```typescript
+type Shape = PointShape | RectangleShape | PolygonShape;
+
+interface PointShape {
+  type: "point";
+  geometry: PointGeometry;
+  bounds: Bounds;
+}
+
+interface RectangleShape {
+  type: "rectangle";
+  geometry: RectangleGeometry;
+  bounds: Bounds;
+}
+
+interface PolygonShape {
+  type: "polygon";
+  geometry: PolygonGeometry;
+  bounds: Bounds;
+}
+```
+
+### Geometry Types
+
+```typescript
+interface PointGeometry {
+  x: number;
+  y: number;
+}
+
+interface RectangleGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface PolygonGeometry {
+  points: Array<{ x: number; y: number }>;
+}
+
+interface Bounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+```
+
+### AnnotationStyle
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeOpacity?: number;
+}
+```
+
+## Layer Types
+
+### Layer
+
+```typescript
+interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity?: number;
+  locked?: boolean;
+  style?: AnnotationStyle;
+  zIndex?: number;
+}
+```
+
+### LayerManager
+
+```typescript
+interface LayerManager {
+  layers: Layer[];
+  createLayer(layer: Layer): void;
+  updateLayer(id: string, updates: Partial<Layer>): void;
+  deleteLayer(id: string, deleteAnnotations?: boolean): void;
+  getLayer(id: string): Layer | undefined;
+}
+```
+
+## Tool Types
+
+### Tool
+
+```typescript
+interface Tool {
+  name: string;
+  cursor?: string;
+  onActivate?(): void;
+  onDeactivate?(): void;
+  onPointerDown?(event: PointerEvent): void;
+  onPointerMove?(event: PointerEvent): void;
+  onPointerUp?(event: PointerEvent): void;
+  onKeyDown?(event: KeyboardEvent): void;
+}
+```
+
+### Tool Options
+
+```typescript
+interface ToolOptions {
+  style?: AnnotationStyle;
+  layer?: string;
+  properties?: Record<string, unknown>;
+}
+
+interface PushToolOptions extends ToolOptions {
+  radius?: number;
+  strength?: number;
+  showCursor?: boolean;
+}
+
+interface ContourToolOptions extends ToolOptions {
+  threshold?: number;
+  minArea?: number;
+  maxContours?: number;
+}
+```
+
+## Event Types
+
+### AnnotatorEvents
+
+```typescript
+interface AnnotatorEvents {
+  createAnnotation: (annotation: Annotation) => void;
+  updateAnnotation: (annotation: Annotation) => void;
+  deleteAnnotation: (annotation: Annotation) => void;
+  selectionChanged: (data: SelectionChangedData) => void;
+  hoverChanged: (annotation: Annotation | null) => void;
+  toolChanged: (tool: Tool | null) => void;
+}
+
+interface SelectionChangedData {
+  selected: string[];
+  added?: string[];
+  removed?: string[];
+}
+```
+
+## Hook Return Types
+
+### useAnnotator
+
+```typescript
+function useAnnotator(): Annotator | null;
+```
+
+### useAnnotations
+
+```typescript
+function useAnnotations(): Annotation[];
+```
+
+### useSelection
+
+```typescript
+function useSelection(): Annotation[];
+```
+
+### useTool
+
+```typescript
+interface UseToolOptions {
+  viewer: OpenSeadragon.Viewer | null;
+  handler: Tool | null;
+  enabled?: boolean;
+}
+
+function useTool(options: UseToolOptions): void;
+```
+
+### useLayers
+
+```typescript
+function useLayers(): Layer[];
+```
+
+### useLayerManager
+
+```typescript
+function useLayerManager(): LayerManager;
+```
+
+## Component Props
+
+### AnnotaProviderProps
+
+```typescript
+interface AnnotaProviderProps {
+  slideId: string;
+  children: ReactNode;
+}
+```
+
+### AnnotaViewerProps
+
+```typescript
+interface AnnotaViewerProps {
+  options: OpenSeadragon.Options;
+  onViewerReady?: (viewer: OpenSeadragon.Viewer) => void;
+  className?: string;
+  style?: CSSProperties;
+}
+```
+
+### AnnotatorProps
+
+```typescript
+interface AnnotatorProps {
+  viewer: OpenSeadragon.Viewer | null;
+  style?: StyleFunction;
+  children?: ReactNode;
+}
+
+type StyleFunction = (annotation: Annotation) => AnnotationStyle;
+```
+
+## Utility Types
+
+### DeepPartial
+
+```typescript
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+```
+
+### Point
+
+```typescript
+interface Point {
+  x: number;
+  y: number;
+}
+```
+
+<Aside type="tip">
+  All types are exported from the main `annota` package and can be imported directly.
+</Aside>
+
+```typescript
+import type { Annotation, Shape, Layer, AnnotationStyle } from "annota";
+```
+

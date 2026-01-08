@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Playground from '../../components/playground/Playground.svelte';
+import PlaygroundLayout from "../../layouts/playground-layout.astro";
+import Playground from "../../components/playground/playground.svelte";
 ---
 
-<BaseLayout title="Playground - Annota">
-    <Playground client:only="svelte" />
-</BaseLayout>
+<PlaygroundLayout title="Playground">
+  <Playground client:only="svelte" />
+</PlaygroundLayout>

@@ -1,0 +1,141 @@
+---
+title: H5 Loading
+description: Load annotations from HDF5 files
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Example of loading annotations from HDF5 files.
+
+<Aside type="note">
+  Requires `h5wasm` package: `npm install h5wasm`
+</Aside>
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotator,
+  loadH5Masks,
+  loadH5Coordinates,
+} from "annota";
+import { useState, useEffect } from "react";
+
+function H5Example() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithH5 />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithH5() {
+  const [viewer, setViewer] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const annotator = useAnnotator();
+
+  const loadMasks = async () => {
+    if (!annotator) return;
+    setLoading(true);
+
+    try {
+      const masks = await loadH5Masks("/data/masks.h5", {
+        color: "#FF0000",
+        fillOpacity: 0.3,
+        layer: "masks",
+      });
+
+      annotator.addAnnotations(masks);
+    } catch (error) {
+      console.error("Failed to load masks:", error);
+    }
+
+    setLoading(false);
+  };
+
+  const loadPoints = async () => {
+    if (!annotator) return;
+    setLoading(true);
+
+    try {
+      const points = await loadH5Coordinates("/data/cells.h5", {
+        color: "#00FF00",
+        fillOpacity: 0.8,
+        layer: "cells",
+      });
+
+      annotator.addAnnotations(points);
+    } catch (error) {
+      console.error("Failed to load points:", error);
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ height: "100vh" }}>
+      <div style={{ padding: 16 }}>
+        <button onClick={loadMasks} disabled={loading}>
+          Load Masks
+        </button>
+        <button onClick={loadPoints} disabled={loading}>
+          Load Cell Points
+        </button>
+        {loading && <span>Loading...</span>}
+      </div>
+
+      <AnnotaViewer
+        options={{ tileSources: "/image.dzi" }}
+        onViewerReady={setViewer}
+      />
+      <Annotator viewer={viewer} />
+    </div>
+  );
+}
+```
+
+## H5 File Format
+
+### Mask Files
+
+Expected structure:
+
+```
+/masks
+  /0  - First mask (2D array)
+  /1  - Second mask
+  ...
+```
+
+### Coordinate Files
+
+Expected structure:
+
+```
+/coordinates
+  /x  - X coordinates (1D array)
+  /y  - Y coordinates (1D array)
+```
+
+## Options
+
+```typescript
+// loadH5Masks options
+{
+  color?: string;      // Default: "#FF0000"
+  fillOpacity?: number; // Default: 0.3
+  layer?: string;      // Layer to assign
+  threshold?: number;  // Mask threshold
+}
+
+// loadH5Coordinates options
+{
+  color?: string;      // Default: "#00FF00"
+  fillOpacity?: number; // Default: 0.8
+  layer?: string;      // Layer to assign
+}
+```
+

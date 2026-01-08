@@ -1,0 +1,96 @@
+---
+title: Popups
+description: Display information popups for annotations
+---
+
+Show information popups when users interact with annotations.
+
+## Basic Usage
+
+```tsx
+import { usePopup } from "annota";
+
+function AnnotationPopup() {
+  const { visible, position, annotation, show, hide } = usePopup();
+  
+  if (!visible || !annotation) return null;
+  
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: position.x,
+        top: position.y,
+        background: "white",
+        padding: 12,
+        borderRadius: 8,
+        boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+      }}
+    >
+      <h4>{annotation.properties?.label || annotation.id}</h4>
+      <p>Type: {annotation.shape.type}</p>
+    </div>
+  );
+}
+```
+
+## Hook Reference
+
+### usePopup
+
+```typescript
+const {
+  visible,     // boolean - whether popup is shown
+  position,    // { x, y } - screen coordinates
+  annotation,  // Annotation | null - associated annotation
+  show,        // (position, annotation) => void
+  hide,        // () => void
+} = usePopup();
+```
+
+## Showing on Hover
+
+```tsx
+function HoverPopup() {
+  const hovered = useHover();
+  const { show, hide } = usePopup();
+  
+  useEffect(() => {
+    if (hovered) {
+      // Get screen position from annotation bounds
+      show({ x: 100, y: 100 }, hovered);
+    } else {
+      hide();
+    }
+  }, [hovered]);
+  
+  // Render popup...
+}
+```
+
+## Showing on Click
+
+```tsx
+function ClickPopup({ viewer }) {
+  const { show } = usePopup();
+  const annotator = useAnnotator();
+  
+  useEffect(() => {
+    if (!annotator) return;
+    
+    const handleClick = (e) => {
+      const point = viewer.viewport.pointFromPixel(e.position);
+      const hit = annotator.hitTest(point);
+      if (hit) {
+        show({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }, hit);
+      }
+    };
+    
+    viewer.addHandler('canvas-click', handleClick);
+    return () => viewer.removeHandler('canvas-click', handleClick);
+  }, [annotator, viewer]);
+  
+  return null;
+}
+```
+

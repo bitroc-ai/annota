@@ -1,0 +1,125 @@
+---
+title: useAnnotations
+description: Get all annotations as a reactive array
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Get all annotations as a reactive array that updates when annotations change.
+
+## Signature
+
+```typescript
+function useAnnotations(): Annotation[];
+```
+
+## Returns
+
+Returns an array of all `Annotation` objects. The array updates automatically when annotations are added, updated, or deleted.
+
+## Usage
+
+```tsx
+import { useAnnotations } from "annota";
+
+function AnnotationList() {
+  const annotations = useAnnotations();
+
+  return (
+    <div>
+      <h3>Annotations ({annotations.length})</h3>
+      <ul>
+        {annotations.map((ann) => (
+          <li key={ann.id}>
+            {ann.shape.type} - {ann.id}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Example: Filtered List
+
+```tsx
+function TumorAnnotations() {
+  const annotations = useAnnotations();
+  
+  const tumorAnnotations = annotations.filter(
+    (ann) => ann.properties?.type === "tumor"
+  );
+
+  return (
+    <div>
+      <h3>Tumor Annotations ({tumorAnnotations.length})</h3>
+      <ul>
+        {tumorAnnotations.map((ann) => (
+          <li key={ann.id}>{ann.id}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Example: Statistics
+
+```tsx
+function AnnotationStats() {
+  const annotations = useAnnotations();
+
+  const stats = {
+    points: annotations.filter((a) => a.shape.type === "point").length,
+    rectangles: annotations.filter((a) => a.shape.type === "rectangle").length,
+    polygons: annotations.filter((a) => a.shape.type === "polygon").length,
+  };
+
+  return (
+    <div>
+      <div>Points: {stats.points}</div>
+      <div>Rectangles: {stats.rectangles}</div>
+      <div>Polygons: {stats.polygons}</div>
+      <div>Total: {annotations.length}</div>
+    </div>
+  );
+}
+```
+
+## Example: Export
+
+```tsx
+function ExportButton() {
+  const annotations = useAnnotations();
+
+  const handleExport = () => {
+    const json = JSON.stringify(annotations, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "annotations.json";
+    a.click();
+    
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <button onClick={handleExport}>
+      Export ({annotations.length} annotations)
+    </button>
+  );
+}
+```
+
+<Aside type="tip">
+  The returned array is a new reference on each update, making it safe to use with React's dependency arrays and memoization.
+</Aside>
+
+## See Also
+
+- [useAnnotation](/api/hooks/use-annotation) — Get a specific annotation
+- [useAnnotator](/api/hooks/use-annotator) — Programmatic annotation control
+- [useSelection](/api/hooks/use-selection) — Get selected annotations
+

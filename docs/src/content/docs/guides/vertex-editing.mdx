@@ -1,0 +1,96 @@
+---
+title: Vertex Editing
+description: Edit polygon vertices with precision
+---
+
+Annota allows precise editing of polygon vertices for fine-tuning annotation boundaries.
+
+## Selection Handles
+
+When a polygon is selected, vertex handles appear at each point:
+
+- **Drag handles** to move individual vertices
+- **Click between handles** to add new vertices
+- **Double-click handles** to delete vertices
+
+## Push Tool
+
+For natural boundary editing, use the Push Tool:
+
+```tsx
+import { PushTool, useTool, usePushToolCursor } from "annota";
+
+function PushToolController({ viewer }) {
+  const radius = 50;
+  const tool = new PushTool({ radius, strength: 1.0 });
+  
+  useTool({ viewer, handler: tool, enabled: true });
+  usePushToolCursor({ viewer, radius }); // Show radius indicator
+  
+  return null;
+}
+```
+
+### Push Tool Options
+
+```typescript
+new PushTool({
+  radius: 50,      // Influence radius in pixels
+  strength: 1.0,   // Push strength (0-1)
+  showCursor: true // Show radius indicator
+});
+```
+
+## Programmatic Vertex Editing
+
+```typescript
+// Get polygon annotation
+const annotation = annotator.getAnnotation("polygon-1");
+
+// Update vertices
+const points = [...annotation.shape.geometry.points];
+points[2] = { x: 150, y: 200 }; // Move third vertex
+
+annotator.updateAnnotation("polygon-1", {
+  shape: {
+    ...annotation.shape,
+    geometry: { points },
+  },
+});
+```
+
+## Adding Vertices
+
+```typescript
+// Insert vertex between index 1 and 2
+const points = [...annotation.shape.geometry.points];
+points.splice(2, 0, { x: 125, y: 175 });
+
+annotator.updateAnnotation("polygon-1", {
+  shape: {
+    ...annotation.shape,
+    geometry: { points },
+  },
+});
+```
+
+## Removing Vertices
+
+```typescript
+// Remove vertex at index 2
+const points = [...annotation.shape.geometry.points];
+points.splice(2, 1);
+
+annotator.updateAnnotation("polygon-1", {
+  shape: {
+    ...annotation.shape,
+    geometry: { points },
+  },
+});
+```
+
+## See Also
+
+- [Tools Guide](/guides/tools) — All annotation tools
+- [Push Tool API](/api/hooks/use-push-tool-cursor) — Push tool cursor hook
+

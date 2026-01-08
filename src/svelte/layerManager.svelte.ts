@@ -43,7 +43,7 @@ export interface LayerManagerResult {
 
 export function layerManager(): LayerManagerResult {
   const getAnnotatorFn = getAnnotator();
-  const layersList = layers();
+  const getLayersList = layers();
 
   function createLayer(id: string, config: LayerConfig): Layer | undefined {
     const annotator = getAnnotatorFn();
@@ -100,7 +100,7 @@ export function layerManager(): LayerManagerResult {
   }
 
   return {
-    get layers() { return layersList; },
+    get layers() { return getLayersList(); },
     createLayer,
     getLayer,
     updateLayer,

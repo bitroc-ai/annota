@@ -1,0 +1,138 @@
+---
+title: Image Overlays
+description: Add image overlays to the viewer
+---
+
+Example of adding image layers as overlays on the viewer.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useViewer,
+  useImageLayerVisibility,
+} from "annota";
+import { useState, useEffect } from "react";
+
+function OverlayExample() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithOverlays />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithOverlays() {
+  const [viewer, setViewer] = useState(null);
+  const [overlayId, setOverlayId] = useState(null);
+  const { setVisibility, opacity, setOpacity } = useImageLayerVisibility(overlayId);
+
+  // Add overlay when viewer is ready
+  useEffect(() => {
+    if (!viewer) return;
+
+    // Add a heatmap overlay
+    viewer.addTiledImage({
+      tileSource: "/heatmap.dzi",
+      opacity: 0.5,
+      success: (event) => {
+        setOverlayId(event.item.id);
+      },
+    });
+  }, [viewer]);
+
+  return (
+    <div style={{ height: "100vh" }}>
+      <div style={{ padding: 16 }}>
+        <label>
+          Overlay Opacity:
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={opacity}
+            onChange={(e) => setOpacity(parseFloat(e.target.value))}
+          />
+        </label>
+        <button onClick={() => setVisibility(!visibility)}>
+          Toggle Overlay
+        </button>
+      </div>
+
+      <AnnotaViewer
+        options={{ tileSources: "/slide.dzi" }}
+        onViewerReady={setViewer}
+      />
+      <Annotator viewer={viewer} />
+    </div>
+  );
+}
+```
+
+## OpenSeadragon Overlay API
+
+### Adding Tiled Images
+
+```typescript
+viewer.addTiledImage({
+  tileSource: "/overlay.dzi",
+  opacity: 0.5,
+  x: 0,
+  y: 0,
+  width: 1, // Normalized width
+});
+```
+
+### Adding Simple Images
+
+```typescript
+viewer.addSimpleImage({
+  url: "/overlay.png",
+  opacity: 0.5,
+  x: 0,
+  y: 0,
+  width: 1,
+});
+```
+
+## Managing Multiple Overlays
+
+```tsx
+function MultipleOverlays({ viewer }) {
+  const [overlays, setOverlays] = useState([]);
+
+  const addOverlay = (url) => {
+    viewer.addTiledImage({
+      tileSource: url,
+      opacity: 0.5,
+      success: (e) => {
+        setOverlays((prev) => [...prev, { id: e.item.id, url }]);
+      },
+    });
+  };
+
+  const removeOverlay = (id) => {
+    const item = viewer.world.getItemAt(id);
+    if (item) {
+      viewer.world.removeItem(item);
+      setOverlays((prev) => prev.filter((o) => o.id !== id));
+    }
+  };
+
+  return (
+    <div>
+      {overlays.map((overlay) => (
+        <div key={overlay.id}>
+          {overlay.url}
+          <button onClick={() => removeOverlay(overlay.id)}>Remove</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+

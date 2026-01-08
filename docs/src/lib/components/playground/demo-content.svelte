@@ -92,8 +92,9 @@
     return () => document.removeEventListener("keydown", handleKeyDown);
   });
 
-  // Create layers on mount
-  onMount(() => {
+  // Create layers when annotator becomes available
+  // Must use $effect instead of onMount because annotator is set asynchronously
+  $effect(() => {
     if (!annotator) return;
 
     // Create layer for positive point annotations
@@ -104,7 +105,7 @@
         locked: false,
         opacity: 1,
         zIndex: 1,
-        filter: (ann) => {
+        filter: (ann: Annotation) => {
           return (
             ann.shape.type === "point" &&
             ann.properties?.category === "positive"

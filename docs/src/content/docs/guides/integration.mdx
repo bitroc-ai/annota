@@ -1,0 +1,181 @@
+---
+title: Integration
+description: Integrate Annota with your application
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+This guide covers common integration patterns for Annota.
+
+## Server Synchronization
+
+### Auto-Save on Create
+
+```tsx
+function AutoSave() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = async (annotation) => {
+      await fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(annotation),
+      });
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+### Debounced Updates
+
+```tsx
+import { debounce } from "lodash";
+
+function DebouncedSync() {
+  const annotator = useAnnotator();
+  
+  const saveUpdate = useMemo(
+    () => debounce(async (annotation) => {
+      await fetch(`/api/annotations/${annotation.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(annotation),
+      });
+    }, 500),
+    []
+  );
+
+  useEffect(() => {
+    if (!annotator) return;
+    annotator.on("updateAnnotation", saveUpdate);
+    return () => annotator.off("updateAnnotation", saveUpdate);
+  }, [annotator, saveUpdate]);
+
+  return null;
+}
+```
+
+## Loading Annotations
+
+```tsx
+function LoadAnnotations({ slideId }) {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    fetch(`/api/annotations/${slideId}`)
+      .then((res) => res.json())
+      .then((annotations) => {
+        annotator.addAnnotations(annotations);
+      });
+  }, [annotator, slideId]);
+
+  return null;
+}
+```
+
+## State Management
+
+### With Redux
+
+```tsx
+function ReduxSync() {
+  const annotator = useAnnotator();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleChange = () => {
+      dispatch(setAnnotations(annotator.getAnnotations()));
+    };
+
+    annotator.on("createAnnotation", handleChange);
+    annotator.on("updateAnnotation", handleChange);
+    annotator.on("deleteAnnotation", handleChange);
+
+    return () => {
+      annotator.off("createAnnotation", handleChange);
+      annotator.off("updateAnnotation", handleChange);
+      annotator.off("deleteAnnotation", handleChange);
+    };
+  }, [annotator, dispatch]);
+
+  return null;
+}
+```
+
+### With Zustand
+
+```tsx
+function ZustandSync() {
+  const annotator = useAnnotator();
+  const setAnnotations = useStore((s) => s.setAnnotations);
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const sync = () => setAnnotations(annotator.getAnnotations());
+
+    annotator.on("createAnnotation", sync);
+    annotator.on("updateAnnotation", sync);
+    annotator.on("deleteAnnotation", sync);
+
+    return () => {
+      annotator.off("createAnnotation", sync);
+      annotator.off("updateAnnotation", sync);
+      annotator.off("deleteAnnotation", sync);
+    };
+  }, [annotator, setAnnotations]);
+
+  return null;
+}
+```
+
+## Image Sources
+
+<Tabs>
+  <TabItem label="DZI">
+    ```tsx
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+      }}
+    />
+    ```
+  </TabItem>
+  <TabItem label="IIIF">
+    ```tsx
+    <AnnotaViewer
+      options={{
+        tileSources: "https://server/iiif/image/info.json",
+      }}
+    />
+    ```
+  </TabItem>
+  <TabItem label="Simple Image">
+    ```tsx
+    <AnnotaViewer
+      options={{
+        tileSources: {
+          type: "image",
+          url: "/path/to/image.jpg",
+        },
+      }}
+    />
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="tip">
+  For whole slide images, use DZI or IIIF formats for efficient tiled loading.
+</Aside>
+

@@ -19,8 +19,8 @@
     selection,
   } from "annota/svelte";
   import { containsPoint, downloadJson, exportJson, canMergeAnnotations } from "annota";
-  import Button from "$lib/components/ui/Button.svelte";
-  import Card from "$lib/components/ui/Card.svelte";
+  import Button from "$lib/components/ui/button.svelte";
+  import Card from "$lib/components/ui/card.svelte";
   import { cn } from "$lib/utils";
   import { warmUpSamApi } from "$lib/services/sam-warmup";
   
@@ -289,8 +289,8 @@
     </Button>
     
     <!-- Divider -->
-    <div class="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
-    
+    <div class="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1"></div>
+
     <!-- Annotation Operations -->
     <Button
       variant="ghost"
@@ -321,10 +321,10 @@
     >
       <Sparkles class="w-4 h-4 text-purple-500" />
     </Button>
-    
+
     <!-- Divider -->
-    <div class="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1" />
-    
+    <div class="h-px w-8 bg-slate-200 dark:bg-slate-800 my-1"></div>
+
     <!-- Layer Panel -->
     {#if layerPanel}
       {@render layerPanel()}

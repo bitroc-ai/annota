@@ -1,60 +1,61 @@
 import OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
-import { getAnnotator } from './annotator';
+import { getContext } from 'svelte';
+import { ANNOTA_CONTEXT_KEY, type AnnotaContextValue } from './context';
 
 export function contextMenuBinding(
   showViewerMenu: (x: number, y: number) => void,
   showAnnotationMenu: (annotation: Annotation, x: number, y: number) => void
 ): void {
-  const getAnnotatorFn = getAnnotator();
+  // Get context once (context object is stable, but its getter is reactive)
+  let context: AnnotaContextValue | undefined;
+  try {
+    context = getContext<AnnotaContextValue>(ANNOTA_CONTEXT_KEY);
+  } catch {
+    // Context not available (SSR or outside provider)
+  }
+
+  // Make annotator access explicitly reactive using $derived
+  const annotator = $derived(context?.annotator);
 
   $effect(() => {
     if (typeof window === 'undefined') return;
     
-    const annotator = getAnnotatorFn();
+    // Use the reactive annotator from $derived
     if (!annotator?.viewer) return;
 
     const store = annotator.state.store;
     const canvas = annotator.viewer.canvas;
 
-    if (!canvas) return;
+    if (!canvas || !store) return;
 
-    let cleanup: (() => void) | null = null;
+    // Access functions directly in the handler to ensure they're current
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
 
-    // Dynamic import to avoid SSR issues
-    import('openseadragon').then((OSD) => {
-      const handleContextMenu = (e: MouseEvent) => {
-        e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
 
-        const rect = canvas.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
+      const imageCoords = annotator.viewer.viewport.viewerElementToImageCoordinates(
+        new OpenSeadragon.Point(offsetX, offsetY)
+      );
 
-        const imageCoords = annotator.viewer.viewport.viewerElementToImageCoordinates(
-          new OSD.default.Point(offsetX, offsetY)
-        );
+      const hitTolerance = 5 / annotator.viewer.viewport.getZoom();
+      const annotation = store.getAt(imageCoords.x, imageCoords.y, undefined, hitTolerance);
 
-        const hitTolerance = 5 / annotator.viewer.viewport.getZoom();
-        const annotation = store.getAt(imageCoords.x, imageCoords.y, undefined, hitTolerance);
+      // Access functions directly here - they're captured from the closure
+      if (annotation) {
+        showAnnotationMenu(annotation, e.clientX, e.clientY);
+      } else {
+        showViewerMenu(e.clientX, e.clientY);
+      }
+    };
 
-        if (annotation) {
-          showAnnotationMenu(annotation, e.clientX, e.clientY);
-        } else {
-          showViewerMenu(e.clientX, e.clientY);
-        }
-      };
-
-      canvas.addEventListener('contextmenu', handleContextMenu);
-      cleanup = () => {
-        canvas.removeEventListener('contextmenu', handleContextMenu);
-      };
-    });
+    canvas.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
-      if (cleanup) {
-        cleanup();
-        cleanup = null;
-      }
+      canvas.removeEventListener('contextmenu', handleContextMenu);
     };
   });
 }

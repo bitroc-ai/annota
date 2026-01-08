@@ -11,8 +11,8 @@
   import { toastSuccess, toastInfo } from "$lib/services/toast";
   import { getAnnotator, viewer as viewerUtils, history } from "annota/svelte";
   import { downloadJson, exportJson } from "annota";
-  import Button from "$lib/components/ui/Button.svelte";
-  import Card from "$lib/components/ui/Card.svelte";
+  import Button from "$lib/components/ui/button.svelte";
+  import Card from "$lib/components/ui/card.svelte";
 
   interface Props {
     viewer?: any;
@@ -83,7 +83,7 @@
     </Button>
 
     <!-- Divider -->
-    <div class="w-px h-8 bg-slate-200 dark:bg-slate-800 mx-1" />
+    <div class="w-px h-8 bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
     <!-- History Controls -->
     <Button
@@ -108,7 +108,7 @@
     </Button>
 
     <!-- Divider -->
-    <div class="w-px h-8 bg-slate-200 dark:bg-slate-800 mx-1" />
+    <div class="w-px h-8 bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
     <!-- File Operations -->
     <Button

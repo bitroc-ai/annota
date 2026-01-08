@@ -1,0 +1,162 @@
+---
+title: Installation
+description: Install Annota in your project
+---
+
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components';
+
+## Prerequisites
+
+Before installing Annota, ensure you have:
+
+- **Node.js** 18 or higher
+- **React** 18 or higher
+- A package manager (npm, pnpm, or yarn)
+
+## Install Annota
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install annota openseadragon
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add annota openseadragon
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add annota openseadragon
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  **OpenSeadragon** is a required peer dependency for viewport management and image display.
+</Aside>
+
+## TypeScript Support
+
+Annota is written in TypeScript and includes full type definitions. For OpenSeadragon types:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install --save-dev @types/openseadragon
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add -D @types/openseadragon
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add -D @types/openseadragon
+    ```
+  </TabItem>
+</Tabs>
+
+## Import Styles
+
+Import the required CSS in your app entry point:
+
+```tsx
+import "annota/dist/index.css";
+```
+
+Or in your global CSS:
+
+```css
+@import "annota/dist/index.css";
+```
+
+## Verify Installation
+
+Create a simple test component:
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+import { useState } from "react";
+import "annota/dist/index.css";
+
+function TestViewer() {
+  const [viewer, setViewer] = useState(null);
+
+  return (
+    <AnnotaProvider slideId="test">
+      <div style={{ width: "800px", height: "600px" }}>
+        <AnnotaViewer
+          options={{
+            tileSources: {
+              type: "image",
+              url: "https://picsum.photos/1920/1080",
+            },
+            prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+          }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </AnnotaProvider>
+  );
+}
+```
+
+If you see an image viewer, Annota is installed correctly!
+
+## Optional Dependencies
+
+### H5 File Support
+
+For loading HDF5 annotation files:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install h5wasm
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add h5wasm
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add h5wasm
+    ```
+  </TabItem>
+</Tabs>
+
+### SAM Tool (AI-Assisted Segmentation)
+
+For the Segment Anything Model tool, you'll need ONNX Runtime:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install onnxruntime-web
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add onnxruntime-web
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add onnxruntime-web
+    ```
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+Now that Annota is installed, continue to:
+
+- [Quick Start](/getting-started/quick-start) — Build your first annotation viewer
+- [Core Concepts](/getting-started/concepts) — Understand annotations, layers, and tools
+

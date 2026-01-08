@@ -1,0 +1,94 @@
+---
+title: Data Loaders
+description: Import and export annotations from various file formats
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Annota provides data loaders for importing annotations from various file formats commonly used in digital pathology.
+
+## H5 (HDF5) Files
+
+### Loading Mask Annotations
+
+Load polygon annotations from HDF5 mask files:
+
+```typescript
+import { loadH5Masks } from "annota";
+
+const annotations = await loadH5Masks("/path/to/masks.h5", {
+  color: "#FF0000",
+  fillOpacity: 0.3,
+});
+```
+
+### Loading Coordinate Points
+
+Load point annotations from HDF5 coordinate files:
+
+```typescript
+import { loadH5Coordinates } from "annota";
+
+const points = await loadH5Coordinates("/path/to/coords.h5", {
+  color: "#00FF00",
+  fillOpacity: 0.8,
+});
+```
+
+<Aside type="note">
+  H5 loading requires the `h5wasm` package: `npm install h5wasm`
+</Aside>
+
+## JSON Files
+
+### Loading
+
+```typescript
+import { loadJSONFile } from "annota";
+
+const annotations = loadJSONFile(jsonData);
+```
+
+### Exporting
+
+```typescript
+import { annotationsToJSON } from "annota";
+
+const json = annotationsToJSON(annotations);
+```
+
+## PGM Files
+
+### Loading Masks
+
+```typescript
+import { loadPgmFile } from "annota";
+
+const annotations = loadPgmFile(pgmData, {
+  threshold: 128,
+});
+```
+
+### Extracting Polygons
+
+```typescript
+import { loadPgmPolygons } from "annota";
+
+const polygons = loadPgmPolygons(pgmData, {
+  threshold: 128,
+});
+```
+
+### Exporting
+
+```typescript
+import { annotationsToPgm } from "annota";
+
+const pgmData = annotationsToPgm(annotations, width, height);
+```
+
+## See Also
+
+- [API Reference](/api) — Complete loader API
+- [H5 Loading Use Case](/use-cases/h5-loading) — Complete example
+

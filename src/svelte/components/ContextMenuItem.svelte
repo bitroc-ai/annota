@@ -36,9 +36,11 @@
 >
   {#if icon}
     <span class="menu-item-icon">
-      {#if typeof icon === "function" && "render" in icon}
+      {#if typeof icon === "function" && !icon.prototype}
+        <!-- Snippet: function without prototype -->
         {@render icon()}
       {:else}
+        <!-- Component: has prototype or is an object -->
         {@const Icon = icon}
         <Icon class="w-4 h-4" />
       {/if}

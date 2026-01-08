@@ -1,0 +1,181 @@
+---
+title: useTool
+description: Activate and manage annotation tools
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Activate and manage annotation tools for creating and editing annotations.
+
+## Signature
+
+```typescript
+function useTool(options: UseToolOptions): void;
+
+interface UseToolOptions {
+  viewer: OpenSeadragon.Viewer | null;
+  handler: Tool | null;
+  enabled?: boolean;
+}
+```
+
+## Parameters
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `viewer` | `Viewer \| null` | OpenSeadragon viewer instance |
+| `handler` | `Tool \| null` | Tool instance to activate |
+| `enabled` | `boolean` | Whether the tool is enabled (default: `true`) |
+
+## Usage
+
+```tsx
+import { useTool, PointTool } from "annota";
+import { useState } from "react";
+
+function AnnotationTools({ viewer }) {
+  const pointTool = new PointTool();
+
+  useTool({
+    viewer,
+    handler: pointTool,
+    enabled: true,
+  });
+
+  return null;
+}
+```
+
+## Example: Tool Switching
+
+```tsx
+import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useState, useMemo } from "react";
+
+function ToolController({ viewer }) {
+  const [activeTool, setActiveTool] = useState<string>("pan");
+
+  // Create tools once
+  const tools = useMemo(() => ({
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  }), []);
+
+  useTool({
+    viewer,
+    handler: activeTool === "pan" ? null : tools[activeTool],
+    enabled: activeTool !== "pan",
+  });
+
+  return (
+    <div>
+      <button 
+        onClick={() => setActiveTool("pan")}
+        style={{ fontWeight: activeTool === "pan" ? "bold" : "normal" }}
+      >
+        Pan
+      </button>
+      <button 
+        onClick={() => setActiveTool("point")}
+        style={{ fontWeight: activeTool === "point" ? "bold" : "normal" }}
+      >
+        Point
+      </button>
+      <button 
+        onClick={() => setActiveTool("rectangle")}
+        style={{ fontWeight: activeTool === "rectangle" ? "bold" : "normal" }}
+      >
+        Rectangle
+      </button>
+      <button 
+        onClick={() => setActiveTool("polygon")}
+        style={{ fontWeight: activeTool === "polygon" ? "bold" : "normal" }}
+      >
+        Polygon
+      </button>
+    </div>
+  );
+}
+```
+
+## Example: Tool with Custom Style
+
+```tsx
+function TumorTool({ viewer }) {
+  const tool = useMemo(
+    () =>
+      new PolygonTool({
+        style: {
+          fill: "#FF0000",
+          fillOpacity: 0.3,
+          stroke: "#FF0000",
+          strokeWidth: 2,
+        },
+        layer: "tumor",
+        properties: {
+          type: "tumor",
+        },
+      }),
+    []
+  );
+
+  useTool({
+    viewer,
+    handler: tool,
+    enabled: true,
+  });
+
+  return null;
+}
+```
+
+## Example: Keyboard Shortcuts
+
+```tsx
+function ToolsWithShortcuts({ viewer }) {
+  const [activeTool, setActiveTool] = useState("pan");
+
+  const tools = useMemo(() => ({
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  }), []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      
+      switch (e.key.toLowerCase()) {
+        case "v": setActiveTool("pan"); break;
+        case "p": setActiveTool("point"); break;
+        case "r": setActiveTool("rectangle"); break;
+        case "g": setActiveTool("polygon"); break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useTool({
+    viewer,
+    handler: activeTool === "pan" ? null : tools[activeTool],
+    enabled: activeTool !== "pan",
+  });
+
+  return <div>Active: {activeTool} (Press V/P/R/G to switch)</div>;
+}
+```
+
+<Aside type="caution">
+  Create tool instances with `useMemo` or `useState` to avoid creating new instances on every render.
+</Aside>
+
+## See Also
+
+- [Tools Guide](/guides/tools) — Complete tools documentation
+- [usePushToolCursor](/api/hooks/use-push-tool-cursor) — Push tool cursor
+- [useAnnotator](/api/hooks/use-annotator) — Programmatic control
+

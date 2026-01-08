@@ -211,5 +211,5 @@
     style="position: fixed; left: {cursorPos.x}px; top: {cursorPos.y}px; width: {radiusInPixels *
       2}px; height: {radiusInPixels *
       2}px; border-radius: 50%; border: 2px solid #00ff00; background-color: rgba(0, 255, 0, 0.1); transform: translate(-50%, -50%); pointer-events: none; z-index: 10;"
-  />
+  ></div>
 {/if}

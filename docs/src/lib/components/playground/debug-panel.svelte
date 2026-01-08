@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronRight } from "lucide-svelte";
   import { annotations } from "annota/svelte";
-  import Button from "$lib/components/ui/Button.svelte";
+  import Button from "$lib/components/ui/button.svelte";
   
   interface Props {
     currentImage: string;
@@ -18,7 +18,7 @@
     <span class="text-xs">
       Annotations: <span class="font-mono">{annotationsList.length}</span>
     </span>
-    <div class="w-px h-4 bg-slate-200 dark:bg-slate-800" />
+    <div class="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
     <Button
       variant="ghost"
       size="sm"

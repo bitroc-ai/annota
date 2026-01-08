@@ -1,0 +1,317 @@
+---
+title: Event System
+description: Respond to annotation lifecycle changes with Annota's event system
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+Annota provides a comprehensive event system to respond to annotation lifecycle changes.
+
+## Event Types
+
+Annota emits four core events:
+
+| Event | Triggered When | Data |
+| --- | --- | --- |
+| `createAnnotation` | New annotation created | `Annotation` |
+| `updateAnnotation` | Annotation modified | `Annotation` |
+| `deleteAnnotation` | Annotation deleted | `Annotation` |
+| `selectionChanged` | Selection changes | `{ selected: string[] }` |
+
+## Listening to Events
+
+Access the annotator instance and register event handlers:
+
+```tsx
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
+
+function AnnotationLogger() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      console.log("Annotation created:", annotation);
+    };
+
+    const handleUpdate = (annotation) => {
+      console.log("Annotation updated:", annotation);
+    };
+
+    const handleDelete = (annotation) => {
+      console.log("Annotation deleted:", annotation);
+    };
+
+    const handleSelection = ({ selected }) => {
+      console.log("Selection changed:", selected);
+    };
+
+    // Register handlers
+    annotator.on("createAnnotation", handleCreate);
+    annotator.on("updateAnnotation", handleUpdate);
+    annotator.on("deleteAnnotation", handleDelete);
+    annotator.on("selectionChanged", handleSelection);
+
+    // Cleanup
+    return () => {
+      annotator.off("createAnnotation", handleCreate);
+      annotator.off("updateAnnotation", handleUpdate);
+      annotator.off("deleteAnnotation", handleDelete);
+      annotator.off("selectionChanged", handleSelection);
+    };
+  }, [annotator]);
+
+  return null;
+}
+```
+
+<Aside type="caution" title="Always Clean Up">
+  Always remove event listeners in the cleanup function to prevent memory leaks.
+</Aside>
+
+## createAnnotation Event
+
+Fired when a new annotation is created.
+
+### Auto-save Example
+
+```tsx
+function AutoSave() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = async (annotation) => {
+      await fetch("/api/annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(annotation),
+      });
+      console.log("Saved annotation:", annotation.id);
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+### Count by Type Example
+
+```tsx
+function AnnotationCounter() {
+  const [counts, setCounts] = useState({ point: 0, rectangle: 0, polygon: 0 });
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      setCounts((prev) => ({
+        ...prev,
+        [annotation.shape.type]: prev[annotation.shape.type] + 1,
+      }));
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
+  }, [annotator]);
+
+  return (
+    <div>
+      <div>Points: {counts.point}</div>
+      <div>Rectangles: {counts.rectangle}</div>
+      <div>Polygons: {counts.polygon}</div>
+    </div>
+  );
+}
+```
+
+## updateAnnotation Event
+
+Fired when an annotation is modified (properties, style, or shape).
+
+### Server Sync Example
+
+```tsx
+function ServerSync() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleUpdate = async (annotation) => {
+      await fetch(`/api/annotations/${annotation.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(annotation),
+      });
+    };
+
+    annotator.on("updateAnnotation", handleUpdate);
+    return () => annotator.off("updateAnnotation", handleUpdate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+## deleteAnnotation Event
+
+Fired when an annotation is deleted.
+
+```tsx
+function DeletionLogger() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleDelete = (annotation) => {
+      console.log(`Deleted annotation ${annotation.id} (${annotation.shape.type})`);
+
+      // Sync deletion to server
+      fetch(`/api/annotations/${annotation.id}`, { method: "DELETE" });
+    };
+
+    annotator.on("deleteAnnotation", handleDelete);
+    return () => annotator.off("deleteAnnotation", handleDelete);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+## selectionChanged Event
+
+Fired when the selection changes.
+
+### Bulk Operations Example
+
+```tsx
+function BulkOperations() {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleSelection = ({ selected }) => {
+      setSelectedIds(selected);
+    };
+
+    annotator.on("selectionChanged", handleSelection);
+    return () => annotator.off("selectionChanged", handleSelection);
+  }, [annotator]);
+
+  const deleteSelected = () => {
+    selectedIds.forEach((id) => annotator?.deleteAnnotation(id));
+  };
+
+  const changeColor = (color: string) => {
+    selectedIds.forEach((id) => {
+      annotator?.updateAnnotation(id, { style: { fill: color } });
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={deleteSelected} disabled={selectedIds.length === 0}>
+        Delete Selected ({selectedIds.length})
+      </button>
+      <button onClick={() => changeColor("#FF0000")}>Red</button>
+      <button onClick={() => changeColor("#00FF00")}>Green</button>
+    </div>
+  );
+}
+```
+
+## Event Handler Patterns
+
+### Debouncing Events
+
+Avoid excessive event firing:
+
+```tsx
+import { debounce } from "lodash";
+
+function DebouncedSync() {
+  const annotator = useAnnotator();
+  const debouncedSyncRef = useRef(
+    debounce(async (annotation) => {
+      await fetch(`/api/annotations/${annotation.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(annotation),
+      });
+    }, 500)
+  );
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleUpdate = (annotation) => {
+      debouncedSyncRef.current(annotation);
+    };
+
+    annotator.on("updateAnnotation", handleUpdate);
+    return () => annotator.off("updateAnnotation", handleUpdate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+### Event Filtering
+
+Filter events based on conditions:
+
+```tsx
+function TumorAnnotationLogger() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = (annotation) => {
+      // Only log tumor annotations
+      if (annotation.properties?.type === "tumor") {
+        console.log("Tumor annotation created:", annotation.id);
+      }
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+## Best Practices
+
+<CardGrid>
+  <Card title="Always Clean Up" icon="approve-check">
+    Remove event listeners in cleanup functions to prevent memory leaks.
+  </Card>
+  <Card title="Handle Async Properly" icon="rocket">
+    Use async/await for server operations with proper error handling.
+  </Card>
+  <Card title="Use Stable References" icon="seti:lock">
+    Use `useCallback` or `useRef` for complex handlers.
+  </Card>
+  <Card title="Error Handling" icon="warning">
+    Wrap handlers in try/catch to prevent errors from breaking the app.
+  </Card>
+</CardGrid>
+
+## Next Steps
+
+- [Annotator API](/api/annotator) — Complete annotator API
+- [Annotation Tools](/guides/tools) — Learn about annotation tools
+- [Use Cases](/use-cases/event-handling) — Practical examples
+

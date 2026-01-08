@@ -1,0 +1,168 @@
+---
+title: React Hooks
+description: Complete reference for Annota's React hooks
+---
+
+import { Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+Annota provides a comprehensive set of React hooks for building annotation interfaces.
+
+<Aside type="tip">
+  All hooks must be used within an `AnnotaProvider` component.
+</Aside>
+
+## Core Hooks
+
+<CardGrid>
+  <Card title="useAnnotator" icon="setting">
+    Access the annotator instance for programmatic control.
+    
+    [View →](/api/hooks/use-annotator)
+  </Card>
+  <Card title="useAnnotations" icon="list-format">
+    Get all annotations as a reactive array.
+    
+    [View →](/api/hooks/use-annotations)
+  </Card>
+  <Card title="useAnnotation" icon="document">
+    Get a specific annotation by ID.
+    
+    [View →](/api/hooks/use-annotation)
+  </Card>
+  <Card title="useSelection" icon="approve-check">
+    Access currently selected annotations.
+    
+    [View →](/api/hooks/use-selection)
+  </Card>
+</CardGrid>
+
+## Tool Hooks
+
+<CardGrid>
+  <Card title="useTool" icon="pencil">
+    Activate and manage annotation tools.
+    
+    [View →](/api/hooks/use-tool)
+  </Card>
+  <Card title="usePushToolCursor" icon="seti:image">
+    Display push tool radius cursor.
+    
+    [View →](/api/hooks/use-push-tool-cursor)
+  </Card>
+</CardGrid>
+
+## Layer Hooks
+
+<CardGrid>
+  <Card title="useLayers" icon="list-format">
+    Get all layers as a reactive array.
+    
+    [View →](/api/hooks/use-layers)
+  </Card>
+  <Card title="useLayer" icon="document">
+    Get a specific layer by ID.
+    
+    [View →](/api/hooks/use-layer)
+  </Card>
+  <Card title="useLayerManager" icon="setting">
+    Create, update, and delete layers.
+    
+    [View →](/api/hooks/use-layer-manager)
+  </Card>
+</CardGrid>
+
+## History Hooks
+
+<CardGrid>
+  <Card title="useHistory" icon="seti:clock">
+    Access undo/redo functionality.
+    
+    [View →](/api/hooks/use-history)
+  </Card>
+  <Card title="useCanUndo" icon="left-arrow">
+    Check if undo is available.
+    
+    [View →](/api/hooks/use-can-undo)
+  </Card>
+  <Card title="useCanRedo" icon="right-arrow">
+    Check if redo is available.
+    
+    [View →](/api/hooks/use-can-redo)
+  </Card>
+</CardGrid>
+
+## Interaction Hooks
+
+<CardGrid>
+  <Card title="useHover" icon="seti:todo">
+    Track hovered annotation.
+    
+    [View →](/api/hooks/use-hover)
+  </Card>
+  <Card title="useEditing" icon="pencil">
+    Track annotation being edited.
+    
+    [View →](/api/hooks/use-editing)
+  </Card>
+  <Card title="useViewer" icon="seti:image">
+    Access OpenSeadragon viewer.
+    
+    [View →](/api/hooks/use-viewer)
+  </Card>
+</CardGrid>
+
+## UI Hooks
+
+<CardGrid>
+  <Card title="useContextMenu" icon="seti:todo">
+    Manage context menu state.
+    
+    [View →](/api/hooks/use-context-menu)
+  </Card>
+  <Card title="useContextMenuBinding" icon="seti:lock">
+    Bind context menu to annotations.
+    
+    [View →](/api/hooks/use-context-menu-binding)
+  </Card>
+  <Card title="usePopup" icon="open-book">
+    Manage popup/tooltip state.
+    
+    [View →](/api/hooks/use-popup)
+  </Card>
+</CardGrid>
+
+## Quick Reference
+
+```tsx
+import {
+  // Core
+  useAnnotator,
+  useAnnotations,
+  useAnnotation,
+  useSelection,
+  
+  // Tools
+  useTool,
+  usePushToolCursor,
+  
+  // Layers
+  useLayers,
+  useLayer,
+  useLayerManager,
+  
+  // History
+  useHistory,
+  useCanUndo,
+  useCanRedo,
+  
+  // Interaction
+  useHover,
+  useEditing,
+  useViewer,
+  
+  // UI
+  useContextMenu,
+  useContextMenuBinding,
+  usePopup,
+} from "annota";
+```

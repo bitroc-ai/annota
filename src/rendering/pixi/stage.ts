@@ -541,6 +541,8 @@ export class PixiStage {
       this.updateEntryRenderCache(id);
     });
     this.snapshotDirty = true;
+    // Trigger redraw to show selection changes immediately
+    this.redraw();
   }
 
   /**

@@ -1,0 +1,82 @@
+---
+title: Styling
+description: Customize annotation appearance
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Annota provides flexible styling options for customizing annotation appearance.
+
+## Style Properties
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;        // Fill color (CSS color)
+  fillOpacity?: number; // Fill transparency (0-1)
+  stroke?: string;      // Stroke color
+  strokeWidth?: number; // Stroke width in pixels
+  strokeOpacity?: number; // Stroke transparency
+}
+```
+
+## Dynamic Styling
+
+Apply styles based on annotation properties:
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
+    fillOpacity: annotation.properties?.confidence || 0.3,
+    stroke: "#FFFFFF",
+    strokeWidth: 2,
+  })}
+/>
+```
+
+## Layer Styling
+
+Apply consistent styles across a layer:
+
+```tsx
+layerManager.createLayer({
+  id: 'tumor',
+  name: 'Tumor Regions',
+  style: {
+    fill: '#FF0000',
+    fillOpacity: 0.3,
+    stroke: '#FF0000',
+    strokeWidth: 2,
+  },
+});
+```
+
+## Style Hierarchy
+
+Styles are applied in order (later overrides earlier):
+
+1. **Default styles** — Built-in defaults
+2. **Layer styles** — Applied to all annotations in layer
+3. **Annotation styles** — Per-annotation overrides
+4. **Selection styles** — Applied to selected annotations
+5. **Hover styles** — Applied on mouse hover
+
+## CSS Variables
+
+Customize default styles with CSS variables:
+
+```css
+:root {
+  --annota-point-fill: #FF0000;
+  --annota-point-size: 10px;
+  --annota-selection-stroke: #0066FF;
+  --annota-hover-stroke: #00AAFF;
+}
+```
+
+## See Also
+
+- [Layer System](/guides/layers) — Layer-based styling
+- [Components](/api/components) — Annotator styling props
+

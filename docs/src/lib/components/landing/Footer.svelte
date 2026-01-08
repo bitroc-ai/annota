@@ -34,7 +34,7 @@
           Issues
         </a>
         <a
-          href="/docs/changelog"
+          href="/changelog"
           class="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           Changelog

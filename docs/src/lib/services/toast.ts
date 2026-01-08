@@ -1,45 +1,30 @@
-import { writable } from 'svelte/store';
+import { toast as sonnerToast } from "svelte-sonner";
 
-type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
-
-const toasts = writable<Toast[]>([]);
-
-export function toast(message: string, type: ToastType = 'info') {
-  const id = Math.random().toString(36).substring(7);
-  const toast: Toast = { id, message, type };
-  
-  toasts.update(ts => [...ts, toast]);
-  
-  setTimeout(() => {
-    toasts.update(ts => ts.filter(t => t.id !== id));
-  }, 3000);
-  
-  return id;
+export function toast(message: string, type: "success" | "error" | "info" | "warning" = "info") {
+  switch (type) {
+    case "success":
+      return sonnerToast.success(message);
+    case "error":
+      return sonnerToast.error(message);
+    case "warning":
+      return sonnerToast.warning(message);
+    default:
+      return sonnerToast.info(message);
+  }
 }
 
 export function toastSuccess(message: string) {
-  return toast(message, 'success');
+  return sonnerToast.success(message);
 }
 
 export function toastError(message: string) {
-  return toast(message, 'error');
+  return sonnerToast.error(message);
 }
 
 export function toastInfo(message: string) {
-  return toast(message, 'info');
+  return sonnerToast.info(message);
 }
 
 export function toastWarning(message: string) {
-  return toast(message, 'warning');
+  return sonnerToast.warning(message);
 }
-
-export function getToasts() {
-  return toasts;
-}
-
