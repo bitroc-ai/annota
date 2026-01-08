@@ -3,29 +3,36 @@ title: Changelog
 description: Release history and changes
 ---
 
-## Latest Release
+# Changelog
 
-See the [GitHub releases](https://github.com/anthropics/annota/releases) for the latest changes.
+All notable changes to Annota are documented here.
 
-## Version History
+## v0.10.0
 
-### 1.0.0
+Released on January 08, 2026
 
-Initial release with core features:
+### Changes
 
-- **Components**: AnnotaProvider, AnnotaViewer, Annotator
-- **Tools**: PointTool, RectangleTool, PolygonTool, PushTool, ContourTool
-- **Hooks**: Full React hooks API
-- **Layer System**: Multi-layer support with visibility and styling
-- **Data Loaders**: H5, JSON, PGM support
-- **Performance**: R-tree indexing, viewport culling, LOD rendering
+- fix: resolve TypeScript errors in handles and stage (55e68ab)
+- 0.10.0 (25336f9)
+- docs: svelte docs (424511d)
+- feat: add handle editing utilities to PixiJS rendering (06e3962)
+- feat: add Svelte annotation editor components (d857caf)
+- feat: add SVG annotation editor for Svelte (4e1e2c8)
+- feat: add selection handles for annotations (e536d21)
+- refactor: svelte version (b6316af)
+- chore: remove deprecated files and update documentation (abeff25)
+- refactor: streamline demo components and enhance context menu functionality (23dd087)
+- chore: remove deprecated files and update dependencies (38f5104)
+- perf: optimize mask loader with bounding box pruning (dc2fdbb)
 
-### Future Roadmap
+### Installation
 
-- [ ] SAM (Segment Anything) tool integration
-- [ ] Multi-select improvements
-- [ ] Annotation grouping
-- [ ] Measurement tools
-- [ ] Export to COCO/VGG formats
-- [ ] Collaborative annotations
+```bash
+npm install annota@0.10.0
+# or
+pnpm add annota@0.10.0
+```
+
+---
 
