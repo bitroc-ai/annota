@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "start": "astro preview",
+    "start": "node scripts/preview-with-mock.js",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "node scripts/preview-with-mock.js",
     "astro": "astro",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

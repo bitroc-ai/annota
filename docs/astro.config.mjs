@@ -124,31 +124,44 @@ export default defineConfig({
     strictPort: false, // Allow Railway to assign port dynamically
   },
   vite: {
+    optimizeDeps: {
+      exclude: ['openseadragon'], // Don't pre-bundle openseadragon
+    },
     ssr: {
-      noExternal: ['annota', 'lucide-svelte'],
-      // Make openseadragon external for SSR so Vite doesn't try to bundle it
-      // The mock plugin will intercept it before it reaches the real module
-      external: ['openseadragon'],
+      noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
+      // Include openseadragon in noExternal so Vite processes it through our plugin
     },
     plugins: [
       {
         name: 'mock-openseadragon',
         enforce: 'pre',
         resolveId(id, importer, options) {
-          // Mock openseadragon during SSR to prevent "document is not defined" errors
+          // Mock openseadragon in all SSR/non-browser contexts
           if (id === 'openseadragon') {
-            // Intercept during SSR (when options.ssr is true)
-            // This happens during build, preview server startup, and SSR requests
+            // Intercept during SSR (build, preview server, SSR requests)
             if (options?.ssr) {
-              return 'virtual:openseadragon';
+              const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
+              return mockPath;
             }
+            // Also intercept for client builds if we detect we're in Node.js
+            // This handles cases where the preview server tries to process modules
+            const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
+            // Check if the importer is from a server context
+            // If importer is undefined or from node_modules, we might be in a server context
+            if (!importer || importer.includes('node_modules')) {
+              // Only use mock if we're definitely not in a browser
+              // For client bundles, let it resolve normally
+              return null;
+            }
+            return mockPath;
           }
           return null;
         },
         load(id) {
-          if (id === 'virtual:openseadragon') {
-            // Return a mock that matches OpenSeadragon's API structure
-            // This prevents "document is not defined" errors during SSR
+          // If the resolved ID is our mock, load it
+          const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
+          if (id === mockPath || id.includes('openseadragon.ts')) {
+            // Return the mock code
             return `
               export default {
                 Viewer: class {
@@ -163,7 +176,7 @@ export default defineConfig({
               };
             `;
           }
-        }
+        },
       },
       tailwindcss(),
     ],
