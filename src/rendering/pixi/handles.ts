@@ -164,3 +164,359 @@ export function renderHandles(
 export function createHandleGraphics(): PIXI.Graphics {
   return new PIXI.Graphics();
 }
+
+/**
+ * Hit test handles for a shape
+ * Returns the handle position if the point is within a handle, undefined otherwise
+ * 
+ * @param shape - The shape to test handles for
+ * @param point - The point to test (in image coordinates)
+ * @param scale - Current viewport scale
+ * @param hitRadius - Hit detection radius in screen pixels (default: 10)
+ */
+export function hitTestHandles(
+  shape: Shape,
+  point: Point,
+  scale: number,
+  hitRadius: number = 10
+): HandlePosition | undefined {
+  const handles = getHandlesForShape(shape);
+  const hitRadiusImage = hitRadius / scale; // Convert screen pixels to image coordinates
+
+  for (const handle of handles) {
+    const dx = point.x - handle.point.x;
+    const dy = point.y - handle.point.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= hitRadiusImage) {
+      return handle.position;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Cursor style for each handle position
+ */
+export function getCursorForHandle(position: HandlePosition): string {
+  switch (position) {
+    case 'nw':
+    case 'se':
+      return 'nwse-resize';
+    case 'ne':
+    case 'sw':
+      return 'nesw-resize';
+    case 'n':
+    case 's':
+      return 'ns-resize';
+    case 'e':
+    case 'w':
+      return 'ew-resize';
+    case 'start':
+    case 'end':
+    case 'vertex':
+      return 'move';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Edit a shape by moving a handle
+ * Returns a new shape with the updated geometry
+ */
+export function editShapeWithHandle(
+  shape: Shape,
+  handlePosition: HandlePosition,
+  delta: Point
+): Shape {
+  const { x: dx, y: dy } = delta;
+
+  switch (shape.type) {
+    case 'rectangle':
+    case 'image': {
+      const { bounds } = shape;
+      let minX = bounds.minX;
+      let minY = bounds.minY;
+      let maxX = bounds.maxX;
+      let maxY = bounds.maxY;
+
+      switch (handlePosition) {
+        case 'nw':
+          minX += dx;
+          minY += dy;
+          break;
+        case 'n':
+          minY += dy;
+          break;
+        case 'ne':
+          maxX += dx;
+          minY += dy;
+          break;
+        case 'w':
+          minX += dx;
+          break;
+        case 'e':
+          maxX += dx;
+          break;
+        case 'sw':
+          minX += dx;
+          maxY += dy;
+          break;
+        case 's':
+          maxY += dy;
+          break;
+        case 'se':
+          maxX += dx;
+          maxY += dy;
+          break;
+      }
+
+      // Prevent flipping by swapping if needed
+      if (minX > maxX) [minX, maxX] = [maxX, minX];
+      if (minY > maxY) [minY, maxY] = [maxY, minY];
+
+      const newBounds = { minX, minY, maxX, maxY };
+
+      if (shape.type === 'rectangle') {
+        return {
+          type: 'rectangle',
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          bounds: newBounds,
+        };
+      } else {
+        return {
+          ...shape,
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          bounds: newBounds,
+        };
+      }
+    }
+
+    case 'circle': {
+      const { center, bounds } = shape;
+      let minX = bounds.minX;
+      let minY = bounds.minY;
+      let maxX = bounds.maxX;
+      let maxY = bounds.maxY;
+
+      // For circles, dragging any handle adjusts the radius uniformly
+      switch (handlePosition) {
+        case 'nw':
+          minX += dx;
+          minY += dy;
+          break;
+        case 'n':
+          minY += dy;
+          break;
+        case 'ne':
+          maxX += dx;
+          minY += dy;
+          break;
+        case 'w':
+          minX += dx;
+          break;
+        case 'e':
+          maxX += dx;
+          break;
+        case 'sw':
+          minX += dx;
+          maxY += dy;
+          break;
+        case 's':
+          maxY += dy;
+          break;
+        case 'se':
+          maxX += dx;
+          maxY += dy;
+          break;
+      }
+
+      // Calculate new radius as average of half-width and half-height
+      const newWidth = Math.abs(maxX - minX);
+      const newHeight = Math.abs(maxY - minY);
+      const newRadius = Math.max((newWidth + newHeight) / 4, 1);
+
+      // Keep center or adjust based on handle
+      const newCenter = { ...center };
+
+      return {
+        type: 'circle',
+        center: newCenter,
+        radius: newRadius,
+        bounds: {
+          minX: newCenter.x - newRadius,
+          minY: newCenter.y - newRadius,
+          maxX: newCenter.x + newRadius,
+          maxY: newCenter.y + newRadius,
+        },
+      };
+    }
+
+    case 'ellipse': {
+      const { center, bounds } = shape;
+      let minX = bounds.minX;
+      let minY = bounds.minY;
+      let maxX = bounds.maxX;
+      let maxY = bounds.maxY;
+
+      switch (handlePosition) {
+        case 'nw':
+          minX += dx;
+          minY += dy;
+          break;
+        case 'n':
+          minY += dy;
+          break;
+        case 'ne':
+          maxX += dx;
+          minY += dy;
+          break;
+        case 'w':
+          minX += dx;
+          break;
+        case 'e':
+          maxX += dx;
+          break;
+        case 'sw':
+          minX += dx;
+          maxY += dy;
+          break;
+        case 's':
+          maxY += dy;
+          break;
+        case 'se':
+          maxX += dx;
+          maxY += dy;
+          break;
+      }
+
+      const newRx = Math.abs(maxX - minX) / 2;
+      const newRy = Math.abs(maxY - minY) / 2;
+      const newCenter = {
+        x: (minX + maxX) / 2,
+        y: (minY + maxY) / 2,
+      };
+
+      return {
+        type: 'ellipse',
+        center: newCenter,
+        rx: newRx,
+        ry: newRy,
+        bounds: { minX, minY, maxX, maxY },
+      };
+    }
+
+    case 'line': {
+      if (handlePosition === 'start') {
+        const newStart = { x: shape.start.x + dx, y: shape.start.y + dy };
+        return {
+          ...shape,
+          start: newStart,
+          bounds: {
+            minX: Math.min(newStart.x, shape.end.x),
+            minY: Math.min(newStart.y, shape.end.y),
+            maxX: Math.max(newStart.x, shape.end.x),
+            maxY: Math.max(newStart.y, shape.end.y),
+          },
+        };
+      } else if (handlePosition === 'end') {
+        const newEnd = { x: shape.end.x + dx, y: shape.end.y + dy };
+        return {
+          ...shape,
+          end: newEnd,
+          bounds: {
+            minX: Math.min(shape.start.x, newEnd.x),
+            minY: Math.min(shape.start.y, newEnd.y),
+            maxX: Math.max(shape.start.x, newEnd.x),
+            maxY: Math.max(shape.start.y, newEnd.y),
+          },
+        };
+      }
+      return shape;
+    }
+
+    case 'polygon':
+    case 'freehand':
+    case 'path':
+    case 'multipolygon': {
+      // For polygons etc., scale based on bounding box corners
+      const { bounds } = shape;
+      let minX = bounds.minX;
+      let minY = bounds.minY;
+      let maxX = bounds.maxX;
+      let maxY = bounds.maxY;
+
+      const origWidth = maxX - minX;
+      const origHeight = maxY - minY;
+
+      switch (handlePosition) {
+        case 'nw':
+          minX += dx;
+          minY += dy;
+          break;
+        case 'ne':
+          maxX += dx;
+          minY += dy;
+          break;
+        case 'sw':
+          minX += dx;
+          maxY += dy;
+          break;
+        case 'se':
+          maxX += dx;
+          maxY += dy;
+          break;
+      }
+
+      // Prevent zero dimensions
+      if (minX >= maxX) maxX = minX + 1;
+      if (minY >= maxY) maxY = minY + 1;
+
+      const newWidth = maxX - minX;
+      const newHeight = maxY - minY;
+      const scaleX = newWidth / origWidth;
+      const scaleY = newHeight / origHeight;
+
+      // Scale all points
+      const scalePoint = (p: Point): Point => ({
+        x: minX + (p.x - bounds.minX) * scaleX,
+        y: minY + (p.y - bounds.minY) * scaleY,
+      });
+
+      if (shape.type === 'polygon' || shape.type === 'freehand') {
+        return {
+          ...shape,
+          points: shape.points.map(scalePoint),
+          bounds: { minX, minY, maxX, maxY },
+        };
+      } else if (shape.type === 'path') {
+        return {
+          ...shape,
+          points: shape.points.map(scalePoint),
+          bounds: { minX, minY, maxX, maxY },
+        };
+      } else if (shape.type === 'multipolygon') {
+        return {
+          ...shape,
+          polygons: shape.polygons.map(polygon => ({
+            ...polygon,
+            points: polygon.points.map(scalePoint),
+          })),
+          bounds: { minX, minY, maxX, maxY },
+        };
+      }
+      return shape;
+    }
+
+    default:
+      return shape;
+  }
+}

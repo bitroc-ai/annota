@@ -441,24 +441,11 @@ export class PixiStage {
       }
     }
 
-    // Render selection handles when annotation is selected
-    const isSelected = this.selectedIds.has(id);
-    if (isSelected && annotation.shape.type !== 'point') {
-      // Create handle graphics if it doesn't exist
-      if (!entry.handleGraphics) {
-        entry.handleGraphics = new PIXI.Graphics();
-        this.container.addChild(entry.handleGraphics);
-      }
-
-      // Clear and render handles
-      entry.handleGraphics.clear();
-      entry.handleGraphics.visible = true;
-      renderHandles(entry.handleGraphics, annotation.shape, this.scale);
-    } else {
-      // Hide handles when not selected
-      if (entry.handleGraphics) {
-        entry.handleGraphics.visible = false;
-      }
+    // Note: Selection handles are rendered by the React SVG Editor (Editor.tsx)
+    // We don't render PixiJS handles here to avoid duplicate visuals
+    // The SVG Editor provides interactive drag handles for resizing
+    if (entry.handleGraphics) {
+      entry.handleGraphics.visible = false;
     }
   }
 
