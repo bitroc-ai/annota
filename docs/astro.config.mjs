@@ -114,8 +114,14 @@ export default defineConfig({
   ],
   output: 'static',
   server: {
-    port: 6006,
-    strictPort: true,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 6006,
+    host: true, // Bind to 0.0.0.0 (all interfaces) for Railway
+    strictPort: false, // Allow Railway to assign port dynamically
+  },
+  preview: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : 6006,
+    host: true, // Bind to 0.0.0.0 (all interfaces) for Railway
+    strictPort: false, // Allow Railway to assign port dynamically
   },
   vite: {
     ssr: {
