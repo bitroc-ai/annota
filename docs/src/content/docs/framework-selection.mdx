@@ -1,0 +1,126 @@
+---
+title: Choose Your Framework
+description: Annota supports both React and Svelte. Choose your preferred framework to get started.
+sidebar:
+  order: -1
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Annota provides the same powerful annotation capabilities for both **React** and **Svelte**. Choose your preferred framework to view framework-specific documentation and examples.
+
+## Framework Selection
+
+<Tabs>
+  <TabItem label="React">
+    <div class="card-grid">
+
+    ### React Documentation
+
+    Annota for React includes:
+
+    - **React Hooks**: `useAnnotator`, `useAnnotations`, `useSelection`, `useTool`, and more
+    - **React Components**: `<AnnotaViewer>`, `<Annotator>`, `<AnnotationPopup>`, `<ContextMenu>`
+    - **TypeScript Support**: Full type definitions for all APIs
+    - **Performance**: Optimized for large-scale annotation with React 18+ and React 19+
+
+    ```tsx title="Basic React Example"
+    import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
+
+    function App() {
+      return (
+        <AnnotaProvider>
+          <AnnotaViewer
+            options={{
+              tileSources: { type: 'image', url: '/image.tif' }
+            }}
+          >
+            {(viewer) => (
+              <Annotator viewer={viewer} />
+            )}
+          </AnnotaViewer>
+        </AnnotaProvider>
+      );
+    }
+    ```
+
+    [View React Documentation →](./getting-started/quick-start/react)
+
+    </div>
+  </TabItem>
+  <TabItem label="Svelte">
+    <div class="card-grid">
+
+    ### Svelte Documentation
+
+    Annota for Svelte includes:
+
+    - **Svelte Stores**: Reactive stores for annotator, annotations, selection, tools, and more
+    - **Svelte Components**: `<AnnotaViewer>`, `<Annotator>`, `<Popup>`, `<ContextMenu>`
+    - **TypeScript Support**: Full type definitions for all APIs
+    - **Performance**: Optimized for large-scale annotation with Svelte 5 runes
+
+    ```svelte title="Basic Svelte Example"
+    <script>
+      import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota/svelte';
+    </script>
+
+    <AnnotaProvider>
+      {@const viewerOptions = {
+        tileSources: { type: 'image', url: '/image.tif' }
+      }}
+
+      <AnnotaViewer options={viewerOptions}>
+        {(viewer) => (
+          <Annotator {viewer} />
+        )}
+      </AnnotaViewer>
+    </AnnotaProvider>
+    ```
+
+    [View Svelte Documentation →](./getting-started/quick-start/svelte)
+
+    </div>
+  </TabItem>
+</Tabs>
+
+## Shared Concepts
+
+Both frameworks share the same:
+
+- **Core System**: Store, spatial indexing, layer management, history/undo-redo
+- **Rendering Engine**: PixiJS-based WebGL rendering for high performance
+- **Tools System**: Point, Rectangle, Polygon, Curve, Push, SAM, Split tools
+- **Data Loaders**: H5, PGM, JSON, and more
+- **Styling**: Flexible style expressions for dynamic annotation appearance
+
+<dl>
+  <div>
+
+  **Core Architecture**
+
+  Framework-agnostic architecture works identically in both React and Svelte. The framework layer only provides the reactive interface.
+
+  [Learn about core concepts →](./getting-started/concepts)
+
+  </div>
+  <div>
+
+  **API Reference**
+
+  Most APIs are shared between frameworks. Only the reactive layer (hooks vs stores) differs.
+
+  [View API reference →](./api/)
+
+  </div>
+  <div>
+
+  **Migration Guide**
+
+    Switching between React and Svelte? See the key differences and migration patterns.
+
+  [Migration guide →](./guides/framework-comparison)
+
+  </div>
+</dl>

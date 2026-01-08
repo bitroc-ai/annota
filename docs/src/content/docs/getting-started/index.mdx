@@ -1,20 +1,55 @@
 ---
 title: Getting Started
 description: Get up and running with Annota in minutes
+sidebar:
+  order: -2
 ---
 
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
 
 Welcome to Annota! This guide will help you integrate Annota into your application and start annotating medical images.
 
-## What You'll Learn
+## Choose Your Framework
 
-This getting started section covers:
+Annota supports both **React** and **Svelte**. Select your preferred framework to see framework-specific getting started guides.
+
+<Tabs>
+  <TabItem label="React">
+    <div class="card-grid">
+
+    ### React Quick Links
+
+    <CardGrid>
+      <LinkCard title="React Installation" href="/getting-started/installation#react" description="Install Annota for React" />
+      <LinkCard title="React Quick Start" href="/getting-started/quick-start/react" description="Build your first React annotation viewer" />
+      <LinkCard title="React Hooks" href="/api/react/hooks" description="Learn about React hooks API" />
+    </CardGrid>
+
+    </div>
+  </TabItem>
+  <TabItem label="Svelte">
+    <div class="card-grid">
+
+    ### Svelte Quick Links
+
+    <CardGrid>
+      <LinkCard title="Svelte Installation" href="/getting-started/installation#svelte" description="Install Annota for Svelte" />
+      <LinkCard title="Svelte Quick Start" href="/getting-started/quick-start/svelte" description="Build your first Svelte annotation viewer" />
+      <LinkCard title="Svelte Stores" href="/api/svelte/stores" description="Learn about Svelte stores API" />
+    </CardGrid>
+
+    </div>
+  </TabItem>
+</Tabs>
+
+## Shared Getting Started Content
+
+These concepts apply to both React and Svelte:
 
 <CardGrid>
-  <LinkCard title="Installation" href="/getting-started/installation" description="Install Annota and its dependencies" />
-  <LinkCard title="Quick Start" href="/getting-started/quick-start" description="Build your first annotation viewer" />
   <LinkCard title="Core Concepts" href="/getting-started/concepts" description="Understand annotations, layers, and tools" />
+  <LinkCard title="Installation" href="/getting-started/installation" description="Install Annota and dependencies" />
+  <LinkCard title="Architecture" href="/architecture" description="Learn about Annota's architecture" />
 </CardGrid>
 
 ## Prerequisites
@@ -22,8 +57,8 @@ This getting started section covers:
 Before you begin, make sure you have:
 
 - **Node.js** 16+ installed
-- **React** 18+ or 19+ in your project
-- Basic knowledge of React hooks
+- **React 18+ / 19+** OR **Svelte 5** in your project
+- Basic knowledge of your chosen framework
 - A whole slide image in a supported format (DZI, IIIF, etc.)
 
 ## What is Annota?
@@ -35,6 +70,7 @@ Annota is a high-performance annotation framework specifically designed for digi
 - **Event system** for responding to annotation changes
 - **Data loaders** for importing annotations from H5, JSON, and other formats
 - **High performance rendering** with PixiJS and WebGL
+- **Framework support** for both React and Svelte
 
 ## Architecture Overview
 
@@ -42,16 +78,16 @@ Annota is built on three core technologies:
 
 - **OpenSeadragon**: For displaying gigapixel images
 - **PixiJS**: For hardware-accelerated annotation rendering
-- **React**: For component-based UI integration
+- **React/Svelte**: For component-based UI integration
 
 The framework follows a clean separation of concerns:
 
 ```
-Your React App
+Your React/Svelte App
     ↓
-AnnotaProvider (Context)
+Provider (Context/Runes)
     ↓
-AnnotaViewer (OpenSeadragon)
+Viewer (OpenSeadragon)
     ↓
 Annotator (Annotation Layer)
     ↓
@@ -62,15 +98,13 @@ Tools (Point, Rectangle, Polygon, etc.)
 
 1. **Install** Annota and OpenSeadragon
 2. **Wrap** your app with `AnnotaProvider`
-3. **Add** `AnnotaViewer` component to display your image
+3. **Add** `Viewer` component to display your image
 4. **Initialize** the `Annotator` overlay
-5. **Use** `useTool()` hook to activate annotation tools
-6. **Access** annotations via `useAnnotations()` hook
+5. **Use** tools via hooks (React) or stores (Svelte)
+6. **Access** annotations reactively
 
 ## Next Steps
 
-Ready to get started? Head over to the [Installation](/getting-started/installation) guide.
-
-Already installed? Jump to the [Quick Start](/getting-started/quick-start) guide.
-
-Want to understand the core concepts first? Check out [Core Concepts](/getting-started/concepts).
+- **New to Annota?** Start with [Framework Selection](/framework-selection)
+- **Ready to install?** Go to [Installation](/getting-started/installation)
+- **Want to compare frameworks?** See [Framework Comparison](/guides/framework-comparison)

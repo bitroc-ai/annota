@@ -10,10 +10,37 @@ import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components';
 Before installing Annota, ensure you have:
 
 - **Node.js** 18 or higher
-- **React** 18 or higher
+- **React 18+ / 19+** OR **Svelte 5**
 - A package manager (npm, pnpm, or yarn)
 
-## Install Annota
+## Choose Your Framework {#react-vs-svelte}
+
+Annota provides identical functionality for both React and Svelte. The only difference is the reactive API (hooks vs stores).
+
+<Tabs>
+  <TabItem label="React">
+    ### React Installation
+
+    React users get:
+    - React hooks (`useAnnotator`, `useAnnotations`, `useTool`, etc.)
+    - React components with JSX
+    - Full TypeScript support
+    - Optimized for React 18+ and React 19+
+
+  </TabItem>
+  <TabItem label="Svelte">
+    ### Svelte Installation
+
+    Svelte users get:
+    - Svelte stores (`annotator()`, `annotations()`, `tool()`, etc.)
+    - Svelte components with Svelte 5 runes
+    - Full TypeScript support
+    - Optimized for Svelte 5
+
+  </TabItem>
+</Tabs>
+
+## Install Core Package {#install-core}
 
 <Tabs>
   <TabItem label="npm">
@@ -37,7 +64,7 @@ Before installing Annota, ensure you have:
   **OpenSeadragon** is a required peer dependency for viewport management and image display.
 </Aside>
 
-## TypeScript Support
+## TypeScript Support {#typescript}
 
 Annota is written in TypeScript and includes full type definitions. For OpenSeadragon types:
 
@@ -59,12 +86,20 @@ Annota is written in TypeScript and includes full type definitions. For OpenSead
   </TabItem>
 </Tabs>
 
-## Import Styles
+## Import Styles {#import-styles}
 
 Import the required CSS in your app entry point:
 
+**React:**
 ```tsx
 import "annota/dist/index.css";
+```
+
+**Svelte:**
+```svelte
+<script>
+  import "annota/dist/index.css";
+</script>
 ```
 
 Or in your global CSS:
@@ -73,7 +108,9 @@ Or in your global CSS:
 @import "annota/dist/index.css";
 ```
 
-## Verify Installation
+## Verify Installation {#verify}
+
+### React Verification
 
 Create a simple test component:
 
@@ -86,7 +123,7 @@ function TestViewer() {
   const [viewer, setViewer] = useState(null);
 
   return (
-    <AnnotaProvider slideId="test">
+    <AnnotaProvider>
       <div style={{ width: "800px", height: "600px" }}>
         <AnnotaViewer
           options={{
@@ -105,11 +142,42 @@ function TestViewer() {
 }
 ```
 
-If you see an image viewer, Annota is installed correctly!
+### Svelte Verification
 
-## Optional Dependencies
+Create a simple test component:
 
-### H5 File Support
+```svelte
+<script>
+  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+  import "annota/dist/index.css";
+
+  let viewer = $state(null);
+</script>
+
+<AnnotaProvider>
+  <div style="width: 800px; height: 600px;">
+    <AnnotaViewer
+      options={{
+        tileSources: {
+          type: "image",
+          url: "https://picsum.photos/1920/1080",
+        },
+        prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+    {#if viewer}
+      <Annotator {viewer} />
+    {/if}
+  </div>
+</AnnotaProvider>
+```
+
+If you see an image viewer in either case, Annota is installed correctly!
+
+## Optional Dependencies {#optional}
+
+### H5 File Support {#h5-support}
 
 For loading HDF5 annotation files:
 
@@ -131,7 +199,7 @@ For loading HDF5 annotation files:
   </TabItem>
 </Tabs>
 
-### SAM Tool (AI-Assisted Segmentation)
+### SAM Tool (AI-Assisted Segmentation) {#sam-tool}
 
 For the Segment Anything Model tool, you'll need ONNX Runtime:
 
@@ -157,6 +225,8 @@ For the Segment Anything Model tool, you'll need ONNX Runtime:
 
 Now that Annota is installed, continue to:
 
-- [Quick Start](/getting-started/quick-start) — Build your first annotation viewer
-- [Core Concepts](/getting-started/concepts) — Understand annotations, layers, and tools
+- **[React Quick Start](/getting-started/quick-start/react)** — Build your first React annotation viewer
+- **[Svelte Quick Start](/getting-started/quick-start/svelte)** — Build your first Svelte annotation viewer
+- [Core Concepts](/getting-started/concepts) — Understand annotations, layers, and tools (framework-agnostic)
+- [Framework Comparison](/guides/framework-comparison) — Compare React and Svelte APIs
 
