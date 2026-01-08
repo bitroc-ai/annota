@@ -117,9 +117,6 @@ export function getHandlesForShape(shape: Shape): { position: HandlePosition; po
     case 'multipolygon':
       // Use corner handles on overall bounding box
       return getCornerHandles(shape.bounds);
-
-    default:
-      return getCornerHandles(shape.bounds);
   }
 }
 
@@ -361,7 +358,7 @@ export function editShapeWithHandle(
     }
 
     case 'ellipse': {
-      const { center, bounds } = shape;
+      const { bounds } = shape;
       let minX = bounds.minX;
       let minY = bounds.minY;
       let maxX = bounds.maxX;
@@ -408,8 +405,8 @@ export function editShapeWithHandle(
       return {
         type: 'ellipse',
         center: newCenter,
-        rx: newRx,
-        ry: newRy,
+        radiusX: newRx,
+        radiusY: newRy,
         bounds: { minX, minY, maxX, maxY },
       };
     }
@@ -506,10 +503,7 @@ export function editShapeWithHandle(
       } else if (shape.type === 'multipolygon') {
         return {
           ...shape,
-          polygons: shape.polygons.map(polygon => ({
-            ...polygon,
-            points: polygon.points.map(scalePoint),
-          })),
+          polygons: shape.polygons.map(polygon => polygon.map(scalePoint)),
           bounds: { minX, minY, maxX, maxY },
         };
       }

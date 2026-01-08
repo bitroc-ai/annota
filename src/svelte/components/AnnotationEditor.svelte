@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import OpenSeadragon from "openseadragon";
   import { selection } from "../selection.svelte";
-  import type { Annotation, Shape, RectangleShape } from "../../core/types";
+  import type { Shape, RectangleShape } from "../../core/types";
   import RectangleEditor from "./editors/RectangleEditor.svelte";
 
   interface Props {
@@ -51,7 +51,9 @@
     const dy = -viewportBounds.y * scaleY;
 
     // Get rotation (OSD 4+)
-    const rotation = viewer.viewport.getRotation ? viewer.viewport.getRotation() : 0;
+    const rotation = viewer.viewport.getRotation
+      ? viewer.viewport.getRotation()
+      : 0;
 
     // Build transform matching Pixi.js stage
     transform = `translate(${dx}, ${dy}) scale(${scaleX}, ${scaleY}) rotate(${rotation})`;
@@ -114,7 +116,7 @@
   class="annota-svg-layer"
   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; z-index: 1000; pointer-events: none;"
 >
-  <g class="annota-transform-group" transform={transform} style="pointer-events: all;">
+  <g class="annota-transform-group" {transform} style="pointer-events: all;">
     {#if editor}
       <svelte:component this={editor.component} {...editor.props} />
     {/if}

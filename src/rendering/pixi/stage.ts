@@ -11,7 +11,6 @@ import type { LayerManager } from "../../core/layer";
 import { isAnnotationVisible } from "../../core/layer";
 import { computeStyle } from "./styles";
 import { renderShape, renderImage } from "./shapes";
-import { renderHandles } from "./handles";
 
 /**
  * Stage options
