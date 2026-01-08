@@ -1,50 +1,75 @@
 <script lang="ts">
-  import { Moon, Sun } from "lucide-svelte";
+  import { Laptop, Moon, Sun } from "lucide-svelte";
 
-  let currentTheme = $state<'light' | 'dark'>('light');
+  type Theme = 'auto' | 'light' | 'dark';
 
-  function getTheme(): 'light' | 'dark' {
-    if (typeof window === 'undefined') return 'light';
+  let currentTheme = $state<Theme>('auto');
+  let isOpen = $state(false);
+
+  function getTheme(): Theme {
+    if (typeof window === 'undefined') return 'auto';
     const stored = localStorage.getItem('starlight-theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (stored === 'dark') return 'dark';
+    if (stored === 'light') return 'light';
+    return 'auto';
   }
 
-  function setTheme(theme: 'light' | 'dark') {
+  function getEffectiveTheme(theme: Theme): 'light' | 'dark' {
+    if (theme === 'auto') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return theme;
+  }
+
+  function setTheme(theme: Theme) {
     if (typeof window === 'undefined') return;
-    localStorage.setItem('starlight-theme', theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    if (theme === 'dark') {
+
+    // Starlight stores auto as empty string, light/dark as-is
+    const storageValue = theme === 'auto' ? '' : theme;
+    localStorage.setItem('starlight-theme', storageValue);
+
+    const effectiveTheme = getEffectiveTheme(theme);
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    if (effectiveTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+
     currentTheme = theme;
+    isOpen = false;
 
     // Dispatch custom event for same-page listeners
-    window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme } }));
+    window.dispatchEvent(new CustomEvent('theme-change', { detail: { theme, effectiveTheme } }));
   }
 
-  function toggleTheme() {
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
+  function handleSelectChange(event: Event) {
+    const select = event.currentTarget as HTMLSelectElement;
+    setTheme(select.value as Theme);
   }
 
   // Initialize theme and set up listeners
   $effect(() => {
     if (typeof window === 'undefined') return;
-    
+
     // Initialize theme
     currentTheme = getTheme();
-    setTheme(currentTheme);
+    const effectiveTheme = getEffectiveTheme(currentTheme);
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    if (effectiveTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
 
     // Listen for storage events (from other tabs)
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'starlight-theme') {
-        const newTheme = (e.newValue || 'light') as 'light' | 'dark';
+        const newTheme = getTheme();
         currentTheme = newTheme;
-        document.documentElement.setAttribute('data-theme', newTheme);
-        if (newTheme === 'dark') {
+        const newEffectiveTheme = getEffectiveTheme(newTheme);
+        document.documentElement.setAttribute('data-theme', newEffectiveTheme);
+        if (newEffectiveTheme === 'dark') {
           document.documentElement.classList.add('dark');
         } else {
           document.documentElement.classList.remove('dark');
@@ -57,40 +82,75 @@
       currentTheme = e.detail.theme;
     }) as EventListener;
 
+    // Listen for system theme changes when in auto mode
+    const handleSystemThemeChange = () => {
+      if (currentTheme === 'auto') {
+        const effectiveTheme = getEffectiveTheme('auto');
+        document.documentElement.setAttribute('data-theme', effectiveTheme);
+        if (effectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    };
+
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('theme-change', handleThemeChange);
+    darkModeQuery.addEventListener('change', handleSystemThemeChange);
 
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('theme-change', handleThemeChange);
+      darkModeQuery.removeEventListener('change', handleSystemThemeChange);
     };
   });
 </script>
 
-<button
-  onclick={toggleTheme}
-  class="theme-switcher"
-  aria-label="Toggle theme"
-  title={currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
->
-  {#if currentTheme === 'dark'}
-    <Sun class="icon" />
-  {:else}
-    <Moon class="icon" />
-  {/if}
-</button>
+<div class="theme-switcher-wrapper">
+  <select
+    value={currentTheme}
+    onchange={handleSelectChange}
+    class="theme-switcher"
+    aria-label="Select theme"
+  >
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+    <option value="auto">Auto</option>
+  </select>
+  <div class="theme-icon" aria-hidden="true">
+    {#if currentTheme === 'dark'}
+      <Moon class="icon" />
+    {:else if currentTheme === 'light'}
+      <Sun class="icon" />
+    {:else}
+      <Laptop class="icon" />
+    {/if}
+  </div>
+</div>
 
 <style>
-  .theme-switcher {
+  .theme-switcher-wrapper {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
+  }
+
+  .theme-switcher {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    padding-right: 2rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     color: var(--sl-color-gray-2);
     background: transparent;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: 0.375rem;
     cursor: pointer;
     transition: color 0.15s ease, background-color 0.15s ease;
   }
@@ -100,9 +160,24 @@
     background: var(--sl-color-gray-6);
   }
 
-  .theme-switcher :global(.icon) {
-    width: 1.125rem;
-    height: 1.125rem;
+  .theme-switcher:focus-visible {
+    outline: 2px solid var(--sl-color-text);
+    outline-offset: 2px;
+  }
+
+  .theme-icon {
+    position: absolute;
+    right: 0.5rem;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+  }
+
+  .theme-icon :global(.icon) {
+    width: 1rem;
+    height: 1rem;
   }
 </style>
 
