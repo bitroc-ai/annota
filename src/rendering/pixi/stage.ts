@@ -11,6 +11,7 @@ import type { LayerManager } from "../../core/layer";
 import { isAnnotationVisible } from "../../core/layer";
 import { computeStyle } from "./styles";
 import { renderShape, renderImage } from "./shapes";
+import { renderHandles } from "./handles";
 
 /**
  * Stage options
@@ -28,6 +29,7 @@ export interface StageOptions {
 interface AnnotationGraphics {
   annotation: Annotation;
   graphics: PIXI.Graphics;
+  handleGraphics?: PIXI.Graphics; // For selection handles
   sprite?: PIXI.Sprite; // For image shapes
   lastRenderedScale?: number; // Track last scale for LOD changes
   lastRenderedState?: {
@@ -321,6 +323,12 @@ export class PixiStage {
       this.container.removeChild(entry.graphics);
       entry.graphics.destroy();
 
+      // Clean up handle graphics if it exists
+      if (entry.handleGraphics) {
+        this.container.removeChild(entry.handleGraphics);
+        entry.handleGraphics.destroy();
+      }
+
       // Also clean up sprite if it exists (for image shapes)
       if (entry.sprite) {
         this.container.removeChild(entry.sprite);
@@ -430,6 +438,26 @@ export class PixiStage {
       } else {
         // Normal detailed rendering (includes all point annotations)
         renderShape(graphics, annotation.shape, finalStyle, this.scale);
+      }
+    }
+
+    // Render selection handles when annotation is selected
+    const isSelected = this.selectedIds.has(id);
+    if (isSelected && annotation.shape.type !== 'point') {
+      // Create handle graphics if it doesn't exist
+      if (!entry.handleGraphics) {
+        entry.handleGraphics = new PIXI.Graphics();
+        this.container.addChild(entry.handleGraphics);
+      }
+
+      // Clear and render handles
+      entry.handleGraphics.clear();
+      entry.handleGraphics.visible = true;
+      renderHandles(entry.handleGraphics, annotation.shape, this.scale);
+    } else {
+      // Hide handles when not selected
+      if (entry.handleGraphics) {
+        entry.handleGraphics.visible = false;
       }
     }
   }
@@ -708,10 +736,10 @@ export class PixiStage {
       const currentLOD = isComplexShape && pixelSize < 3;
       const lastLOD = entry.lastRenderedScale
         ? isComplexShape &&
-          this.getAnnotationPixelSizeAtScale(
-            entry.annotation,
-            entry.lastRenderedScale
-          ) < 3
+        this.getAnnotationPixelSizeAtScale(
+          entry.annotation,
+          entry.lastRenderedScale
+        ) < 3
         : null;
 
       const stateChanged =
@@ -806,7 +834,12 @@ export class PixiStage {
       }
     }
 
-    this.annotationMap.forEach((entry) => entry.graphics.destroy());
+    this.annotationMap.forEach((entry) => {
+      entry.graphics.destroy();
+      if (entry.handleGraphics) {
+        entry.handleGraphics.destroy();
+      }
+    });
     this.annotationMap.clear();
     this.spatialIndex.clear();
     this.spatialEntryById.clear();

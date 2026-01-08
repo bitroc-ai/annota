@@ -7,3 +7,5 @@ export type { StageOptions } from './stage';
 export { computeStyle } from './styles';
 export type { ComputedStyle } from './styles';
 export { renderShape } from './shapes';
+export { renderHandles, getHandlesForShape } from './handles';
+export type { HandlePosition, HandleStyle } from './handles';

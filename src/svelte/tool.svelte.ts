@@ -31,9 +31,17 @@ export function tool({ viewer, handler, enabled }: ToolOptions): void {
       // Check types: ToolHandler.init(viewer, annotator)
       h.init(v, annotator);
       initialized = true;
+      // Register this tool as the active tool so annotator can check it
+      if (annotator.state.activeTool) {
+        annotator.state.activeTool.current = h;
+      }
     } else if (!e && initialized) {
       h.destroy();
       initialized = false;
+      // Clear active tool reference
+      if (annotator.state.activeTool) {
+        annotator.state.activeTool.current = undefined;
+      }
     }
 
     h.enabled = e;
@@ -42,6 +50,10 @@ export function tool({ viewer, handler, enabled }: ToolOptions): void {
       if (initialized && h) {
         h.destroy();
         initialized = false;
+        // Clear active tool reference on cleanup
+        if (annotator && annotator.state.activeTool) {
+          annotator.state.activeTool.current = undefined;
+        }
       }
     };
   });

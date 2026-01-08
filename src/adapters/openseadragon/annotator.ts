@@ -66,6 +66,7 @@ export interface OpenSeadragonAnnotatorState {
   hover: { current: string | undefined };
   editing: { current: string | undefined; mode: 'vertices' | undefined };
   toolDrawing: { active: boolean }; // Flag for tools to signal they're drawing
+  activeTool: { current: any | undefined }; // Reference to the currently active tool handler
 }
 
 /**
@@ -150,6 +151,7 @@ export async function createOpenSeadragonAnnotator(
   const hover: { current: string | undefined } = { current: undefined };
   const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
   const toolDrawing: { active: boolean } = { active: false };
+  const activeTool: { current: any | undefined } = { current: undefined };
   let currentFilter: Filter | undefined = options.filter;
   let suppressHoverUntil = 0;
   let interactionEndTimer: number | null = null;
@@ -371,6 +373,13 @@ export async function createOpenSeadragonAnnotator(
       return;
     }
 
+    // If a drawing tool is active, prevent default and let it handle the event
+    // Drawing tools need exclusive access to mouse events to create annotations
+    if (activeTool.current && activeTool.current.enabled) {
+      (evt as any).preventDefaultAction = true;
+      return;
+    }
+
     const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
     if (!imagePoint) return;
 
@@ -548,7 +557,7 @@ export async function createOpenSeadragonAnnotator(
 
   return {
     viewer,
-    state: { store, layerManager, history, hover, selection, editing, toolDrawing },
+    state: { store, layerManager, history, hover, selection, editing, toolDrawing, activeTool },
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {
