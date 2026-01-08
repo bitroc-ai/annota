@@ -125,14 +125,20 @@ export default defineConfig({
   },
   vite: {
     ssr: {
-      noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
+      noExternal: ['annota', 'lucide-svelte'],
+      // Make openseadragon external for SSR so Vite doesn't try to bundle it
+      // The mock plugin will intercept it before it reaches the real module
+      external: ['openseadragon'],
     },
     plugins: [
       {
         name: 'mock-openseadragon',
         enforce: 'pre',
         resolveId(id, importer, options) {
+          // Mock openseadragon during SSR to prevent "document is not defined" errors
           if (id === 'openseadragon') {
+            // Intercept during SSR (when options.ssr is true)
+            // This happens during build, preview server startup, and SSR requests
             if (options?.ssr) {
               return 'virtual:openseadragon';
             }
@@ -141,7 +147,21 @@ export default defineConfig({
         },
         load(id) {
           if (id === 'virtual:openseadragon') {
-            return 'export default {};';
+            // Return a mock that matches OpenSeadragon's API structure
+            // This prevents "document is not defined" errors during SSR
+            return `
+              export default {
+                Viewer: class {
+                  constructor() {}
+                },
+                Point: class {
+                  constructor(x, y) {
+                    this.x = x || 0;
+                    this.y = y || 0;
+                  }
+                }
+              };
+            `;
           }
         }
       },
