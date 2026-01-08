@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { getAnnotator, tool, Viewer as AnnotaViewer } from "annota/svelte";
+  import {
+    getAnnotator,
+    tool,
+    Viewer as AnnotaViewer,
+    Annotator,
+  } from "annota/svelte";
   import {
     PointTool,
     RectangleTool,
@@ -182,8 +187,13 @@
       visibilityRatio: 1,
       constrainDuringPan: true,
     }}
-    onViewerReady={(v) => (viewer = v)}
+    onViewerReady={(v: any) => (viewer = v)}
   />
+
+  <!-- Annotator - connects the annotator to the viewer -->
+  {#if viewer}
+    <Annotator {viewer} />
+  {/if}
 
   <!-- Context Menu Component -->
   <DemoContextMenu />
