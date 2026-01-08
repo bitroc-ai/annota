@@ -15,7 +15,7 @@
   import ToolSettings from "$lib/components/playground/tool-settings.svelte";
   import AnnotationContextMenu from "$lib/components/playground/context-menu.svelte";
   import DemoContent from "$lib/components/playground/demo-content.svelte";
-  import Toaster from "$lib/components/ui/Toaster.svelte";
+  import Toaster from "$lib/components/ui/toaster.svelte";
   import type { ToolType } from "$lib/components/playground/toolbar";
 
   let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
