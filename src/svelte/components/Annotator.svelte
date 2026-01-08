@@ -17,7 +17,7 @@
   let { viewer, children, ...options }: Props = $props();
 
   const setAnnotatorFn = setAnnotator();
-  let annotatorInstance: OpenSeadragonAnnotator | undefined = undefined;
+  let annotatorInstance: OpenSeadragonAnnotator | undefined = $state(undefined);
 
   $effect(() => {
     if (!viewer || !viewer.canvas) return;
