@@ -91,7 +91,7 @@ export function computeStyle(
   let fillAlpha = mergedStyle.fillOpacity ?? fillAlphaFromColor ?? DEFAULT_FILL_ALPHA;
 
   // Parse stroke
-  const strokeColor = mergedStyle.stroke ? parseColor(mergedStyle.stroke) : DEFAULT_STROKE;
+  let strokeColor = mergedStyle.stroke ? parseColor(mergedStyle.stroke) : DEFAULT_STROKE;
 
   const strokeAlphaFromColor = mergedStyle.stroke ? extractAlpha(mergedStyle.stroke) : undefined;
 
@@ -100,8 +100,11 @@ export function computeStyle(
 
   // Apply state modifiers
   if (state?.selected) {
-    fillAlpha = Math.min(fillAlpha * 1.5, 1.0);
+    // Blue border for selected annotations
+    strokeColor = 0x0066ff; // Blue (#0066FF)
+    strokeAlpha = 1.0;
     strokeWidth = strokeWidth * 1.5;
+    fillAlpha = Math.min(fillAlpha * 1.5, 1.0);
   }
 
   if (state?.hovered) {

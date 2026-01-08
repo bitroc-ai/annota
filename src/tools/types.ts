@@ -2,7 +2,7 @@
  * Interaction types and interfaces for Annota
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { OpenSeadragonAnnotator as Annotator } from '../adapters/openseadragon/annotator';
 import type { Annotation } from '../core/types';
 

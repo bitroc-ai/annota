@@ -1,0 +1,93 @@
+---
+title: Event Handling
+description: React to annotation changes
+---
+
+Example of comprehensive event handling.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotator,
+} from "annota";
+import { useState, useEffect } from "react";
+
+function EventExample() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithEvents />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithEvents() {
+  const [viewer, setViewer] = useState(null);
+  const [log, setLog] = useState([]);
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const addLog = (type, data) => {
+      setLog((prev) => [
+        { type, data, time: new Date().toISOString() },
+        ...prev.slice(0, 49), // Keep last 50
+      ]);
+    };
+
+    const handlers = {
+      create: (ann) => addLog("CREATE", ann.id),
+      update: (ann) => addLog("UPDATE", ann.id),
+      delete: (ann) => addLog("DELETE", ann.id),
+      selection: ({ selected }) => addLog("SELECT", selected.length),
+    };
+
+    annotator.on("createAnnotation", handlers.create);
+    annotator.on("updateAnnotation", handlers.update);
+    annotator.on("deleteAnnotation", handlers.delete);
+    annotator.on("selectionChanged", handlers.selection);
+
+    return () => {
+      annotator.off("createAnnotation", handlers.create);
+      annotator.off("updateAnnotation", handlers.update);
+      annotator.off("deleteAnnotation", handlers.delete);
+      annotator.off("selectionChanged", handlers.selection);
+    };
+  }, [annotator]);
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Event Log */}
+      <div style={{ width: 300, padding: 16, overflow: "auto" }}>
+        <h3>Event Log</h3>
+        {log.map((entry, i) => (
+          <div key={i} style={{ fontSize: 12, marginBottom: 4 }}>
+            <strong>{entry.type}</strong>: {JSON.stringify(entry.data)}
+          </div>
+        ))}
+      </div>
+
+      {/* Viewer */}
+      <div style={{ flex: 1 }}>
+        <AnnotaViewer
+          options={{ tileSources: "/image.dzi" }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </div>
+  );
+}
+```
+
+## Events Captured
+
+- `createAnnotation` — New annotation created
+- `updateAnnotation` — Annotation modified
+- `deleteAnnotation` — Annotation removed
+- `selectionChanged` — Selection state changed
+

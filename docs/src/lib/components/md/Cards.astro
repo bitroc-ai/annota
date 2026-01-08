@@ -1,0 +1,13 @@
+---
+interface Props {
+  num?: number;
+}
+
+const { num = 3 } = Astro.props;
+const cols = Math.min(num, 2);
+---
+
+<div class={`mt-4 gap-4 grid grid-cols-1 md:grid-cols-${cols} lg:grid-cols-${num}`}>
+  <slot />
+</div>
+

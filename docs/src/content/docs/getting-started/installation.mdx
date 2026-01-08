@@ -1,0 +1,232 @@
+---
+title: Installation
+description: Install Annota in your project
+---
+
+import { Tabs, TabItem, Aside, Steps } from '@astrojs/starlight/components';
+
+## Prerequisites
+
+Before installing Annota, ensure you have:
+
+- **Node.js** 18 or higher
+- **React 18+ / 19+** OR **Svelte 5**
+- A package manager (npm, pnpm, or yarn)
+
+## Choose Your Framework
+
+Annota provides identical functionality for both React and Svelte. The only difference is the reactive API (hooks vs stores).
+
+<Tabs>
+  <TabItem label="React">
+    ### React Installation
+
+    React users get:
+    - React hooks (`useAnnotator`, `useAnnotations`, `useTool`, etc.)
+    - React components with JSX
+    - Full TypeScript support
+    - Optimized for React 18+ and React 19+
+
+  </TabItem>
+  <TabItem label="Svelte">
+    ### Svelte Installation
+
+    Svelte users get:
+    - Svelte stores (`annotator()`, `annotations()`, `tool()`, etc.)
+    - Svelte components with Svelte 5 runes
+    - Full TypeScript support
+    - Optimized for Svelte 5
+
+  </TabItem>
+</Tabs>
+
+## Install Core Package
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install annota openseadragon
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add annota openseadragon
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add annota openseadragon
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="note">
+  **OpenSeadragon** is a required peer dependency for viewport management and image display.
+</Aside>
+
+## TypeScript Support
+
+Annota is written in TypeScript and includes full type definitions. For OpenSeadragon types:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install --save-dev @types/openseadragon
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add -D @types/openseadragon
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add -D @types/openseadragon
+    ```
+  </TabItem>
+</Tabs>
+
+## Import Styles
+
+Import the required CSS in your app entry point:
+
+**React:**
+```tsx
+import "annota/dist/index.css";
+```
+
+**Svelte:**
+```svelte
+<script>
+  import "annota/dist/index.css";
+</script>
+```
+
+Or in your global CSS:
+
+```css
+@import "annota/dist/index.css";
+```
+
+## Verify Installation
+
+### React Verification
+
+Create a simple test component:
+
+```tsx
+import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+import { useState } from "react";
+import "annota/dist/index.css";
+
+function TestViewer() {
+  const [viewer, setViewer] = useState(null);
+
+  return (
+    <AnnotaProvider>
+      <div style={{ width: "800px", height: "600px" }}>
+        <AnnotaViewer
+          options={{
+            tileSources: {
+              type: "image",
+              url: "https://picsum.photos/1920/1080",
+            },
+            prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+          }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </AnnotaProvider>
+  );
+}
+```
+
+### Svelte Verification
+
+Create a simple test component:
+
+```svelte
+<script>
+  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+  import "annota/dist/index.css";
+
+  let viewer = $state(null);
+</script>
+
+<AnnotaProvider>
+  <div style="width: 800px; height: 600px;">
+    <AnnotaViewer
+      options={{
+        tileSources: {
+          type: "image",
+          url: "https://picsum.photos/1920/1080",
+        },
+        prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+   
+      <Annotator {viewer} />
+    {/if}
+  </div>
+</AnnotaProvider>
+```
+
+If you see an image viewer in either case, Annota is installed correctly!
+
+## Optional Dependencies
+
+### H5 File Support
+
+For loading HDF5 annotation files:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install h5wasm
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add h5wasm
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add h5wasm
+    ```
+  </TabItem>
+</Tabs>
+
+### SAM Tool (AI-Assisted Segmentation)
+
+For the Segment Anything Model tool, you'll need ONNX Runtime:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install onnxruntime-web
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add onnxruntime-web
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add onnxruntime-web
+    ```
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+Now that Annota is installed, continue to:
+
+- **[React Quick Start](/getting-started/quick-start/react)** — Build your first React annotation viewer
+- **[Svelte Quick Start](/getting-started/quick-start/svelte)** — Build your first Svelte annotation viewer
+- [Core Concepts](/getting-started/concepts) — Understand annotations, layers, and tools (framework-agnostic)
+- [Framework Comparison](/guides/framework-comparison) — Compare React and Svelte APIs
+

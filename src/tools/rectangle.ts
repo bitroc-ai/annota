@@ -2,10 +2,10 @@
  * Rectangle Tool - Draw rectangle annotations by dragging
  */
 
-import type OpenSeadragon from 'openseadragon';
-import type { Annotation, Point } from '../core/types';
-import { BaseTool } from './base';
-import type { ToolHandlerOptions } from './types';
+import OpenSeadragon from "openseadragon";
+import type { Annotation, Point } from "../core/types";
+import { BaseTool } from "./base";
+import type { ToolHandlerOptions } from "./types";
 
 /**
  * Tool for drawing rectangle annotations
@@ -16,7 +16,7 @@ export class RectangleTool extends BaseTool {
   private currentAnnotationId: string | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
-    super('rectangle', {
+    super("rectangle", {
       preventDefaultAction: true,
       checkAnnotationHits: true,
       ...options,
@@ -32,7 +32,10 @@ export class RectangleTool extends BaseTool {
     const { originalEvent } = evt as any;
 
     // Get click point in image coordinates
-    const clickPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
+    const clickPoint = this.viewerToImageCoords(
+      originalEvent.offsetX,
+      originalEvent.offsetY
+    );
 
     // Check if click hit an existing annotation
     const hitAnnotation = this.checkAnnotationHit(clickPoint);
@@ -50,16 +53,26 @@ export class RectangleTool extends BaseTool {
     this.isDragging = true;
     this.currentAnnotationId = `rectangle-${Date.now()}`;
 
+    // Signal that a tool is actively drawing to prevent interference
+    if (this.annotator) {
+      this.annotator.state.toolDrawing.active = true;
+    }
+
     // Create initial rectangle (0 size)
     const annotation: Annotation = {
       id: this.currentAnnotationId,
       shape: {
-        type: 'rectangle',
+        type: "rectangle",
         x: clickPoint.x,
         y: clickPoint.y,
         width: 0,
         height: 0,
-        bounds: { minX: clickPoint.x, minY: clickPoint.y, maxX: clickPoint.x, maxY: clickPoint.y },
+        bounds: {
+          minX: clickPoint.x,
+          minY: clickPoint.y,
+          maxX: clickPoint.x,
+          maxY: clickPoint.y,
+        },
       },
       style: this.options.annotationStyle,
       properties: this.options.annotationProperties || {},
@@ -76,11 +89,15 @@ export class RectangleTool extends BaseTool {
    * Handle mouse/pointer drag - update rectangle size
    */
   onCanvasDrag = (evt: OpenSeadragon.ViewerEvent): void => {
-    if (!this.isDragging || !this.startPoint || !this.currentAnnotationId) return;
+    if (!this.isDragging || !this.startPoint || !this.currentAnnotationId)
+      return;
     if (!this.annotator || !this.viewer) return;
 
     const { originalEvent } = evt as any;
-    const currentPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
+    const currentPoint = this.viewerToImageCoords(
+      originalEvent.offsetX,
+      originalEvent.offsetY
+    );
 
     // Calculate rectangle bounds
     const minX = Math.min(this.startPoint.x, currentPoint.x);
@@ -97,7 +114,7 @@ export class RectangleTool extends BaseTool {
       this.annotator.updateAnnotation(this.currentAnnotationId, {
         ...existing,
         shape: {
-          type: 'rectangle',
+          type: "rectangle",
           x: minX,
           y: minY,
           width,
@@ -122,8 +139,10 @@ export class RectangleTool extends BaseTool {
 
     // If rectangle is too small, delete it
     if (this.currentAnnotationId && this.annotator) {
-      const annotation = this.annotator.state.store.get(this.currentAnnotationId);
-      if (annotation && annotation.shape.type === 'rectangle') {
+      const annotation = this.annotator.state.store.get(
+        this.currentAnnotationId
+      );
+      if (annotation && annotation.shape.type === "rectangle") {
         const { width, height } = annotation.shape;
         // Delete if smaller than 5 pixels in either dimension
         if (width < 5 || height < 5) {
@@ -143,6 +162,11 @@ export class RectangleTool extends BaseTool {
     this.startPoint = null;
     this.isDragging = false;
     this.currentAnnotationId = null;
+
+    // Reset tool drawing state
+    if (this.annotator) {
+      this.annotator.state.toolDrawing.active = false;
+    }
 
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;

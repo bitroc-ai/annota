@@ -1,0 +1,268 @@
+---
+title: Svelte Quick Start
+description: Build your first Svelte annotation viewer
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Build your first annotation viewer with Annota and Svelte.
+
+## Prerequisites
+
+- Svelte 5 installed
+- Annota package installed (see [Installation](../installation))
+- Basic knowledge of Svelte 5 runes ($state, $derived, $effect)
+
+## Minimal Example
+
+Here's the simplest possible annotation viewer:
+
+```svelte
+<script>
+  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+  import "annota/dist/index.css";
+
+  let viewer = $state(null);
+</script>
+
+<AnnotaProvider slideId="my-slide">
+  <div style="width: 100vw; height: 100vh;">
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+    {#if viewer}
+      <Annotator {viewer} />
+    {/if}
+  </div>
+</AnnotaProvider>
+```
+
+That's it! You now have a working image viewer with annotation capabilities.
+
+<Aside type="tip">
+  **Svelte Note**: Use the `onViewerReady` callback to get the OpenSeadragon viewer instance. The `#if` block ensures the `Annotator` only renders after the viewer is ready.
+</Aside>
+
+## Understanding the Code
+
+### 1. AnnotaProvider
+
+```svelte
+<AnnotaProvider slideId="my-slide">
+```
+
+Wraps your application and provides Svelte context for annotations. The `slideId` identifies this slide's annotations.
+
+### 2. AnnotaViewer
+
+```svelte
+<AnnotaViewer
+  options={{
+    tileSources: "/path/to/image.dzi",
+    prefixUrl: "...",
+  }}
+  onViewerReady={(v) => viewer = v}
+/>
+```
+
+Creates the OpenSeadragon viewer instance. Returns the viewer via `onViewerReady` callback.
+
+### 3. Annotator
+
+```svelte
+{#if viewer}
+  <Annotator {viewer} />
+{/if}
+```
+
+Creates the annotation overlay layer. The `#if` block ensures it only renders when viewer exists.
+
+## Adding Annotation Tools
+
+Let's add tools for creating annotations:
+
+```svelte
+<script>
+  import { AnnotaProvider, AnnotaViewer, Annotator, tool } from "annota/svelte";
+  import { PointTool, RectangleTool, PolygonTool } from "annota";
+  import "annota/dist/index.css";
+
+  let viewer = $state(null);
+  let activeTool = $state("point");
+
+  const pointTool = $derived(new PointTool());
+  const rectangleTool = $derived(new RectangleTool());
+  const polygonTool = $derived(new PolygonTool());
+</script>
+
+<AnnotaProvider slideId="my-slide">
+  <div style="width: 100vw; height: 100vh;">
+    <!-- Toolbar -->
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 10;">
+      <button onclick={() => activeTool = "point"}>Point</button>
+      <button onclick={() => activeTool = "rectangle"}>Rectangle</button>
+      <button onclick={() => activeTool = "polygon"}>Polygon</button>
+      <button onclick={() => activeTool = "pan"}>Pan</button>
+    </div>
+
+    <!-- Viewer -->
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={(v) => viewer = v}
+    />
+
+    <!-- Annotator and Tools -->
+    {#if viewer}
+      <Annotator {viewer}>
+        <svelte:component this={tool} />
+      </Annotator>
+    {/if}
+  </div>
+</AnnotaProvider>
+
+<script>
+  // Tool activation
+  $effect(() => {
+    if (!viewer) return;
+
+    const tools = {
+      point: pointTool,
+      rectangle: rectangleTool,
+      polygon: polygonTool,
+    };
+
+    tool({
+      viewer: () => viewer,
+      handler: () => activeTool === "pan" ? null : tools[activeTool],
+      enabled: () => activeTool !== "pan",
+    });
+  });
+</script>
+```
+
+## Accessing Annotations with Stores
+
+Use Svelte stores to access annotations reactively:
+
+```svelte
+<script>
+  import { annotations, selection } from "annota/svelte";
+
+  const allAnnotations = annotations();
+  const selectedAnnotations = selection();
+</script>
+
+<div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
+  <h3>Annotations ({allAnnotations.length})</h3>
+  <ul>
+    {#each allAnnotations as ann (ann.id)}
+      <li>
+        {ann.shape.type}
+        {#if selectedAnnotations.some(s => s.id === ann.id)}
+          (selected)
+        {/if}
+      </li>
+    {/each}
+  </ul>
+</div>
+```
+
+## Common Svelte Patterns
+
+### Loading Existing Annotations
+
+```svelte
+<script>
+  import { onMount } from "svelte";
+  import { getAnnotator } from "annota/svelte";
+
+  const getAnnotatorFn = getAnnotator();
+  const annotator = $derived(getAnnotatorFn());
+
+  onMount(() => {
+    if (!$annotator) return;
+
+    fetch("/api/annotations/slide-001")
+      .then((res) => res.json())
+      .then((anns) => {
+        $annotator.addAnnotations(anns);
+      });
+  });
+</script>
+```
+
+### Saving Annotations
+
+```svelte
+<script>
+  import { annotations } from "annota/svelte";
+
+  const allAnnotations = annotations();
+
+  function handleSave() {
+    fetch("/api/annotations/slide-001", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(allAnnotations),
+    });
+  }
+</script>
+
+<button onclick={handleSave}>Save</button>
+```
+
+### Custom Styling
+
+```svelte
+<script>
+  const categoryStyle = (annotation) => {
+    if (annotation.properties?.type === "tumor") {
+      return {
+        fill: "#FF0000",
+        fillOpacity: 0.3,
+        stroke: "#FFFFFF",
+        strokeWidth: 2,
+      };
+    }
+    return {
+      fill: "#00FF00",
+      fillOpacity: 0.3,
+      stroke: "#FFFFFF",
+      strokeWidth: 2,
+    };
+  };
+</script>
+
+<Annotator {viewer} style={categoryStyle} />
+```
+
+## Svelte 5 Runes vs React Hooks
+
+| React | Svelte |
+|-------|--------|
+| `useState` | `$state` |
+| `useMemo` | `$derived` |
+| `useEffect` | `$effect` |
+| `useCallback` | Function declarations |
+| `useAnnotations()` | `annotations()` |
+| `useAnnotator()` | `$derived(getAnnotator()())` |
+| `useTool()` | `tool()` |
+
+## Next Steps
+
+Now that you have a working Svelte annotation viewer:
+
+- [Core Concepts](../../concepts) — Understand annotations, layers, and tools
+- [Svelte Stores API](../../../api/svelte/stores) — Learn about all Svelte stores
+- [Annotation Tools](../../../guides/tools) — Learn about all available tools
+- [Layer System](../../../guides/layers) — Organize annotations into layers
+- [Events](../../../guides/events) — Respond to annotation changes
+
+**Want to try React instead?** See the [React Quick Start](../react)

@@ -1,0 +1,32 @@
+---
+import DynamicIcon from "./dynamic-icon.svelte";
+
+interface Props {
+  title: string;
+  iconName?: string;
+  href: string;
+}
+
+const { title, iconName, href } = Astro.props;
+const currentPath = Astro.url.pathname;
+const isActive = currentPath === href || currentPath.startsWith(href + "/");
+---
+
+<a
+  href={href}
+  class="group flex flex-col justify-start overflow-hidden rounded-lg border no-underline shadow-sm transition-all duration-300 ease-out card-link {isActive ? 'card-link-active' : ''}"
+  style="border-color: var(--border); background-color: var(--background);"
+>
+  {iconName && (
+    <div class="p-4 card-icon-wrapper" style="color: var(--muted-foreground);">
+      <DynamicIcon client:load name={iconName} class="w-6 h-6 card-icon" />
+    </div>
+  )}
+  <div class="flex-1 p-4 pt-0">
+    <div class="font-semibold card-title" style="color: var(--foreground);">{title}</div>
+    <div class="card-description">
+      <slot />
+    </div>
+  </div>
+</a>
+

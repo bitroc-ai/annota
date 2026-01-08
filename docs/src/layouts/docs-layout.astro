@@ -1,0 +1,21 @@
+---
+import DocsLayoutComponent from '../lib/components/layout/docs-layout.svelte';
+
+interface Props {
+  title?: string;
+  frontmatter?: {
+    title?: string;
+  };
+}
+
+const { title, frontmatter } = Astro.props;
+const displayTitle = title || frontmatter?.title;
+const currentPath = Astro.url.pathname;
+---
+
+<DocsLayoutComponent client:load currentPath={currentPath}>
+  <div class="prose max-w-none">
+    <slot />
+  </div>
+</DocsLayoutComponent>
+

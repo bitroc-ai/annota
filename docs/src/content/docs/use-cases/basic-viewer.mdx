@@ -1,0 +1,130 @@
+---
+title: Basic Viewer
+description: Build a simple annotation viewer
+---
+
+A complete example of a basic annotation viewer with tools.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotations,
+  useSelection,
+  useTool,
+  PointTool,
+  RectangleTool,
+  PolygonTool,
+} from "annota";
+import { useState, useMemo } from "react";
+import "annota/dist/index.css";
+
+export default function BasicViewer() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithTools />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithTools() {
+  const [viewer, setViewer] = useState(null);
+  const [tool, setTool] = useState("pan");
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  // Create tools once
+  const tools = useMemo(() => ({
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  }), []);
+
+  useTool({
+    viewer,
+    handler: tool === "pan" ? null : tools[tool],
+    enabled: tool !== "pan",
+  });
+
+  return (
+    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
+      {/* Toolbar */}
+      <div style={toolbarStyle}>
+        {["pan", "point", "rectangle", "polygon"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setTool(t)}
+            style={{
+              ...buttonStyle,
+              background: tool === t ? "#0066FF" : "#f0f0f0",
+              color: tool === t ? "white" : "black",
+            }}
+          >
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Info panel */}
+      <div style={infoPanelStyle}>
+        <div>Annotations: {annotations.length}</div>
+        <div>Selected: {selection.length}</div>
+      </div>
+
+      {/* Viewer */}
+      <AnnotaViewer
+        options={{
+          tileSources: {
+            type: "image",
+            url: "https://picsum.photos/1920/1080",
+          },
+          prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+          showNavigationControl: true,
+        }}
+        onViewerReady={setViewer}
+      />
+      <Annotator viewer={viewer} />
+    </div>
+  );
+}
+
+const toolbarStyle = {
+  position: "absolute" as const,
+  top: 20,
+  left: 20,
+  zIndex: 10,
+  display: "flex",
+  gap: 8,
+};
+
+const buttonStyle = {
+  padding: "8px 16px",
+  border: "none",
+  borderRadius: 4,
+  cursor: "pointer",
+};
+
+const infoPanelStyle = {
+  position: "absolute" as const,
+  top: 20,
+  right: 20,
+  zIndex: 10,
+  background: "white",
+  padding: 16,
+  borderRadius: 8,
+  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+};
+```
+
+## Key Points
+
+1. **AnnotaProvider** wraps everything and provides context
+2. **AnnotaViewer** creates the OpenSeadragon viewer
+3. **Annotator** renders the annotation overlay
+4. **useTool** activates the selected tool
+5. **useAnnotations** provides reactive annotation list
+6. **useSelection** tracks selected annotations
+

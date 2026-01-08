@@ -1,0 +1,161 @@
+/* Custom styles for Annota docs - Starlight theme */
+
+/* Only customize specific components, let Starlight handle the rest */
+
+/* Remove redundant mobile TOC padding but keep navbar spacing */
+.main-frame {
+  padding-top: 0 !important;
+}
+
+/* Ensure hero section has minimal spacing */
+.hero {
+  margin-block: 0 !important;
+}
+
+.hero .sl-container {
+  padding-top: 0 !important;
+  padding-bottom: 1rem !important;
+}
+
+/* Ensure header is sticky and solid (no blur to prevent flashing) */
+header.header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 50 !important;
+  background-color: var(--sl-color-bg-nav) !important;
+  /* Remove backdrop-filter to prevent navbar flashing during transitions */
+  max-width: 100% !important;
+}
+
+/* Align header inner content with footer container */
+/* Target the inner div.header specifically to avoid duplicate padding */
+header.header > div.header {
+  max-width: 1536px !important; /* 2xl container */
+  margin: 0 auto !important;
+  padding-inline: 0 !important; /* px-6 */
+  width: 100% !important;
+}
+
+/* Match header logo and title size and color with homepage */
+.site-title {
+  font-size: 1.125rem !important;
+  gap: 0.5rem !important;
+  color: var(--sl-color-white) !important;
+}
+
+.site-title:hover {
+  color: var(--sl-color-white) !important;
+}
+
+.site-title img {
+  height: 1.5rem !important;
+  width: 1.5rem !important;
+}
+
+/* Playground container styles */
+.playground-container {
+  width: 100%;
+  height: calc(100vh - 4rem);
+  position: relative;
+}
+
+/* Demo viewer styles */
+.demo-wrapper {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--sl-color-gray-5);
+}
+
+/* API signature block */
+.api-signature {
+  font-family: var(--sl-font-mono);
+  background: var(--sl-color-gray-6);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+/* Improve code block styling */
+.expressive-code pre {
+  border-radius: 0.5rem;
+}
+
+/* Table improvements */
+table {
+  display: table;
+  width: 100%;
+}
+
+table th {
+  text-align: left;
+}
+
+/* Context Menu Styles for playground */
+.annota-context-menu {
+  position: fixed;
+  min-width: 180px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--sl-color-gray-5);
+  background: var(--sl-color-bg);
+  padding: 0.375rem;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(16px);
+  pointer-events: auto;
+  z-index: 10000;
+}
+
+.annota-context-menu-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  z-index: 9999;
+}
+
+.annota-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.annota-context-menu-item:hover {
+  background: var(--sl-color-gray-6);
+}
+
+.annota-context-menu-item[data-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.annota-context-menu-item[data-disabled="true"]:hover {
+  background: transparent;
+}
+
+.annota-context-menu-item[data-danger="true"] {
+  color: var(--sl-color-red);
+}
+
+.annota-context-menu-item[data-danger="true"]:hover {
+  background: var(--sl-color-red-low);
+}
+
+.annota-context-menu-divider {
+  height: 1px;
+  background: var(--sl-color-gray-5);
+  margin: 0.375rem 0.5rem;
+}
+
+.annota-context-menu-header {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sl-color-gray-3);
+}

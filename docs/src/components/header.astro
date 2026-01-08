@@ -1,0 +1,169 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<style>
+  /* Add navigation links after the site title */
+  :global(header.header) {
+    position: relative;
+  }
+
+  /* Prevent header flickering during transitions */
+  :global(header.header) {
+    view-transition-name: header;
+    contain: layout style paint;
+  }
+</style>
+
+<script>
+  // Use a flag to prevent multiple simultaneous executions
+  let isUpdating = false;
+  let navElement: HTMLElement | null = null;
+
+  // Add navigation links to the header (only creates if doesn't exist)
+  function addNavLinks() {
+    // Prevent concurrent executions
+    if (isUpdating) return;
+    isUpdating = true;
+
+    // Use requestAnimationFrame to batch DOM updates and prevent flickering
+    requestAnimationFrame(() => {
+      try {
+        const header = document.querySelector('header.header');
+        if (!header) {
+          isUpdating = false;
+          return;
+        }
+
+        const siteTitle = header.querySelector('.site-title');
+        if (!siteTitle) {
+          isUpdating = false;
+          return;
+        }
+
+        // Check if nav already exists (check both in header and globally)
+        let nav = navElement || header.querySelector('.custom-nav');
+
+        // If nav doesn't exist, create it
+        if (!nav) {
+          nav = document.createElement('nav');
+          nav.className = 'custom-nav';
+          nav.setAttribute('aria-label', 'Main navigation');
+
+          const links = [
+            { href: '/', label: 'Home' },
+            { href: '/getting-started/installation', label: 'Docs' },
+            { href: '/playground', label: 'Playground' },
+            { href: '/api', label: 'API' },
+          ];
+
+          links.forEach(({ href, label }) => {
+            const link = document.createElement('a');
+            link.href = href;
+            link.textContent = label;
+            link.className = 'nav-link';
+            link.dataset.href = href; // Store href for updating active state
+            nav.appendChild(link);
+          });
+
+          // Insert after site title
+          siteTitle.parentNode?.insertBefore(nav, siteTitle.nextSibling);
+          navElement = nav;
+        } else {
+          // If nav exists but is not in the current header, move it
+          if (nav.parentElement !== header) {
+            const currentNav = header.querySelector('.custom-nav');
+            if (currentNav && currentNav !== nav) {
+              currentNav.remove();
+            }
+            if (nav.parentElement) {
+              nav.parentElement.removeChild(nav);
+            }
+            siteTitle.parentNode?.insertBefore(nav, siteTitle.nextSibling);
+          }
+        }
+
+        // Update active state for existing nav
+        const currentPath = window.location.pathname;
+        nav.querySelectorAll('.nav-link').forEach(link => {
+          const href = link.dataset.href || link.getAttribute('href');
+          link.removeAttribute('aria-current');
+
+          if (href === '/' && currentPath === '/') {
+            link.setAttribute('aria-current', 'page');
+          } else if (href !== '/' && currentPath.startsWith(href.replace(/\/$/, ''))) {
+            link.setAttribute('aria-current', 'page');
+          }
+        });
+      } finally {
+        isUpdating = false;
+      }
+    });
+  }
+
+  // Run on page load (use DOMContentLoaded for initial load)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addNavLinks);
+  } else {
+    // DOM is already ready
+    addNavLinks();
+  }
+
+  // Run on Astro page transitions (use after-swap for better timing)
+  document.addEventListener('astro:after-swap', () => {
+    // Reset navElement reference on page swap to allow re-checking
+    navElement = null;
+    // Small delay to ensure DOM is fully ready
+    setTimeout(addNavLinks, 0);
+  });
+</script>
+
+<style is:global>
+  /* Prevent layout shifts and flickering */
+  header.header {
+    will-change: auto;
+  }
+
+  .custom-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 1.5rem;
+    /* Prevent layout shifts */
+    min-height: 2rem;
+    contain: layout style;
+  }
+  
+  .custom-nav .nav-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    border-radius: 0.375rem;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    /* Prevent text selection flicker */
+    user-select: none;
+  }
+  
+  .custom-nav .nav-link:hover {
+    color: var(--sl-color-white);
+    background-color: var(--sl-color-gray-6);
+  }
+  
+  .custom-nav .nav-link[aria-current="page"] {
+    color: var(--sl-color-white);
+    background-color: var(--sl-color-gray-5);
+  }
+  
+  /* Hide on mobile */
+  @media (max-width: 50rem) {
+    .custom-nav {
+      display: none;
+    }
+  }
+</style>
+

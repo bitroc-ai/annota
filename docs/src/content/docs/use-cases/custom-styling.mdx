@@ -1,0 +1,84 @@
+---
+title: Custom Styling
+description: Apply dynamic styles to annotations
+---
+
+Example of dynamic annotation styling based on properties.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotator,
+} from "annota";
+import { useState, useCallback } from "react";
+
+function StylingExample() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithStyling />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithStyling() {
+  const [viewer, setViewer] = useState(null);
+
+  // Dynamic style function
+  const getStyle = useCallback((annotation) => {
+    const type = annotation.properties?.type;
+    const confidence = annotation.properties?.confidence || 0.5;
+
+    const colors = {
+      tumor: "#FF0000",
+      stroma: "#00FF00",
+      necrosis: "#0000FF",
+      default: "#888888",
+    };
+
+    return {
+      fill: colors[type] || colors.default,
+      fillOpacity: confidence * 0.5,
+      stroke: colors[type] || colors.default,
+      strokeWidth: 2,
+      strokeOpacity: 1,
+    };
+  }, []);
+
+  return (
+    <div style={{ height: "100vh" }}>
+      <AnnotaViewer
+        options={{ tileSources: "/image.dzi" }}
+        onViewerReady={setViewer}
+      />
+      <Annotator viewer={viewer} style={getStyle} />
+    </div>
+  );
+}
+```
+
+## Style Properties
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;         // Fill color
+  fillOpacity?: number;  // Fill opacity (0-1)
+  stroke?: string;       // Stroke color
+  strokeWidth?: number;  // Stroke width (px)
+  strokeOpacity?: number; // Stroke opacity (0-1)
+}
+```
+
+## Conditional Styling
+
+Style based on:
+
+- **Type**: `annotation.properties.type`
+- **Confidence**: `annotation.properties.confidence`
+- **Layer**: `annotation.layerId`
+- **Selection**: Check if ID is in selection
+- **Custom**: Any property you add
+

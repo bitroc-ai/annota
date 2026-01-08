@@ -1,0 +1,140 @@
+---
+title: useSelection
+description: Access currently selected annotations
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Access the currently selected annotations as a reactive array.
+
+## Signature
+
+```typescript
+function useSelection(): Annotation[];
+```
+
+## Returns
+
+Returns an array of selected `Annotation` objects. Updates when selection changes.
+
+## Usage
+
+```tsx
+import { useSelection } from "annota";
+
+function SelectionInfo() {
+  const selection = useSelection();
+
+  if (selection.length === 0) {
+    return <div>No annotations selected</div>;
+  }
+
+  return (
+    <div>
+      <h3>Selected ({selection.length})</h3>
+      <ul>
+        {selection.map((ann) => (
+          <li key={ann.id}>
+            {ann.shape.type} - {ann.id}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Example: Selection Actions
+
+```tsx
+import { useSelection, useAnnotator } from "annota";
+
+function SelectionActions() {
+  const selection = useSelection();
+  const annotator = useAnnotator();
+
+  const deleteSelected = () => {
+    selection.forEach((ann) => {
+      annotator?.deleteAnnotation(ann.id);
+    });
+  };
+
+  const changeColor = (color: string) => {
+    selection.forEach((ann) => {
+      annotator?.updateAnnotation(ann.id, {
+        style: { fill: color },
+      });
+    });
+  };
+
+  return (
+    <div>
+      <div>Selected: {selection.length}</div>
+      <button onClick={deleteSelected} disabled={selection.length === 0}>
+        Delete Selected
+      </button>
+      <button onClick={() => changeColor("#FF0000")}>Make Red</button>
+      <button onClick={() => changeColor("#00FF00")}>Make Green</button>
+    </div>
+  );
+}
+```
+
+## Example: Property Editor
+
+```tsx
+function PropertyEditor() {
+  const selection = useSelection();
+  const annotator = useAnnotator();
+
+  if (selection.length !== 1) {
+    return <div>Select a single annotation to edit</div>;
+  }
+
+  const selected = selection[0];
+
+  const updateProperty = (key: string, value: any) => {
+    annotator?.updateAnnotation(selected.id, {
+      properties: {
+        ...selected.properties,
+        [key]: value,
+      },
+    });
+  };
+
+  return (
+    <div>
+      <h3>Edit: {selected.id}</h3>
+      <label>
+        Type:
+        <input
+          value={selected.properties?.type || ""}
+          onChange={(e) => updateProperty("type", e.target.value)}
+        />
+      </label>
+      <label>
+        Confidence:
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.1"
+          value={selected.properties?.confidence || 0}
+          onChange={(e) => updateProperty("confidence", parseFloat(e.target.value))}
+        />
+      </label>
+    </div>
+  );
+}
+```
+
+<Aside type="tip">
+  Use `selection.length === 1` to check for single selection when building property editors.
+</Aside>
+
+## See Also
+
+- [useAnnotations](/api/hooks/use-annotations) — Get all annotations
+- [useAnnotator](/api/hooks/use-annotator) — Programmatic selection control
+- [Events Guide](/guides/events) — Selection change events
+

@@ -1,0 +1,112 @@
+---
+title: Layer Management
+description: Organize annotations with layers
+---
+
+Example of managing multiple annotation layers.
+
+## Full Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useLayerManager,
+  useLayers,
+  useTool,
+  PolygonTool,
+} from "annota";
+import { useState, useMemo } from "react";
+
+function LayerExample() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <ViewerWithLayers />
+    </AnnotaProvider>
+  );
+}
+
+function ViewerWithLayers() {
+  const [viewer, setViewer] = useState(null);
+  const [activeLayer, setActiveLayer] = useState("tumor");
+  const layerManager = useLayerManager();
+  const layers = useLayers();
+
+  // Initialize layers
+  useEffect(() => {
+    layerManager.createLayer({
+      id: "tumor",
+      name: "Tumor",
+      visible: true,
+      style: { fill: "#FF0000", fillOpacity: 0.3 },
+    });
+    layerManager.createLayer({
+      id: "stroma",
+      name: "Stroma",
+      visible: true,
+      style: { fill: "#00FF00", fillOpacity: 0.3 },
+    });
+    layerManager.createLayer({
+      id: "necrosis",
+      name: "Necrosis",
+      visible: true,
+      style: { fill: "#0000FF", fillOpacity: 0.3 },
+    });
+  }, [layerManager]);
+
+  // Tool for active layer
+  const tool = useMemo(
+    () => new PolygonTool({ layer: activeLayer }),
+    [activeLayer]
+  );
+
+  useTool({ viewer, handler: tool, enabled: true });
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Layer Panel */}
+      <div style={{ width: 250, padding: 16, borderRight: "1px solid #ccc" }}>
+        <h3>Layers</h3>
+        {layers.map((layer) => (
+          <div key={layer.id} style={{ marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={layer.visible}
+              onChange={(e) =>
+                layerManager.updateLayer(layer.id, { visible: e.target.checked })
+              }
+            />
+            <button
+              onClick={() => setActiveLayer(layer.id)}
+              style={{
+                marginLeft: 8,
+                fontWeight: activeLayer === layer.id ? "bold" : "normal",
+              }}
+            >
+              {layer.name}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Viewer */}
+      <div style={{ flex: 1 }}>
+        <AnnotaViewer
+          options={{ tileSources: "/image.dzi" }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </div>
+  );
+}
+```
+
+## Features Demonstrated
+
+- Creating multiple layers with different styles
+- Toggling layer visibility
+- Switching active layer for annotation
+- Layer-based tool configuration
+

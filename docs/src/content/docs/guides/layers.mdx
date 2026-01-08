@@ -1,0 +1,239 @@
+---
+title: Layer System
+description: Organize annotations into logical groups with independent controls
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+Annota's layer system allows you to organize annotations into logical groups with independent styling and visibility control.
+
+## Creating Layers
+
+Use the `useLayerManager` hook to create and manage layers:
+
+```tsx
+import { useLayerManager } from 'annota';
+
+function LayerPanel() {
+  const layerManager = useLayerManager();
+
+  const handleCreateLayer = () => {
+    layerManager.createLayer({
+      id: 'tumor',
+      name: 'Tumor Regions',
+      visible: true,
+      style: {
+        fill: 'rgba(255, 0, 0, 0.3)',
+        stroke: '#ff0000',
+        strokeWidth: 2,
+      },
+    });
+  };
+
+  return (
+    <button onClick={handleCreateLayer}>
+      Create Tumor Layer
+    </button>
+  );
+}
+```
+
+## Layer Properties
+
+Each layer has the following properties:
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Unique identifier for the layer |
+| `name` | `string` | Display name for the layer |
+| `visible` | `boolean` | Whether annotations in this layer are visible |
+| `opacity` | `number` | Layer transparency (0-1) |
+| `locked` | `boolean` | Prevent editing of annotations |
+| `style` | `AnnotationStyle` | Default style for annotations in this layer |
+
+## Assigning Annotations to Layers
+
+Annotations can be assigned to layers via their `properties.layer` field:
+
+```tsx
+const annotation = {
+  id: 'ann-1',
+  shape: {
+    type: 'rectangle',
+    geometry: { x: 100, y: 100, width: 200, height: 150 },
+  },
+  properties: {
+    layer: 'tumor', // Assign to tumor layer
+  },
+};
+```
+
+Or when using tools:
+
+```tsx
+const polygonTool = new PolygonTool({
+  layer: 'tumor', // All annotations created will be assigned to this layer
+});
+```
+
+## Managing Layer Visibility
+
+Toggle layer visibility to show/hide all annotations in a layer:
+
+```tsx
+function LayerList() {
+  const layerManager = useLayerManager();
+
+  return (
+    <div>
+      {layerManager.layers.map(layer => (
+        <div key={layer.id}>
+          <input
+            type="checkbox"
+            checked={layer.visible}
+            onChange={(e) =>
+              layerManager.updateLayer(layer.id, {
+                visible: e.target.checked,
+              })
+            }
+          />
+          {layer.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Layer Styling
+
+Layers define default styles for their annotations. Individual annotations can override:
+
+```tsx
+// Layer style (default for all annotations in layer)
+const layerStyle = {
+  fill: 'rgba(255, 0, 0, 0.3)',
+  stroke: '#ff0000',
+  strokeWidth: 2,
+};
+
+// Annotation-specific style override
+const annotation = {
+  id: 'special-1',
+  properties: { layer: 'tumor' },
+  style: {
+    fill: 'rgba(255, 255, 0, 0.5)', // Override fill color
+  },
+};
+```
+
+<Aside type="tip" title="Style Hierarchy">
+  Styles are applied in order: Default → Layer → Annotation → Selection → Hover
+</Aside>
+
+## Deleting Layers
+
+Delete a layer and optionally remove all its annotations:
+
+```tsx
+// Delete layer and keep annotations (they become unassigned)
+layerManager.deleteLayer('tumor', false);
+
+// Delete layer and remove all its annotations
+layerManager.deleteLayer('tumor', true);
+```
+
+## Common Use Cases
+
+<CardGrid>
+  <Card title="By Tissue Type" icon="list-format">
+    - "Tumor"
+    - "Stroma"
+    - "Necrosis"
+    - "Normal"
+  </Card>
+  <Card title="By Annotator" icon="seti:todo">
+    - "Pathologist-A"
+    - "Pathologist-B"
+    - "AI-Model"
+  </Card>
+  <Card title="By Status" icon="approve-check">
+    - "Reviewed"
+    - "Pending"
+    - "Rejected"
+  </Card>
+  <Card title="By Source" icon="seti:notebook">
+    - "Manual"
+    - "Model-v1"
+    - "Model-v2"
+  </Card>
+</CardGrid>
+
+## Complete Example
+
+```tsx
+import { useLayerManager, useLayers } from 'annota';
+import { useState } from 'react';
+
+function LayerPanel() {
+  const layerManager = useLayerManager();
+  const layers = useLayers();
+  const [newLayerName, setNewLayerName] = useState('');
+
+  const createLayer = () => {
+    if (!newLayerName) return;
+    
+    layerManager.createLayer({
+      id: newLayerName.toLowerCase().replace(/\s+/g, '-'),
+      name: newLayerName,
+      visible: true,
+      style: {
+        fill: `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.3)`,
+        stroke: '#000000',
+        strokeWidth: 2,
+      },
+    });
+    setNewLayerName('');
+  };
+
+  return (
+    <div className="layer-panel">
+      <h3>Layers</h3>
+      
+      <div className="create-layer">
+        <input
+          value={newLayerName}
+          onChange={(e) => setNewLayerName(e.target.value)}
+          placeholder="Layer name"
+        />
+        <button onClick={createLayer}>Add</button>
+      </div>
+
+      <ul>
+        {layers.map(layer => (
+          <li key={layer.id}>
+            <input
+              type="checkbox"
+              checked={layer.visible}
+              onChange={(e) => 
+                layerManager.updateLayer(layer.id, { visible: e.target.checked })
+              }
+            />
+            <span>{layer.name}</span>
+            <button onClick={() => layerManager.deleteLayer(layer.id, true)}>
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+- [Styling](/guides/styling) — Customize annotation appearance
+- [Events](/guides/events) — Respond to layer changes
+- [API Reference](/api/hooks/use-layer-manager) — Complete layer API
+

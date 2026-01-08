@@ -1,0 +1,179 @@
+---
+title: Components
+description: React components for building annotation interfaces
+---
+
+import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+React components for building annotation interfaces with Annota.
+
+## AnnotaProvider
+
+Provides annotation context to all child components. Must wrap your annotation UI.
+
+```tsx
+import { AnnotaProvider } from "annota";
+
+function App() {
+  return (
+    <AnnotaProvider slideId="my-slide">
+      {/* Your annotation components */}
+    </AnnotaProvider>
+  );
+}
+```
+
+### Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `slideId` | `string` | Unique identifier for this slide's annotations |
+| `children` | `ReactNode` | Child components |
+
+<Aside type="caution">
+  All Annota hooks must be used within an `AnnotaProvider`.
+</Aside>
+
+## AnnotaViewer
+
+Wrapper component for OpenSeadragon viewer.
+
+```tsx
+import { AnnotaViewer } from "annota";
+import { useState } from "react";
+
+function Viewer() {
+  const [viewer, setViewer] = useState(null);
+
+  return (
+    <AnnotaViewer
+      options={{
+        tileSources: "/path/to/image.dzi",
+        prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+      }}
+      onViewerReady={setViewer}
+    />
+  );
+}
+```
+
+### Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `options` | `OpenSeadragon.Options` | OpenSeadragon configuration |
+| `onViewerReady` | `(viewer: Viewer) => void` | Callback when viewer initializes |
+| `className` | `string` | CSS class for container |
+| `style` | `CSSProperties` | Inline styles for container |
+
+### OpenSeadragon Options
+
+Common options:
+
+```tsx
+<AnnotaViewer
+  options={{
+    tileSources: "/image.dzi",
+    prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+    showNavigationControl: true,
+    showNavigator: true,
+    navigatorPosition: "BOTTOM_RIGHT",
+    minZoomLevel: 0.5,
+    maxZoomLevel: 40,
+    visibilityRatio: 0.5,
+    constrainDuringPan: true,
+  }}
+  onViewerReady={setViewer}
+/>
+```
+
+## Annotator
+
+Creates the annotation overlay layer on top of the viewer.
+
+```tsx
+import { Annotator } from "annota";
+
+function AnnotationLayer({ viewer }) {
+  return <Annotator viewer={viewer} />;
+}
+```
+
+### Props
+
+| Prop | Type | Description |
+| --- | --- | --- |
+| `viewer` | `Viewer \| null` | OpenSeadragon viewer instance |
+| `style` | `StyleFunction` | Dynamic style function |
+| `children` | `ReactNode` | Child components (tool controllers, etc.) |
+
+### Dynamic Styling
+
+```tsx
+<Annotator
+  viewer={viewer}
+  style={(annotation) => ({
+    fill: annotation.properties?.type === "tumor" ? "#FF0000" : "#00FF00",
+    fillOpacity: 0.3,
+    stroke: "#FFFFFF",
+    strokeWidth: 2,
+  })}
+/>
+```
+
+## Complete Example
+
+```tsx
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  useAnnotations,
+  useSelection,
+} from "annota";
+import { useState } from "react";
+import "annota/dist/index.css";
+
+function App() {
+  return (
+    <AnnotaProvider slideId="slide-001">
+      <AnnotationWorkspace />
+    </AnnotaProvider>
+  );
+}
+
+function AnnotationWorkspace() {
+  const [viewer, setViewer] = useState(null);
+  const annotations = useAnnotations();
+  const selection = useSelection();
+
+  return (
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Sidebar */}
+      <div style={{ width: 250, padding: 16, borderRight: "1px solid #ccc" }}>
+        <h3>Annotations ({annotations.length})</h3>
+        <p>Selected: {selection.length}</p>
+      </div>
+
+      {/* Viewer */}
+      <div style={{ flex: 1, position: "relative" }}>
+        <AnnotaViewer
+          options={{
+            tileSources: "/slide.dzi",
+            prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
+          }}
+          onViewerReady={setViewer}
+        />
+        <Annotator viewer={viewer} />
+      </div>
+    </div>
+  );
+}
+```
+
+## See Also
+
+- [Quick Start](/getting-started/quick-start) — Build your first viewer
+- [Hooks](/api/hooks) — React hooks reference
+- [Styling Guide](/guides/styling) — Customize appearance
+

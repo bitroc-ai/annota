@@ -1,72 +1,38 @@
-# Annota Documentation
+# sv
 
-Professional documentation site for the Annota framework, built with Nextra and Next.js 15.
+Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
-## Development
+## Creating a project
 
-```bash
-# Install dependencies
-pnpm install
+If you're seeing this, you've probably already done this step. Congrats!
 
-# Start development server
-pnpm dev
+```sh
+# create a new project in the current directory
+npx sv create
 
-# Build for production
-pnpm build
-
-# Start production server
-pnpm start
+# create a new project in my-app
+npx sv create my-app
 ```
 
-The documentation site will be available at http://localhost:7772
+## Developing
 
-## Structure
+Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
-```
-docs/
-├── app/                    # Next.js App Router
-│   ├── layout.tsx         # Root layout with Nextra theme
-│   ├── page.tsx           # Homepage
-│   └── [...mdxPath]/      # Dynamic MDX routing
-├── content/               # Documentation content (MDX files)
-│   ├── docs/             # Main documentation
-│   │   ├── index.mdx     # Introduction
-│   │   ├── getting-started.mdx
-│   │   ├── guides/       # Guide articles
-│   │   └── examples/     # Code examples
-│   └── api/              # API reference
-├── public/               # Static assets
-└── package.json
+```sh
+npm run dev
+
+# or start the server and open the app in a new browser tab
+npm run dev -- --open
 ```
 
-## Adding Content
+## Building
 
-### New Documentation Page
+To create a production version of your app:
 
-Create a new `.mdx` file in `content/docs/`:
-
-```mdx
-# Page Title
-
-Your content here...
+```sh
+npm run build
 ```
 
-Update the `_meta.js` file to include it in navigation.
+You can preview the production build with `npm run preview`.
 
-### New Guide
-
-Add MDX files to `content/docs/guides/` and update `content/docs/guides/_meta.js`.
-
-### New API Documentation
-
-Add MDX files to `content/api/` and update `content/api/_meta.js`.
-
-## Deployment
-
-Build the static site:
-
-```bash
-pnpm build
-```
-
-The static files will be generated in the `out/` directory, ready for deployment to any static hosting service (GitHub Pages, Vercel, Netlify, etc.).
+> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.

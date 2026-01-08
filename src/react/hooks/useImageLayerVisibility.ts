@@ -18,7 +18,7 @@
  */
 
 import { useEffect } from 'react';
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import { useLayer } from './useLayer';
 
 export function useImageLayerVisibility(viewer: OpenSeadragon.Viewer | undefined): void {

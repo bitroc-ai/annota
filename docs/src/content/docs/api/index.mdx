@@ -1,0 +1,256 @@
+---
+title: API Reference
+description: Complete API documentation for Annota
+---
+
+import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+Complete API documentation for Annota, supporting both React and Svelte.
+
+## Framework Selection
+
+Choose your framework to view framework-specific APIs:
+
+<Tabs>
+  <TabItem label="React">
+    ### React API
+
+    <CardGrid>
+      <Card title="React Hooks" icon="seti:react">
+        Hooks for accessing annotations, selection, and tools.
+        [View Hooks →](./react/hooks)
+      </Card>
+      <Card title="React Components" icon="puzzle">
+        React components for building annotation UIs.
+        [View Components →](./react/components)
+      </Card>
+    </CardGrid>
+
+  </TabItem>
+  <TabItem label="Svelte">
+    ### Svelte API
+
+    <CardGrid>
+      <Card title="Svelte Stores" icon="open-svelte">
+        Reactive stores for annotations, selection, and tools.
+        [View Stores →](./svelte/stores)
+      </Card>
+      <Card title="Svelte Components" icon="puzzle">
+        Svelte components for building annotation UIs.
+        [View Components →](./svelte/components)
+      </Card>
+    </CardGrid>
+
+  </TabItem>
+</Tabs>
+
+## Shared APIs
+
+These APIs are identical for both React and Svelte:
+
+<CardGrid>
+  <Card title="Annotator Instance" icon="setting">
+    Programmatic API for annotation management.
+    [View Annotator →](./annotator)
+  </Card>
+  <Card title="TypeScript Types" icon="document">
+    Complete type definitions (shared).
+    [View Types →](./types)
+  </Card>
+  <Card title="Tools" icon="tool">
+    Built-in annotation tools (PointTool, RectangleTool, etc.).
+    [View Tools →](#built-in-tools)
+  </Card>
+  <Card title="Data Loaders" icon="download">
+    Load H5, PGM, JSON files (shared).
+    [View Loaders →](#data-loaders)
+  </Card>
+</CardGrid>
+
+## Core Types
+
+These types are shared between React and Svelte.
+
+### Annotation
+
+```typescript
+interface Annotation {
+  id: string;
+  shape: Shape;
+  properties?: Record<string, unknown>;
+  style?: AnnotationStyle;
+}
+```
+
+### Shape
+
+```typescript
+type Shape =
+  | PointShape
+  | RectangleShape
+  | PolygonShape
+  | MultiPolygonShape
+  | CircleShape
+  | LineShape
+  | FreehandShape
+  | PathShape
+  | ImageShape;
+```
+
+**PointShape:**
+```typescript
+interface PointShape {
+  type: "point";
+  point: { x: number; y: number };
+  bounds: Bounds;
+}
+```
+
+**RectangleShape:**
+```typescript
+interface RectangleShape {
+  type: "rectangle";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  bounds: Bounds;
+}
+```
+
+**PolygonShape:**
+```typescript
+interface PolygonShape {
+  type: "polygon";
+  points: Array<{ x: number; y: number }>;
+  closed: boolean;
+  bounds: Bounds;
+}
+```
+
+### AnnotationStyle
+
+```typescript
+interface AnnotationStyle {
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeOpacity?: number;
+}
+```
+
+### Layer
+
+```typescript
+interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity?: number;
+  locked?: boolean;
+  filter?: Filter;
+  style?: AnnotationStyle;
+}
+```
+
+## Built-in Tools
+
+Annota includes several annotation tools (shared between frameworks):
+
+<Tabs>
+  <TabItem label="React">
+    ```typescript
+    import { PointTool, RectangleTool, PolygonTool } from "annota";
+
+    const pointTool = new PointTool();
+    const rectangleTool = new RectangleTool();
+    const polygonTool = new PolygonTool();
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```typescript
+    import { PointTool, RectangleTool, PolygonTool } from "annota";
+
+    const pointTool = new PointTool();
+    const rectangleTool = new RectangleTool();
+    const polygonTool = new PolygonTool();
+    ```
+  </TabItem>
+</Tabs>
+
+See the [Tools Guide](/guides/tools) for detailed usage.
+
+## Data Loaders
+
+### H5 Files
+
+<Tabs>
+  <TabItem label="React">
+    ```typescript
+    import { loadH5Masks, loadH5Coordinates } from "annota";
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```typescript
+    import { loadH5Masks, loadH5Coordinates } from "annota";
+    ```
+  </TabItem>
+</Tabs>
+
+### JSON
+
+<Tabs>
+  <TabItem label="React">
+    ```typescript
+    import { loadJSONFile, exportJSON } from "annota";
+    ```
+  </TabItem>
+  <TabItem label="Svelte">
+    ```typescript
+    import { loadJSONFile, exportJSON } from "annota";
+    ```
+  </TabItem>
+</Tabs>
+
+See the [Loaders Guide](/guides/loaders) for more details.
+
+## Quick Reference
+
+### React Hooks
+
+| Hook | Purpose |
+| --- | --- |
+| `useAnnotator()` | Access annotator instance |
+| `useAnnotations()` | Get all annotations |
+| `useSelection()` | Get selected annotations |
+| `useTool()` | Activate annotation tool |
+| `useLayers()` | Get all layers |
+| `useLayerManager()` | Manage layers |
+
+### Svelte Stores
+
+| Store | Purpose |
+| --- | --- |
+| `getAnnotator()` | Access annotator instance |
+| `annotations()` | Get all annotations |
+| `selection()` | Get selected annotations |
+| `tool()` | Activate annotation tool |
+| `layers()` | Get all layers |
+| `layerManager()` | Manage layers |
+
+### Shared Components
+
+| Component | React | Svelte |
+| --- | --- | --- |
+| Provider | `AnnotaProvider` | `AnnotaProvider` |
+| Viewer | `AnnotaViewer` | `Viewer` |
+| Annotator | `Annotator` | `Annotator` |
+| Popup | `AnnotationPopup` | `Popup` |
+| Context Menu | `ContextMenu` | `ContextMenu` |
+
+<Aside type="tip">
+  **Framework Note**: The component names are the same, but imports differ:
+  - React: `import { ... } from "annota"`
+  - Svelte: `import { ... } from "annota/svelte"`
+</Aside>

@@ -2,7 +2,7 @@
  * Push Tool - Adjust polygon vertices by pushing/pulling them
  */
 
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';

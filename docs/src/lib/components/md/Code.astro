@@ -1,0 +1,163 @@
+---
+import { codeToHtml } from 'shiki';
+
+interface Props {
+  code: string;
+  lang?: string;
+  filename?: string;
+}
+
+const { code, lang = 'typescript', filename } = Astro.props;
+
+// Map language aliases
+const langMap: Record<string, string> = {
+  'svelte': 'html', // Svelte uses HTML-like syntax
+  'tsx': 'tsx',
+  'jsx': 'jsx',
+  'ts': 'typescript',
+  'js': 'javascript',
+};
+
+const shikiLang = langMap[lang] || lang;
+
+// Generate filename from lang if not provided
+const displayFilename = filename || (lang ? `example.${lang}` : 'example.ts');
+
+let html = '';
+try {
+  html = await codeToHtml(code, {
+    lang: shikiLang,
+    theme: 'github-dark',
+  });
+} catch (e) {
+  // Fallback to plain code if highlighting fails
+  html = `<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+}
+---
+
+<div class="code-window">
+  <div class="code-window-header">
+    <div class="code-window-controls">
+      <span class="code-window-dot code-window-dot-close"></span>
+      <span class="code-window-dot code-window-dot-minimize"></span>
+      <span class="code-window-dot code-window-dot-maximize"></span>
+    </div>
+    <div class="code-window-title">
+      <svg class="code-window-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 2H10V10H2V2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 4H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>{displayFilename}</span>
+    </div>
+  </div>
+  <div class="code-window-content">
+    <Fragment set:html={html} />
+  </div>
+</div>
+
+<style>
+  .code-window {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: #1e1e1e;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .code-window-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .code-window-controls {
+    display: flex;
+    gap: 0.375rem;
+    align-items: center;
+  }
+
+  .code-window-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .code-window-dot-close {
+    background: #ff5f57;
+  }
+
+  .code-window-dot-minimize {
+    background: #ffbd2e;
+  }
+
+  .code-window-dot-maximize {
+    background: #28ca42;
+  }
+
+  .code-window-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .code-window-icon {
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .code-window-content {
+    overflow: hidden;
+  }
+
+  :global(.code-window-content pre.shiki) {
+    margin: 0;
+    padding: 1.5rem;
+    border-radius: 0;
+    overflow-x: auto;
+    background: #1e1e1e !important;
+    border: none;
+  }
+  
+  :global(.code-window-content pre.shiki code) {
+    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    display: block;
+    width: 100%;
+  }
+
+  /* Smooth scrolling for long code blocks */
+  :global(.code-window-content pre.shiki) {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  :global(.code-window-content pre.shiki::-webkit-scrollbar) {
+    height: 8px;
+  }
+
+  :global(.code-window-content pre.shiki::-webkit-scrollbar-track) {
+    background: transparent;
+  }
+
+  :global(.code-window-content pre.shiki::-webkit-scrollbar-thumb) {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+
+  :global(.code-window-content pre.shiki::-webkit-scrollbar-thumb:hover) {
+    background: rgba(255, 255, 255, 0.3);
+  }
+</style>

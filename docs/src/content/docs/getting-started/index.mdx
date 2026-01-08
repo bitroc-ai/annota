@@ -1,0 +1,110 @@
+---
+title: Getting Started
+description: Get up and running with Annota in minutes
+sidebar:
+  order: -2
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Welcome to Annota! This guide will help you integrate Annota into your application and start annotating medical images.
+
+## Choose Your Framework
+
+Annota supports both **React** and **Svelte**. Select your preferred framework to see framework-specific getting started guides.
+
+<Tabs>
+  <TabItem label="React">
+    <div class="card-grid">
+
+    ### React Quick Links
+
+    <CardGrid>
+      <LinkCard title="React Installation" href="/getting-started/installation#react" description="Install Annota for React" />
+      <LinkCard title="React Quick Start" href="/getting-started/quick-start/react" description="Build your first React annotation viewer" />
+      <LinkCard title="React Hooks" href="/api/react/hooks" description="Learn about React hooks API" />
+    </CardGrid>
+
+    </div>
+  </TabItem>
+  <TabItem label="Svelte">
+    <div class="card-grid">
+
+    ### Svelte Quick Links
+
+    <CardGrid>
+      <LinkCard title="Svelte Installation" href="/getting-started/installation#svelte" description="Install Annota for Svelte" />
+      <LinkCard title="Svelte Quick Start" href="/getting-started/quick-start/svelte" description="Build your first Svelte annotation viewer" />
+      <LinkCard title="Svelte Stores" href="/api/svelte/stores" description="Learn about Svelte stores API" />
+    </CardGrid>
+
+    </div>
+  </TabItem>
+</Tabs>
+
+## Shared Getting Started Content
+
+These concepts apply to both React and Svelte:
+
+<CardGrid>
+  <LinkCard title="Core Concepts" href="/getting-started/concepts" description="Understand annotations, layers, and tools" />
+  <LinkCard title="Installation" href="/getting-started/installation" description="Install Annota and dependencies" />
+  <LinkCard title="Architecture" href="/architecture" description="Learn about Annota's architecture" />
+</CardGrid>
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Node.js** 16+ installed
+- **React 18+ / 19+** OR **Svelte 5** in your project
+- Basic knowledge of your chosen framework
+- A whole slide image in a supported format (DZI, IIIF, etc.)
+
+## What is Annota?
+
+Annota is a high-performance annotation framework specifically designed for digital pathology and whole slide imaging. It provides:
+
+- **Interactive drawing tools** for creating annotations (points, rectangles, polygons)
+- **Layer management** for organizing annotations
+- **Event system** for responding to annotation changes
+- **Data loaders** for importing annotations from H5, JSON, and other formats
+- **High performance rendering** with PixiJS and WebGL
+- **Framework support** for both React and Svelte
+
+## Architecture Overview
+
+Annota is built on three core technologies:
+
+- **OpenSeadragon**: For displaying gigapixel images
+- **PixiJS**: For hardware-accelerated annotation rendering
+- **React/Svelte**: For component-based UI integration
+
+The framework follows a clean separation of concerns:
+
+```
+Your React/Svelte App
+    ↓
+Provider (Context/Runes)
+    ↓
+Viewer (OpenSeadragon)
+    ↓
+Annotator (Annotation Layer)
+    ↓
+Tools (Point, Rectangle, Polygon, etc.)
+```
+
+## Typical Workflow
+
+1. **Install** Annota and OpenSeadragon
+2. **Wrap** your app with `AnnotaProvider`
+3. **Add** `Viewer` component to display your image
+4. **Initialize** the `Annotator` overlay
+5. **Use** tools via hooks (React) or stores (Svelte)
+6. **Access** annotations reactively
+
+## Next Steps
+
+- **New to Annota?** Start with [Framework Selection](/framework-selection)
+- **Ready to install?** Go to [Installation](/getting-started/installation)
+- **Want to compare frameworks?** See [Framework Comparison](/guides/framework-comparison)

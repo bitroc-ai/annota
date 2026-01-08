@@ -1,0 +1,178 @@
+---
+title: useAnnotator
+description: Access the annotator instance for programmatic control
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Access the annotator instance for programmatic control of annotations.
+
+## Signature
+
+```typescript
+function useAnnotator(): Annotator | null;
+```
+
+## Returns
+
+Returns the `Annotator` instance, or `null` if not yet initialized.
+
+## Usage
+
+```tsx
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
+
+function MyComponent() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    // Add an annotation programmatically
+    annotator.addAnnotation({
+      id: "my-annotation",
+      shape: {
+        type: "point",
+        geometry: { x: 100, y: 100 },
+      },
+    });
+  }, [annotator]);
+
+  return null;
+}
+```
+
+<Aside type="caution">
+  Always check if `annotator` is not `null` before using it, as it may not be initialized immediately.
+</Aside>
+
+## Annotator Methods
+
+### Annotation Management
+
+```typescript
+// Add annotation
+annotator.addAnnotation(annotation: Annotation): void;
+
+// Add multiple annotations
+annotator.addAnnotations(annotations: Annotation[]): void;
+
+// Update annotation
+annotator.updateAnnotation(id: string, updates: Partial<Annotation>): void;
+
+// Delete annotation
+annotator.deleteAnnotation(id: string): void;
+
+// Get annotation by ID
+annotator.getAnnotation(id: string): Annotation | undefined;
+
+// Get all annotations
+annotator.getAnnotations(): Annotation[];
+```
+
+### Selection
+
+```typescript
+// Select annotations
+annotator.setSelected(ids: string[]): void;
+
+// Clear selection
+annotator.clearSelection(): void;
+
+// Get selected annotations
+annotator.getSelected(): Annotation[];
+```
+
+### Events
+
+```typescript
+// Listen to events
+annotator.on(event: string, handler: Function): void;
+
+// Remove listener
+annotator.off(event: string, handler: Function): void;
+
+// Emit event
+annotator.emit(event: string, data: any): void;
+```
+
+### History
+
+```typescript
+// Undo last action
+annotator.undo(): void;
+
+// Redo last undone action
+annotator.redo(): void;
+
+// Check if undo is available
+annotator.canUndo(): boolean;
+
+// Check if redo is available
+annotator.canRedo(): boolean;
+```
+
+## Example: Batch Operations
+
+```tsx
+function BatchOperations() {
+  const annotator = useAnnotator();
+
+  const createMultiple = () => {
+    if (!annotator) return;
+
+    const annotations = Array.from({ length: 10 }, (_, i) => ({
+      id: `point-${i}`,
+      shape: {
+        type: "point" as const,
+        geometry: { x: i * 50, y: i * 50 },
+      },
+    }));
+
+    annotator.addAnnotations(annotations);
+  };
+
+  const deleteAll = () => {
+    if (!annotator) return;
+    
+    const all = annotator.getAnnotations();
+    all.forEach(ann => annotator.deleteAnnotation(ann.id));
+  };
+
+  return (
+    <div>
+      <button onClick={createMultiple}>Create 10 Points</button>
+      <button onClick={deleteAll}>Delete All</button>
+    </div>
+  );
+}
+```
+
+## Example: Event Handling
+
+```tsx
+function EventLogger() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    const handleCreate = (ann: Annotation) => {
+      console.log("Created:", ann.id);
+    };
+
+    annotator.on("createAnnotation", handleCreate);
+    return () => annotator.off("createAnnotation", handleCreate);
+  }, [annotator]);
+
+  return null;
+}
+```
+
+## See Also
+
+- [useAnnotations](/api/hooks/use-annotations) — Get all annotations reactively
+- [useSelection](/api/hooks/use-selection) — Access selection state
+- [Events Guide](/guides/events) — Learn about the event system
+

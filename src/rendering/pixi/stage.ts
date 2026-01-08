@@ -3,14 +3,15 @@
  * High-performance WebGL rendering with viewport culling
  */
 
-import * as PIXI from 'pixi.js';
-import OpenSeadragon from 'openseadragon';
-import RBush from 'rbush';
-import type { Annotation, Filter, StyleExpression } from '../../core/types';
-import type { LayerManager } from '../../core/layer';
-import { isAnnotationVisible } from '../../core/layer';
-import { computeStyle } from './styles';
-import { renderShape, renderImage } from './shapes';
+import * as PIXI from "pixi.js";
+import OpenSeadragon from "openseadragon";
+import RBush from "rbush";
+import type { Annotation, Filter, StyleExpression } from "../../core/types";
+import type { LayerManager } from "../../core/layer";
+import { isAnnotationVisible } from "../../core/layer";
+import { computeStyle } from "./styles";
+import { renderShape, renderImage } from "./shapes";
+import { renderHandles } from "./handles";
 
 /**
  * Stage options
@@ -28,6 +29,7 @@ export interface StageOptions {
 interface AnnotationGraphics {
   annotation: Annotation;
   graphics: PIXI.Graphics;
+  handleGraphics?: PIXI.Graphics; // For selection handles
   sprite?: PIXI.Sprite; // For image shapes
   lastRenderedScale?: number; // Track last scale for LOD changes
   lastRenderedState?: {
@@ -314,12 +316,18 @@ export class PixiStage {
    * Remove annotation from stage
    */
   removeAnnotation(annotation: Annotation | string): void {
-    const id = typeof annotation === 'string' ? annotation : annotation.id;
+    const id = typeof annotation === "string" ? annotation : annotation.id;
     const entry = this.annotationMap.get(id);
 
     if (entry) {
       this.container.removeChild(entry.graphics);
       entry.graphics.destroy();
+
+      // Clean up handle graphics if it exists
+      if (entry.handleGraphics) {
+        this.container.removeChild(entry.handleGraphics);
+        entry.handleGraphics.destroy();
+      }
 
       // Also clean up sprite if it exists (for image shapes)
       if (entry.sprite) {
@@ -356,7 +364,10 @@ export class PixiStage {
     }
 
     // Check layer visibility - hide graphics if layer is not visible
-    if (this.layerManager && !isAnnotationVisible(annotation, this.layerManager)) {
+    if (
+      this.layerManager &&
+      !isAnnotationVisible(annotation, this.layerManager)
+    ) {
       graphics.visible = false;
       if (entry.sprite) entry.sprite.visible = false;
       return;
@@ -395,7 +406,7 @@ export class PixiStage {
     }
 
     // Handle image shapes differently - they use sprites
-    if (annotation.shape.type === 'image') {
+    if (annotation.shape.type === "image") {
       // Clear any existing sprite
       if (entry.sprite) {
         this.container.removeChild(entry.sprite);
@@ -403,7 +414,12 @@ export class PixiStage {
       }
 
       // Render image shape as sprite
-      const sprite = renderImage(this.container, annotation.shape, finalStyle, this.scale);
+      const sprite = renderImage(
+        this.container,
+        annotation.shape,
+        finalStyle,
+        this.scale
+      );
       if (sprite) {
         entry.sprite = sprite;
       }
@@ -414,7 +430,7 @@ export class PixiStage {
       // LOD (Level of Detail): Simplify rendering when zoomed out
       // Only apply to complex shapes (polygons, rectangles) - not to points which are already simple
       const pixelSize = this.getAnnotationPixelSize(annotation);
-      const isComplexShape = annotation.shape.type !== 'point';
+      const isComplexShape = annotation.shape.type !== "point";
 
       if (isComplexShape && pixelSize < 3) {
         // When complex annotation is < 3 pixels, simplify to a point
@@ -423,6 +439,13 @@ export class PixiStage {
         // Normal detailed rendering (includes all point annotations)
         renderShape(graphics, annotation.shape, finalStyle, this.scale);
       }
+    }
+
+    // Note: Selection handles are rendered by the React SVG Editor (Editor.tsx)
+    // We don't render PixiJS handles here to avoid duplicate visuals
+    // The SVG Editor provides interactive drag handles for resizing
+    if (entry.handleGraphics) {
+      entry.handleGraphics.visible = false;
     }
   }
 
@@ -436,7 +459,10 @@ export class PixiStage {
   /**
    * Get annotation size in screen pixels at a specific scale
    */
-  private getAnnotationPixelSizeAtScale(annotation: Annotation, scale: number): number {
+  private getAnnotationPixelSizeAtScale(
+    annotation: Annotation,
+    scale: number
+  ): number {
     const bounds = annotation.shape.bounds;
     const width = (bounds.maxX - bounds.minX) * scale;
     const height = (bounds.maxY - bounds.minY) * scale;
@@ -468,7 +494,7 @@ export class PixiStage {
   setStyle(style?: StyleExpression): void {
     this.style = style;
     // Invalidate all caches since style affects rendering
-    this.annotationMap.forEach(entry => {
+    this.annotationMap.forEach((entry) => {
       entry.lastRenderedScale = undefined;
       entry.lastRenderedState = undefined;
     });
@@ -525,11 +551,13 @@ export class PixiStage {
 
     // Re-render affected annotations
     const affectedIds = new Set([...prevSelectedIds, ...this.selectedIds]);
-    affectedIds.forEach(id => {
+    affectedIds.forEach((id) => {
       this.renderAnnotation(id);
       this.updateEntryRenderCache(id);
     });
     this.snapshotDirty = true;
+    // Trigger redraw to show selection changes immediately
+    this.redraw();
   }
 
   /**
@@ -609,7 +637,10 @@ export class PixiStage {
         this.container.visible = false;
 
         this.snapshotSprite.scale.set(r, r);
-        this.snapshotSprite.position.set(dx - r * this.snapshotBaseDx - r * pad, dy - r * this.snapshotBaseDy - r * pad);
+        this.snapshotSprite.position.set(
+          dx - r * this.snapshotBaseDx - r * pad,
+          dy - r * this.snapshotBaseDy - r * pad
+        );
       }
 
       // Force a render immediately to stay synced with the viewer tiles.
@@ -665,14 +696,20 @@ export class PixiStage {
         continue;
       }
 
-      const layerVisible = !this.layerManager || isAnnotationVisible(entry.annotation, this.layerManager);
+      const layerVisible =
+        !this.layerManager ||
+        isAnnotationVisible(entry.annotation, this.layerManager);
       entry.graphics.visible = layerVisible;
       if (entry.sprite) entry.sprite.visible = layerVisible;
       if (!layerVisible) continue;
 
       // Fast path: during pans (scale unchanged) and for already-visible annotations,
       // the geometry/style caches are still valid, so avoid any LOD/state checks.
-      if (!this.vectorNeedsRefresh && !scaleChangedSignificantly && wasVisible) {
+      if (
+        !this.vectorNeedsRefresh &&
+        !scaleChangedSignificantly &&
+        wasVisible
+      ) {
         continue;
       }
 
@@ -682,10 +719,14 @@ export class PixiStage {
       };
 
       const pixelSize = this.getAnnotationPixelSize(entry.annotation);
-      const isComplexShape = entry.annotation.shape.type !== 'point';
+      const isComplexShape = entry.annotation.shape.type !== "point";
       const currentLOD = isComplexShape && pixelSize < 3;
       const lastLOD = entry.lastRenderedScale
-        ? isComplexShape && this.getAnnotationPixelSizeAtScale(entry.annotation, entry.lastRenderedScale) < 3
+        ? isComplexShape &&
+        this.getAnnotationPixelSizeAtScale(
+          entry.annotation,
+          entry.lastRenderedScale
+        ) < 3
         : null;
 
       const stateChanged =
@@ -698,7 +739,8 @@ export class PixiStage {
       // Use 1% threshold - smaller changes are visually imperceptible
       const scaleChanged =
         this.vectorNeedsRefresh ||
-        !entry.lastRenderedScale || Math.abs(entry.lastRenderedScale - this.scale) / this.scale > 0.01;
+        !entry.lastRenderedScale ||
+        Math.abs(entry.lastRenderedScale - this.scale) / this.scale > 0.01;
 
       if (stateChanged || lodChanged || scaleChanged) {
         this.renderAnnotation(id);
@@ -740,16 +782,18 @@ export class PixiStage {
     // instead of full re-render
     this.annotationMap.forEach((entry) => {
       const { annotation, graphics, sprite } = entry;
-      
+
       // Check layer visibility
-      const layerVisible = !this.layerManager || isAnnotationVisible(annotation, this.layerManager);
-      
+      const layerVisible =
+        !this.layerManager ||
+        isAnnotationVisible(annotation, this.layerManager);
+
       // Update visibility
       // Note: We also need to check if it's culled by viewport (handled in performRedraw)
       // But for immediate feedback, we can set it here if we know it's currently rendered
       if (graphics.visible !== layerVisible && layerVisible === false) {
-         graphics.visible = false;
-         if (sprite) sprite.visible = false;
+        graphics.visible = false;
+        if (sprite) sprite.visible = false;
       }
 
       // Update opacity if visible
@@ -760,7 +804,7 @@ export class PixiStage {
         this.renderAnnotation(annotation.id);
       }
     });
-    
+
     // Trigger a redraw to handle culling and other state updates
     this.requestRedraw();
     this.snapshotDirty = true;
@@ -777,7 +821,12 @@ export class PixiStage {
       }
     }
 
-    this.annotationMap.forEach(entry => entry.graphics.destroy());
+    this.annotationMap.forEach((entry) => {
+      entry.graphics.destroy();
+      if (entry.handleGraphics) {
+        entry.handleGraphics.destroy();
+      }
+    });
     this.annotationMap.clear();
     this.spatialIndex.clear();
     this.spatialEntryById.clear();

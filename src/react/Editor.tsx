@@ -76,6 +76,10 @@ function SvgLayer({ viewer, children }: SvgLayerProps) {
       const rotation = viewer.viewport.getRotation ? viewer.viewport.getRotation() : 0;
 
       // Build transform matching Pixi.js stage
+      // SVG transforms are applied right-to-left:
+      // - First scale the content (shapes drawn in image coords)
+      // - Then translate to position within viewport
+      // The order in the string is: translate THEN scale (applied as scale first, translate second)
       const layerTransform = `translate(${dx}, ${dy}) scale(${scaleX}, ${scaleY}) rotate(${rotation})`;
 
       setTransform(layerTransform);
@@ -458,7 +462,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
     const editorProps: any = {
       annotation: annotation,
       scale,
-      onGrab: () => {},
+      onGrab: () => { },
     };
 
     // Add polygon-specific props

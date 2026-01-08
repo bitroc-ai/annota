@@ -1,0 +1,32 @@
+---
+title: React API
+description: Complete React API documentation
+---
+
+React-specific API documentation for Annota.
+
+## React Hooks
+
+| Hook | Description |
+| --- | --- |
+| [useAnnotator](./hooks/use-annotator) | Access the annotator instance |
+| [useAnnotations](./hooks/use-annotations) | Get all annotations |
+| [useSelection](./hooks/use-selection) | Get selected annotations |
+| [useTool](./hooks/use-tool) | Activate annotation tools |
+| [useHistory](./hooks/use-history) | Access undo/redo history |
+| [useLayers](./hooks/use-layers) | Get all layers |
+| [useLayerManager](./hooks/use-layer-manager) | Manage layers |
+
+## React Components
+
+| Component | Description |
+| --- | --- |
+| [AnnotaProvider](./components/provider) | Provides annotation context |
+| [AnnotaViewer](./components/viewer) | OpenSeadragon viewer wrapper |
+| [Annotator](./components/annotator) | Annotation overlay layer |
+| [AnnotationPopup](./components/popup) | Display annotation information |
+| [ContextMenu](./components/context-menu) | Context menu for annotations |
+
+<aside type="note">
+  All React hooks must be used within an `AnnotaProvider` component.
+</aside>

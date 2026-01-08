@@ -1,0 +1,166 @@
+---
+interface Props {
+  items: Array<{ label: string; icon: string }>;
+}
+
+const { items } = Astro.props;
+---
+
+<div class="framework-tabs" data-framework-tabs>
+  <div class="framework-tabs-header">
+    {items.map((item, i) => (
+      <button
+        type="button"
+        class="framework-tab-button"
+        data-framework-tab-button
+        data-index={i}
+        role="tab"
+        aria-selected={i === 0}
+      >
+        <span class="framework-tab-icon" set:html={item.icon}></span>
+        <span class="framework-tab-label">{item.label}</span>
+      </button>
+    ))}
+  </div>
+
+  <div class="framework-tabs-content">
+    <slot />
+  </div>
+</div>
+
+<script>
+  function setupFrameworkTabs() {
+    const tabContainers = document.querySelectorAll('[data-framework-tabs]');
+    
+    tabContainers.forEach(container => {
+      const buttons = container.querySelectorAll('[data-framework-tab-button]');
+      const panels = container.querySelectorAll('[data-framework-tab-panel]');
+      
+      function setTab(index) {
+        buttons.forEach((btn, i) => {
+          const isSelected = i === index;
+          btn.setAttribute('aria-selected', isSelected.toString());
+          btn.classList.toggle('active', isSelected);
+        });
+        
+        panels.forEach((panel, i) => {
+          if (i === index) {
+            panel.classList.remove('hidden');
+            panel.style.animation = 'fadeIn 0.2s ease-in-out';
+          } else {
+            panel.classList.add('hidden');
+          }
+        });
+      }
+      
+      buttons.forEach((btn, i) => {
+        btn.addEventListener('click', () => setTab(i));
+      });
+      
+      // Initialize first tab
+      if (buttons.length > 0) {
+        setTab(0);
+      }
+    });
+  }
+
+  // Run on initial load
+  setupFrameworkTabs();
+  // Run on View Transitions navigation
+  document.addEventListener('astro:after-swap', setupFrameworkTabs);
+</script>
+
+<style>
+  .framework-tabs {
+    margin-top: 2rem;
+  }
+
+  .framework-tabs-header {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    padding: 0.25rem;
+    background: var(--sl-color-gray-6);
+    border-radius: 0.75rem;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .framework-tab-button {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .framework-tab-button:hover:not(.active) {
+    color: var(--sl-color-text);
+    background: var(--sl-color-gray-5);
+  }
+
+  .framework-tab-button.active {
+    color: var(--sl-color-text);
+    background: var(--sl-color-bg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .framework-tab-button.active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .framework-tab-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: filter 0.2s ease, opacity 0.2s ease;
+  }
+
+  .framework-tab-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .framework-tab-button:not(.active) .framework-tab-icon {
+    filter: grayscale(100%);
+    opacity: 0.6;
+  }
+
+  .framework-tab-button.active .framework-tab-icon {
+    filter: grayscale(0%);
+    opacity: 1;
+  }
+
+  .framework-tab-label {
+    white-space: nowrap;
+  }
+
+  .framework-tabs-content {
+    position: relative;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+

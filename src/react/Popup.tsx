@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useRef, type ReactNode } from 'react';
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import type { Annotation, Bounds } from '../core/types';
 import type { PopupPosition, PopupAnchor, PopupOptions } from './types';
 

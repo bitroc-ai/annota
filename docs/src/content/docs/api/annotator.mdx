@@ -1,0 +1,246 @@
+---
+title: Annotator Instance
+description: Programmatic API for annotation management
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The Annotator instance provides programmatic control over annotations.
+
+## Accessing the Annotator
+
+Use the `useAnnotator` hook to access the annotator instance:
+
+```tsx
+import { useAnnotator } from "annota";
+
+function MyComponent() {
+  const annotator = useAnnotator();
+  
+  // annotator may be null initially
+  if (!annotator) return null;
+  
+  // Use annotator...
+}
+```
+
+## Annotation Methods
+
+### addAnnotation
+
+Add a single annotation:
+
+```typescript
+annotator.addAnnotation({
+  id: "ann-1",
+  shape: {
+    type: "point",
+    geometry: { x: 100, y: 200 },
+  },
+  properties: {
+    label: "Cell",
+  },
+  style: {
+    fill: "#FF0000",
+  },
+});
+```
+
+### addAnnotations
+
+Add multiple annotations at once:
+
+```typescript
+annotator.addAnnotations([
+  { id: "ann-1", shape: { type: "point", geometry: { x: 100, y: 100 } } },
+  { id: "ann-2", shape: { type: "point", geometry: { x: 200, y: 200 } } },
+]);
+```
+
+### updateAnnotation
+
+Update an existing annotation:
+
+```typescript
+annotator.updateAnnotation("ann-1", {
+  properties: { label: "Updated" },
+  style: { fill: "#00FF00" },
+});
+```
+
+### deleteAnnotation
+
+Delete an annotation by ID:
+
+```typescript
+annotator.deleteAnnotation("ann-1");
+```
+
+### getAnnotation
+
+Get a single annotation by ID:
+
+```typescript
+const annotation = annotator.getAnnotation("ann-1");
+```
+
+### getAnnotations
+
+Get all annotations:
+
+```typescript
+const all = annotator.getAnnotations();
+```
+
+## Selection Methods
+
+### setSelected
+
+Set selected annotation IDs:
+
+```typescript
+annotator.setSelected(["ann-1", "ann-2"]);
+```
+
+### clearSelection
+
+Clear all selections:
+
+```typescript
+annotator.clearSelection();
+```
+
+### getSelected
+
+Get selected annotations:
+
+```typescript
+const selected = annotator.getSelected();
+```
+
+## History Methods
+
+### undo
+
+Undo the last action:
+
+```typescript
+annotator.undo();
+```
+
+### redo
+
+Redo the last undone action:
+
+```typescript
+annotator.redo();
+```
+
+### canUndo / canRedo
+
+Check if undo/redo is available:
+
+```typescript
+if (annotator.canUndo()) {
+  annotator.undo();
+}
+```
+
+## Event Methods
+
+### on
+
+Listen to events:
+
+```typescript
+annotator.on("createAnnotation", (annotation) => {
+  console.log("Created:", annotation);
+});
+```
+
+### off
+
+Remove event listener:
+
+```typescript
+const handler = (annotation) => console.log(annotation);
+annotator.on("createAnnotation", handler);
+
+// Later...
+annotator.off("createAnnotation", handler);
+```
+
+### emit
+
+Emit a custom event:
+
+```typescript
+annotator.emit("customEvent", { data: "value" });
+```
+
+## Advanced Methods
+
+### mergeSelected
+
+Merge selected annotations into one:
+
+```typescript
+const merged = annotator.mergeSelected();
+```
+
+### fitToAnnotation
+
+Zoom to fit an annotation in view:
+
+```typescript
+annotator.fitToAnnotation("ann-1", { padding: 0.1 });
+```
+
+## Complete Example
+
+```tsx
+import { useAnnotator } from "annota";
+import { useEffect } from "react";
+
+function AnnotationManager() {
+  const annotator = useAnnotator();
+
+  useEffect(() => {
+    if (!annotator) return;
+
+    // Load annotations from API
+    fetch("/api/annotations")
+      .then((res) => res.json())
+      .then((annotations) => {
+        annotator.addAnnotations(annotations);
+      });
+
+    // Listen for changes
+    const handleChange = (annotation) => {
+      fetch(`/api/annotations/${annotation.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(annotation),
+      });
+    };
+
+    annotator.on("updateAnnotation", handleChange);
+    
+    return () => {
+      annotator.off("updateAnnotation", handleChange);
+    };
+  }, [annotator]);
+
+  return null;
+}
+```
+
+<Aside type="tip">
+  Always clean up event listeners in the useEffect cleanup function.
+</Aside>
+
+## See Also
+
+- [useAnnotator](/api/hooks/use-annotator) — Hook documentation
+- [Events Guide](/guides/events) — Event system guide
+- [Types](/api/types) — Type definitions
+

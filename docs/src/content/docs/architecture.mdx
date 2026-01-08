@@ -1,0 +1,142 @@
+---
+title: Architecture
+description: Understanding Annota's internal architecture
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Annota follows a clean, layered architecture that separates concerns for maintainability and performance.
+
+## Overview
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    React Layer                       │
+│         Components, Hooks, Context                   │
+├─────────────────────────────────────────────────────┤
+│                    Core Engine                       │
+│    Store, R-tree Index, Layer Manager, Events       │
+├─────────────────────────────────────────────────────┤
+│                 Rendering Engine                     │
+│    PixiJS WebGL, Viewport Culling, LOD, Caching    │
+├─────────────────────────────────────────────────────┤
+│              OpenSeadragon Adapter                   │
+│    Viewport Integration, Coordinate Transform       │
+└─────────────────────────────────────────────────────┘
+```
+
+## React Layer
+
+The React layer provides the developer-facing API:
+
+- **AnnotaProvider**: Context provider for annotation state
+- **AnnotaViewer**: OpenSeadragon viewer wrapper
+- **Annotator**: Annotation overlay component
+- **Hooks**: `useAnnotator`, `useAnnotations`, `useTool`, etc.
+
+## Core Engine
+
+The core engine manages annotation data and state:
+
+### Observable Store
+
+The store holds all annotation data and emits events on changes:
+
+```typescript
+store.on("createAnnotation", handler);
+store.on("updateAnnotation", handler);
+store.on("deleteAnnotation", handler);
+```
+
+### R-tree Spatial Index
+
+Sub-millisecond spatial queries using an R-tree:
+
+```typescript
+// Find annotations at point
+const hits = spatialIndex.query({ x: 100, y: 200 });
+
+// Find annotations in bounds
+const inView = spatialIndex.queryBounds({ x: 0, y: 0, width: 1000, height: 1000 });
+```
+
+### Layer Manager
+
+Manages annotation layers with visibility, opacity, and locking:
+
+```typescript
+layerManager.createLayer({ id: "tumor", name: "Tumor Regions" });
+layerManager.updateLayer("tumor", { visible: false });
+```
+
+## Rendering Engine
+
+High-performance rendering with PixiJS:
+
+### Viewport Culling
+
+Only renders annotations visible in the current viewport:
+
+```typescript
+// On viewport change
+const visible = spatialIndex.queryBounds(viewportBounds);
+renderer.render(visible);
+```
+
+### Level of Detail (LOD)
+
+Simplifies rendering when zoomed out:
+
+- **High zoom**: Full detail with all vertices
+- **Medium zoom**: Simplified polygons
+- **Low zoom**: Bounding boxes or points
+
+### Smart Caching
+
+Graphics are cached and only re-rendered when:
+
+- Annotation data changes
+- LOD level changes
+- Significant scale change
+
+## OpenSeadragon Adapter
+
+Bridges OpenSeadragon and the annotation system:
+
+### Coordinate Transform
+
+Converts between image coordinates and viewport coordinates:
+
+```typescript
+// Image → Viewport
+const viewportPoint = adapter.imageToViewport(imagePoint);
+
+// Viewport → Image
+const imagePoint = adapter.viewportToImage(viewportPoint);
+```
+
+### Event Handling
+
+Intercepts OpenSeadragon events for annotation tools:
+
+```typescript
+adapter.on("pointerdown", handlePointerDown);
+adapter.on("pointermove", handlePointerMove);
+adapter.on("pointerup", handlePointerUp);
+```
+
+## Performance Optimizations
+
+<Aside type="tip" title="Performance Target">
+  Annota handles 10,000+ annotations at 60 FPS.
+</Aside>
+
+Key optimizations:
+
+1. **R-tree indexing** — O(log n) spatial queries
+2. **Viewport culling** — Only render what's visible
+3. **LOD rendering** — Simplify when zoomed out
+4. **Graphics caching** — Reuse PixiJS graphics objects
+5. **Batch rendering** — Combine draw calls
+6. **WebGL acceleration** — Hardware-accelerated rendering
+

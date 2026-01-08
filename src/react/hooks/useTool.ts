@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import type OpenSeadragon from 'openseadragon';
+import OpenSeadragon from 'openseadragon';
 import { useAnnotator } from '../Provider';
 import type { ToolHandler } from '../../tools/types';
 

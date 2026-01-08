@@ -1,0 +1,308 @@
+---
+title: Annotation Tools
+description: Comprehensive guide to Annota's annotation tools
+---
+
+import { Aside, Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Annota provides a comprehensive set of tools for creating and editing annotations.
+
+## Overview
+
+Tools enable users to interact with the image and create annotations. Each tool implements a specific interaction pattern:
+
+| Tool | Purpose | Interaction |
+| --- | --- | --- |
+| **PointTool** | Create point markers | Single click |
+| **RectangleTool** | Draw rectangles | Click and drag |
+| **PolygonTool** | Draw polygons | Click vertices, double-click to finish |
+| **PushTool** | Edit polygon vertices | Click and drag to push/pull vertices |
+| **ContourTool** | Extract contours from masks | Click to detect contours |
+| **SplitTool** | Cut annotations into pieces | Click start point, click end point |
+
+## Using Tools
+
+### Basic Usage
+
+Activate a tool using the `useTool` hook:
+
+```tsx
+import { useTool, PointTool } from "annota";
+
+function MyComponent({ viewer }) {
+  const pointTool = new PointTool();
+
+  useTool({
+    viewer,
+    handler: pointTool,
+    enabled: true,
+  });
+
+  return null;
+}
+```
+
+### Tool Switching
+
+Allow users to switch between tools:
+
+```tsx
+import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useState } from "react";
+
+function ToolController({ viewer }) {
+  const [activeTool, setActiveTool] = useState("point");
+
+  const tools = {
+    point: new PointTool(),
+    rectangle: new RectangleTool(),
+    polygon: new PolygonTool(),
+  };
+
+  useTool({
+    viewer,
+    handler: activeTool === "pan" ? null : tools[activeTool],
+    enabled: activeTool !== "pan",
+  });
+
+  return (
+    <div>
+      <button onClick={() => setActiveTool("pan")}>Pan</button>
+      <button onClick={() => setActiveTool("point")}>Point</button>
+      <button onClick={() => setActiveTool("rectangle")}>Rectangle</button>
+      <button onClick={() => setActiveTool("polygon")}>Polygon</button>
+    </div>
+  );
+}
+```
+
+## Point Tool
+
+Create point annotations with a single click.
+
+<CardGrid>
+  <Card title="Use Cases" icon="star">
+    - Cell counting
+    - Nuclei detection
+    - Marking points of interest
+    - Landmarks for registration
+  </Card>
+  <Card title="Interaction" icon="pencil">
+    Single click to place a point marker at that location.
+  </Card>
+</CardGrid>
+
+```tsx
+import { PointTool } from "annota";
+
+const pointTool = new PointTool({
+  style: {
+    fill: "#FF0000",
+    fillOpacity: 0.8,
+    stroke: "#FFFFFF",
+    strokeWidth: 2,
+  },
+});
+```
+
+## Rectangle Tool
+
+Draw rectangular regions by clicking and dragging.
+
+**Interaction:**
+
+1. **Click** to start the rectangle
+2. **Drag** to define the size
+3. **Release** to finish
+
+```tsx
+import { RectangleTool } from "annota";
+
+const rectangleTool = new RectangleTool({
+  style: {
+    fill: "#00FF00",
+    fillOpacity: 0.3,
+    stroke: "#00FF00",
+    strokeWidth: 2,
+  },
+});
+```
+
+## Polygon Tool
+
+Draw polygons by clicking to add vertices.
+
+**Interaction:**
+
+1. **Click** to add vertices
+2. **Move mouse** to preview next segment
+3. **Double-click** or **press Enter** to finish
+4. **Press Escape** to cancel
+
+```tsx
+import { PolygonTool } from "annota";
+
+const polygonTool = new PolygonTool({
+  style: {
+    fill: "#0000FF",
+    fillOpacity: 0.3,
+    stroke: "#0000FF",
+    strokeWidth: 2,
+  },
+});
+```
+
+## Push Tool
+
+Edit polygon vertices by pushing and pulling.
+
+```tsx
+import { PushTool } from "annota";
+
+const pushTool = new PushTool({
+  radius: 50,      // Influence radius in pixels
+  strength: 1.0,   // Strength of the push effect (0-1)
+  showCursor: true, // Show the cursor indicator
+});
+```
+
+**Interaction:**
+
+1. **Click and drag** on or near polygon edges
+2. Vertices within the radius are pushed
+3. Effect falls off with distance from cursor
+
+<Aside type="tip">
+  Use the `usePushToolCursor` hook to display a visual indicator showing the push tool's radius.
+</Aside>
+
+## Split Tool
+
+Cut annotations into multiple pieces with a line.
+
+```tsx
+import { SplitTool } from "annota";
+
+const splitTool = new SplitTool();
+```
+
+**Workflow:**
+
+1. **Select an annotation** (before or during tool activation)
+2. **Activate the split tool**
+3. **Click** to set the start point of the split line
+4. **Move mouse** — an orange line preview follows the cursor
+5. **Click** to set the end point and execute the split
+
+<Aside type="note">
+  The split tool provides visual feedback with an orange line (color: `#ff6b00`) showing where the split will occur.
+</Aside>
+
+## Merge Operation
+
+Combine multiple selected annotations into a single annotation:
+
+```tsx
+import { useAnnotator } from "annota";
+
+function MergeButton() {
+  const annotator = useAnnotator();
+
+  const handleMerge = () => {
+    const merged = annotator.mergeSelected();
+    if (merged) {
+      console.log("Successfully merged annotations");
+    }
+  };
+
+  return <button onClick={handleMerge}>Merge Selected</button>;
+}
+```
+
+## Contour Tool
+
+Automatically detect contours from underlying image data.
+
+```tsx
+import { ContourTool, loadOpenCV } from "annota";
+
+// Load OpenCV before using ContourTool
+await loadOpenCV();
+
+const contourTool = new ContourTool({
+  threshold: 128,    // Threshold for binary mask
+  minArea: 100,      // Minimum contour area
+  maxContours: 1000, // Maximum number of contours
+});
+```
+
+<Aside type="caution">
+  The Contour Tool requires OpenCV.js. Install it with `npm install @techstark/opencv-js`.
+</Aside>
+
+## Tool Options
+
+All tools support these common options:
+
+### Style
+
+```tsx
+const tool = new PointTool({
+  style: {
+    fill: "#FF0000",
+    fillOpacity: 0.8,
+    stroke: "#FFFFFF",
+    strokeWidth: 2,
+  },
+});
+```
+
+### Layer Assignment
+
+```tsx
+const tool = new PointTool({
+  layer: "tumor", // Annotations will be created on the 'tumor' layer
+});
+```
+
+### Custom Properties
+
+```tsx
+const tool = new PointTool({
+  properties: {
+    type: "cell",
+    confidence: 1.0,
+  },
+});
+```
+
+## Best Practices
+
+<CardGrid>
+  <Card title="Reuse Instances" icon="approve-check">
+    Create tool instances once, not on every render.
+    
+    ```tsx
+    const [tools] = useState({
+      point: new PointTool(),
+      rectangle: new RectangleTool(),
+    });
+    ```
+  </Card>
+  <Card title="Visual Feedback" icon="seti:image">
+    Show which tool is active with UI highlighting.
+  </Card>
+  <Card title="Allow Deactivation" icon="close">
+    Always provide a way to disable tools (e.g., "Pan" mode).
+  </Card>
+  <Card title="Keyboard Shortcuts" icon="laptop">
+    Add keyboard shortcuts for common tools (P, R, G, V).
+  </Card>
+</CardGrid>
+
+## Next Steps
+
+- [Events](/guides/events) — Respond to annotation changes
+- [Styling](/guides/styling) — Customize annotation appearance
+- [Layer System](/guides/layers) — Organize annotations
+
