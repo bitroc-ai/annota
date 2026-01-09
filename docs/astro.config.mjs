@@ -128,56 +128,11 @@ export default defineConfig({
       exclude: ['openseadragon'], // Don't pre-bundle openseadragon
     },
     ssr: {
-      noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
-      // Include openseadragon in noExternal so Vite processes it through our plugin
+      noExternal: ['annota', 'lucide-svelte'],
+      // Don't include openseadragon - it should only load on client
+      external: ['openseadragon'],
     },
     plugins: [
-      {
-        name: 'mock-openseadragon',
-        enforce: 'pre',
-        resolveId(id, importer, options) {
-          // Mock openseadragon in all SSR/non-browser contexts
-          if (id === 'openseadragon') {
-            // Intercept during SSR (build, preview server, SSR requests)
-            if (options?.ssr) {
-              const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
-              return mockPath;
-            }
-            // Also intercept for client builds if we detect we're in Node.js
-            // This handles cases where the preview server tries to process modules
-            const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
-            // Check if the importer is from a server context
-            // If importer is undefined or from node_modules, we might be in a server context
-            if (!importer || importer.includes('node_modules')) {
-              // Only use mock if we're definitely not in a browser
-              // For client bundles, let it resolve normally
-              return null;
-            }
-            return mockPath;
-          }
-          return null;
-        },
-        load(id) {
-          // If the resolved ID is our mock, load it
-          const mockPath = path.resolve(__dirname, './src/lib/mocks/openseadragon.ts');
-          if (id === mockPath || id.includes('openseadragon.ts')) {
-            // Return the mock code
-            return `
-              export default {
-                Viewer: class {
-                  constructor() {}
-                },
-                Point: class {
-                  constructor(x, y) {
-                    this.x = x || 0;
-                    this.y = y || 0;
-                  }
-                }
-              };
-            `;
-          }
-        },
-      },
       tailwindcss(),
     ],
     resolve: {
