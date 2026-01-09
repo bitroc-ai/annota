@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 
 // Load the mock
-require(join(__dirname, '../src/lib/mocks/setup-openseadragon-mock.js'));
+require(join(__dirname, '../src/lib/mocks/setup-openseadragon-mock.cjs'));
 
 // Now run astro preview
 const astro = spawn('astro', ['preview'], {
