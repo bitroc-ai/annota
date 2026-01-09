@@ -2,7 +2,6 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
 import react from '@astrojs/react';
-import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -129,11 +128,38 @@ export default defineConfig({
     },
     ssr: {
       noExternal: ['annota', 'lucide-svelte'],
-      // Don't include openseadragon - it should only load on client
-      external: ['openseadragon'],
     },
     plugins: [
-      tailwindcss(),
+      {
+        name: 'mock-openseadragon-ssr',
+        enforce: 'pre',
+        resolveId(id) {
+          if (id === 'openseadragon') {
+            return '\0mock-openseadragon';
+          }
+        },
+        load(id) {
+          if (id === '\0mock-openseadragon') {
+            return `
+              export default {
+                Viewer: class Viewer {
+                  constructor() {}
+                  addHandler() {}
+                  removeHandler() {}
+                  open() {}
+                  close() {}
+                },
+                Point: class Point {
+                  constructor(x, y) {
+                    this.x = x ?? 0;
+                    this.y = y ?? 0;
+                  }
+                }
+              };
+            `;
+          }
+        },
+      },
     ],
     resolve: {
       alias: {
