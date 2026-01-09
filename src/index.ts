@@ -44,14 +44,14 @@ export { createSelectionManager } from "./core/selection";
 // React Components & Hooks
 // ============================================
 
-export { AnnotaProvider, useAnnotator } from "./react/Provider";
-export type { AnnotaProviderProps } from "./react/Provider";
+export { AnnotaProvider, useAnnotator } from "./react/provider";
+export type { AnnotaProviderProps } from "./react/provider";
 
-export { Annotator } from "./react/Annotator";
-export type { AnnotatorProps } from "./react/Annotator";
+export { Annotator } from "./react/annotator";
+export type { AnnotatorProps } from "./react/annotator";
 
-export { Viewer as AnnotaViewer } from "./react/Viewer";
-export type { ViewerProps as AnnotaViewerProps } from "./react/Viewer";
+export { Viewer as AnnotaViewer } from "./react/viewer";
+export type { ViewerProps as AnnotaViewerProps } from "./react/viewer";
 
 export {
   useAnnotations,
@@ -81,25 +81,25 @@ export type {
   UseEditingResult,
 } from "./react/hooks";
 
-export { AnnotationPopup } from "./react/Popup";
+export { AnnotationPopup } from "./react/popup";
 
 export {
   ContextMenu,
   ContextMenuItem,
   ContextMenuDivider,
-} from "./react/ContextMenu";
+} from "./react/context-menu";
 export type {
   ContextMenuProps,
   ContextMenuItemProps,
-} from "./react/ContextMenu";
+} from "./react/context-menu";
 
 export {
   AnnotationEditor,
   registerShapeEditor,
   unregisterShapeEditor,
   getEditorConfig,
-} from "./react/Editor";
-export type { AnnotationEditorProps, ShapeEditorConfig } from "./react/Editor";
+} from "./react/editor";
+export type { AnnotationEditorProps, ShapeEditorConfig } from "./react/editor";
 
 export {
   PointEditor,

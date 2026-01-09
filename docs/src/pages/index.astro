@@ -16,9 +16,8 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/getting-started/installation', label: 'Docs' },
-  { href: '/playground', label: 'Playground' },
-  { href: '/api', label: 'API' },
+  { href: '/getting-started/installation/', label: 'Docs' },
+  { href: '/playground/', label: 'Playground' },
 ];
 
 const currentPath = Astro.url.pathname;
@@ -166,7 +165,7 @@ const currentPath = Astro.url.pathname;
                 select and resize the existing one.
               </p>
               <div class="demo-wrapper">
-                <AnnotaDemo client:load />
+                <AnnotaDemo client:only="svelte" />
               </div>
             </div>
           </div>
@@ -567,7 +566,7 @@ function App() {
     position: relative;
   }
 
-  .demo-wrapper :global(> *) {
+  .demo-wrapper :global(> *:not(script):not(style)) {
     width: 100%;
     height: 100%;
     display: block;

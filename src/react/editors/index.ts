@@ -3,17 +3,17 @@
  * Shape-specific editor components
  */
 
-export { PointEditor, editPoint } from './Point';
-export type { PointEditorProps } from './Point';
+export { PointEditor, editPoint } from './point';
+export type { PointEditorProps } from './point';
 
-export { RectangleEditor, editRectangle } from './Rectangle';
-export type { RectangleEditorProps } from './Rectangle';
+export { RectangleEditor, editRectangle } from './rectangle';
+export type { RectangleEditorProps } from './rectangle';
 
-export { PolygonEditor, editPolygon, deletePolygonVertex } from './Polygon';
-export type { PolygonEditorProps } from './Polygon';
+export { PolygonEditor, editPolygon, deletePolygonVertex } from './polygon';
+export type { PolygonEditorProps } from './polygon';
 
-export { FreehandEditor, editFreehand } from './Freehand';
-export type { FreehandEditorProps } from './Freehand';
+export { FreehandEditor, editFreehand } from './freehand';
+export type { FreehandEditorProps } from './freehand';
 
-export { ImageEditor, editImage } from './Image';
-export type { ImageEditorProps } from './Image';
+export { ImageEditor, editImage } from './image';
+export type { ImageEditorProps } from './image';

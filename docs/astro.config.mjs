@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
 import react from '@astrojs/react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -123,46 +124,28 @@ export default defineConfig({
     strictPort: false, // Allow Railway to assign port dynamically
   },
   vite: {
-    optimizeDeps: {
-      exclude: ['openseadragon'], // Don't pre-bundle openseadragon
-    },
     ssr: {
-      noExternal: ['annota', 'lucide-svelte'],
+      noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
     },
     plugins: [
       {
-        name: 'mock-openseadragon-ssr',
+        name: 'mock-openseadragon',
         enforce: 'pre',
-        resolveId(id, importer) {
-          // Only intercept exact 'openseadragon' imports, not type imports or subpaths
-          if (id === 'openseadragon' || id === 'openseadragon?commonjs-external') {
-            return '\0mock-openseadragon';
+        resolveId(id, importer, options) {
+          if (id === 'openseadragon') {
+            if (options?.ssr) {
+              return 'virtual:openseadragon';
+            }
           }
           return null;
         },
         load(id) {
-          if (id === '\0mock-openseadragon') {
-            return `
-              export default {
-                Viewer: class Viewer {
-                  constructor() {}
-                  addHandler() {}
-                  removeHandler() {}
-                  open() {}
-                  close() {}
-                },
-                Point: class Point {
-                  constructor(x, y) {
-                    this.x = x ?? 0;
-                    this.y = y ?? 0;
-                  }
-                }
-              };
-            `;
+          if (id === 'virtual:openseadragon') {
+            return 'export default {};';
           }
-          return null;
-        },
+        }
       },
+      tailwindcss(),
     ],
     resolve: {
       alias: {
