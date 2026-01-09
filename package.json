@@ -1,7 +1,7 @@
 {
   "name": "annota",
   "version": "0.10.0",
-  "description": "A React annotation framework for digital pathology and whole slide imaging",
+  "description": "An annotation framework for React and Svelte",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",

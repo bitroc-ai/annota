@@ -1,25 +1,34 @@
-// Setup script to mock openseadragon at Node.js module level
-// This runs before any other code via --require flag
+// CommonJS module to mock openseadragon at Node.js module level
+// This intercepts require('openseadragon') calls before the real module loads
+// This file is loaded via NODE_OPTIONS --require flag
 
-if (typeof window === 'undefined') {
-  // We're in Node.js, mock openseadragon
-  const Module = require('module');
-  const originalRequire = Module.prototype.require;
-  
-  Module.prototype.require = function(id) {
-    if (id === 'openseadragon') {
-      return {
-        Viewer: class {
-          constructor() {}
-        },
-        Point: class {
-          constructor(x, y) {
-            this.x = x || 0;
-            this.y = y || 0;
-          }
-        },
-      };
+const Module = require('module');
+const originalRequire = Module.prototype.require;
+
+// Create the mock object
+const openseadragonMock = {
+  Viewer: class {
+    constructor() {}
+    addHandler() {}
+    removeHandler() {}
+    open() {}
+    close() {}
+  },
+  Point: class {
+    constructor(x, y) {
+      this.x = x ?? 0;
+      this.y = y ?? 0;
     }
-    return originalRequire.apply(this, arguments);
-  };
-}
+  },
+};
+
+// For ESM compatibility, some code might access .default
+openseadragonMock.default = openseadragonMock;
+
+// Override Module.prototype.require to intercept openseadragon
+Module.prototype.require = function(id) {
+  if (id === 'openseadragon') {
+    return openseadragonMock;
+  }
+  return originalRequire.apply(this, arguments);
+};

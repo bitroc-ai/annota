@@ -133,10 +133,12 @@ export default defineConfig({
       {
         name: 'mock-openseadragon-ssr',
         enforce: 'pre',
-        resolveId(id) {
-          if (id === 'openseadragon') {
+        resolveId(id, importer) {
+          // Only intercept exact 'openseadragon' imports, not type imports or subpaths
+          if (id === 'openseadragon' || id === 'openseadragon?commonjs-external') {
             return '\0mock-openseadragon';
           }
+          return null;
         },
         load(id) {
           if (id === '\0mock-openseadragon') {
@@ -158,6 +160,7 @@ export default defineConfig({
               };
             `;
           }
+          return null;
         },
       },
     ],
