@@ -125,6 +125,12 @@ export default defineConfig({
     allowedHosts: ['annota.dev', 'www.annota.dev'],
   },
   vite: {
+    server: {
+      allowedHosts: ['annota.dev', 'www.annota.dev'],
+    },
+    preview: {
+      allowedHosts: ['annota.dev', 'www.annota.dev'],
+    },
     ssr: {
       noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
     },
