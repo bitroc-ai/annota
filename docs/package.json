@@ -5,9 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "start": "astro preview",
+    "start": "serve dist -l ${PORT:-6006}",
     "build": "astro build",
-    "preview": "astro preview",
+    "preview": "serve dist -l ${PORT:-6006}",
     "astro": "astro",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

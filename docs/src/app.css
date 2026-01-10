@@ -4,6 +4,31 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Starlight-compatible CSS variables for custom pages */
+:root {
+  --sl-color-bg: #ffffff;
+  --sl-color-bg-nav: #f8f9fa;
+  --sl-color-text: #1e293b;
+  --sl-color-gray-2: #64748b;
+  --sl-color-gray-5: #cbd5e1;
+  --sl-color-gray-6: #e2e8f0;
+  --sl-color-hairline: #e2e8f0;
+  --sl-color-accent: #3b82f6;
+  --sl-color-white: #ffffff;
+}
+
+.dark {
+  --sl-color-bg: #0a0a0a;
+  --sl-color-bg-nav: #0f0f0f;
+  --sl-color-text: #fafafa;
+  --sl-color-gray-2: #a1a1aa;
+  --sl-color-gray-5: #3f3f46;
+  --sl-color-gray-6: #27272a;
+  --sl-color-hairline: #27272a;
+  --sl-color-accent: #60a5fa;
+  --sl-color-white: #ffffff;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

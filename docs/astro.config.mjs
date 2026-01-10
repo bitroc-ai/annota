@@ -124,12 +124,6 @@ export default defineConfig({
     strictPort: false, // Allow Railway to assign port dynamically
   },
   vite: {
-    server: {
-      allowedHosts: true, // Allow all hosts (safe behind Railway's proxy)
-    },
-    preview: {
-      allowedHosts: true, // Allow all hosts (safe behind Railway's proxy)
-    },
     ssr: {
       noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
     },
