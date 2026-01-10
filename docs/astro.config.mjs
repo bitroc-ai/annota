@@ -122,14 +122,13 @@ export default defineConfig({
     port: process.env.PORT ? parseInt(process.env.PORT) : 6006,
     host: true, // Bind to 0.0.0.0 (all interfaces) for Railway
     strictPort: false, // Allow Railway to assign port dynamically
-    allowedHosts: ['annota.dev', 'www.annota.dev'],
   },
   vite: {
     server: {
-      allowedHosts: ['annota.dev', 'www.annota.dev'],
+      allowedHosts: true, // Allow all hosts (safe behind Railway's proxy)
     },
     preview: {
-      allowedHosts: ['annota.dev', 'www.annota.dev'],
+      allowedHosts: true, // Allow all hosts (safe behind Railway's proxy)
     },
     ssr: {
       noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
