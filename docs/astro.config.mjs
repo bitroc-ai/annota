@@ -20,10 +20,10 @@ export default defineConfig({
         replacesTitle: false,
       },
       social: [
-        { icon: 'github', label: 'GitHub', href: 'https://github.com/anthropics/annota' },
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/bitroc-ai/annota' },
       ],
       editLink: {
-        baseUrl: 'https://github.com/anthropics/annota/edit/main/docs/',
+        baseUrl: 'https://github.com/bitroc-ai/annota/edit/main/docs/',
       },
       components: {
         Header: './src/components/header.astro',
