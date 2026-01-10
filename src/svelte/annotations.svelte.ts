@@ -1,11 +1,12 @@
 /**
  * Function to get all annotations
+ * Returns a getter function to access the reactive annotations list
  */
 
 import { getAnnotator } from './annotator';
 import type { Annotation } from '../core/types';
 
-export function annotations(): Annotation[] {
+export function annotations(): () => Annotation[] {
   const getAnnotatorFn = getAnnotator();
   let annotationsList: Annotation[] = $state([]);
 
@@ -37,6 +38,7 @@ export function annotations(): Annotation[] {
     };
   });
 
-  return annotationsList;
+  // Return a getter function to maintain reactivity
+  return () => annotationsList;
 }
 

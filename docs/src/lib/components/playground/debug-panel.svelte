@@ -10,7 +10,8 @@
   
   let { currentImage, onNextImage }: Props = $props();
   
-  const annotationsList = annotations();
+  const getAnnotationsList = annotations();
+  const annotationsList = $derived(getAnnotationsList());
 </script>
 
 <div class="absolute top-2 right-2 z-10">

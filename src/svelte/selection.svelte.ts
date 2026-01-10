@@ -1,11 +1,12 @@
 /**
  * Function to get currently selected annotations
+ * Returns a getter function to access the reactive selection
  */
 
 import { getAnnotator } from "./annotator";
 import type { Annotation } from "../core/types";
 
-export function selection(): Annotation[] {
+export function selection(): () => Annotation[] {
   const getAnnotatorFn = getAnnotator();
   let selectedIds: string[] = $state([]);
 
@@ -56,9 +57,11 @@ export function selection(): Annotation[] {
     };
   });
 
-  const annotator = getAnnotatorFn();
-  const store = annotator?.state.store;
-  if (!store) return [];
-
-  return selectedIds.map((id) => store.get(id)).filter(Boolean) as Annotation[];
+  // Return a getter function to maintain reactivity
+  return () => {
+    const annotator = getAnnotatorFn();
+    const store = annotator?.state.store;
+    if (!store) return [];
+    return selectedIds.map((id) => store.get(id)).filter(Boolean) as Annotation[];
+  };
 }

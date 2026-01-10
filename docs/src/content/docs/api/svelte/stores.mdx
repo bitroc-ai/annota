@@ -3,7 +3,7 @@ title: Svelte Stores
 description: Reactive stores for accessing annotations and tools
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Aside } from "@astrojs/starlight/components";
 
 Svelte stores provide reactive access to Annota's state. Unlike React hooks, Svelte stores are called as functions and return reactive values using Svelte 5 runes.
 
@@ -49,19 +49,21 @@ Svelte stores provide reactive access to Annota's state. Unlike React hooks, Sve
 
 ### annotations()
 
-Get all annotations as a reactive array.
+Get all annotations as a reactive getter function.
 
 ```typescript
-function annotations(): Annotation[];
+function annotations(): () => Annotation[];
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { annotations } from "annota/svelte";
 
-  const allAnnotations = annotations();
-
+  const getAnnotations = annotations();
+  // Use $derived to make it reactive
+  const allAnnotations = $derived(getAnnotations());
   const count = $derived(allAnnotations.length);
 </script>
 
@@ -70,18 +72,21 @@ function annotations(): Annotation[];
 
 ### selection()
 
-Get currently selected annotations as a reactive array.
+Get currently selected annotations as a reactive getter function.
 
 ```typescript
-function selection(): Annotation[];
+function selection(): () => Annotation[];
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { selection } from "annota/svelte";
 
-  const selectedAnnotations = selection();
+  const getSelectedAnnotations = selection();
+  // Use $derived to make it reactive
+  const selectedAnnotations = $derived(getSelectedAnnotations());
   const hasSelection = $derived(selectedAnnotations.length > 0);
 </script>
 
@@ -99,6 +104,7 @@ function tool(config: ToolConfig): void;
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { tool } from "annota/svelte";
@@ -114,7 +120,7 @@ function tool(config: ToolConfig): void;
 
     tool({
       viewer: () => viewer,
-      handler: () => activeTool === "rectangle" ? rectTool : null,
+      handler: () => (activeTool === "rectangle" ? rectTool : null),
       enabled: () => activeTool === "rectangle",
     });
   });
@@ -130,6 +136,7 @@ function getAnnotator(): () => Annotator | undefined;
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { getAnnotator } from "annota/svelte";
@@ -161,6 +168,7 @@ function history(): {
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { history } from "annota/svelte";
@@ -185,6 +193,7 @@ function layers(): Layer[];
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { layers } from "annota/svelte";
@@ -206,6 +215,7 @@ function layerManager(): LayerManager;
 ```
 
 **Usage:**
+
 ```svelte
 <script>
   import { layerManager } from "annota/svelte";
@@ -230,9 +240,12 @@ function layerManager(): LayerManager;
 <script>
   import { annotations, selection, getAnnotator } from "annota/svelte";
 
-  const allAnnotations = annotations();
-  const selectedAnnotations = selection();
+  const getAnnotations = annotations();
+  const getSelection = selection();
   const getAnnotatorFn = getAnnotator();
+
+  const allAnnotations = $derived(getAnnotations());
+  const selectedAnnotations = $derived(getSelection());
   const annotator = $derived(getAnnotatorFn());
 
   // Derived: Count selected vs total
@@ -241,9 +254,7 @@ function layerManager(): LayerManager;
   );
 
   // Derived: Get selected annotation IDs
-  const selectedIds = $derived(
-    selectedAnnotations.map(a => a.id)
-  );
+  const selectedIds = $derived(selectedAnnotations.map((a) => a.id));
 </script>
 ```
 
@@ -253,7 +264,8 @@ function layerManager(): LayerManager;
 <script>
   import { annotations } from "annota/svelte";
 
-  const allAnnotations = annotations();
+  const getAnnotations = annotations();
+  const allAnnotations = $derived(getAnnotations());
 
   // Automatically updates when annotations change
   $effect(() => {
@@ -264,7 +276,8 @@ function layerManager(): LayerManager;
 ```
 
 <Aside type="tip">
-  **Svelte 5 Runes**: Unlike React hooks, Svelte stores don't need dependency arrays. The `$effect` automatically tracks reactive dependencies.
+  **Svelte 5 Runes**: Unlike React hooks, Svelte stores don't need dependency
+  arrays. The `$effect` automatically tracks reactive dependencies.
 </Aside>
 
 ## See Also

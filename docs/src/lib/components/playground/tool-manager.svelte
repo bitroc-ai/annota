@@ -202,8 +202,8 @@
     () => pushTool,
     () => tool === "push" && !!viewer && !!pushTool
   );
-  const cursorPos = $derived(pushCursor.cursorPos);
-  const radiusInPixels = $derived(pushCursor.radiusInPixels);
+  const cursorPos = $derived(pushCursor.cursorPos());
+  const radiusInPixels = $derived(pushCursor.radiusInPixels());
 </script>
 
 {#if cursorPos}

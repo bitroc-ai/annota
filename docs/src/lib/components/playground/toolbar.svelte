@@ -52,7 +52,8 @@
   
   const getAnnotatorFn = getAnnotator();
   const annotator = $derived(getAnnotatorFn());
-  const selectedAnnotations = selection();
+  const getSelectedAnnotations = selection();
+  const selectedAnnotations = $derived(getSelectedAnnotations());
   
   function handleAddImageAnnotation() {
     if (!annotator || !viewer) return;

@@ -155,8 +155,12 @@ Use Svelte stores to access annotations reactively:
 <script>
   import { annotations, selection } from "annota/svelte";
 
-  const allAnnotations = annotations();
-  const selectedAnnotations = selection();
+  const getAnnotations = annotations();
+  const getSelection = selection();
+  
+  // Use $derived to make them reactive
+  const allAnnotations = $derived(getAnnotations());
+  const selectedAnnotations = $derived(getSelection());
 </script>
 
 <div style="position: absolute; top: 20px; right: 20px; z-index: 10;">
@@ -204,7 +208,8 @@ Use Svelte stores to access annotations reactively:
 <script>
   import { annotations } from "annota/svelte";
 
-  const allAnnotations = annotations();
+  const getAnnotations = annotations();
+  const allAnnotations = $derived(getAnnotations());
 
   function handleSave() {
     fetch("/api/annotations/slide-001", {

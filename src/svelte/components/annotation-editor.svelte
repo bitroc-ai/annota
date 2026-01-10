@@ -22,11 +22,11 @@
   let transform = $state("");
   let scale = $state(1);
 
-  // Get selected annotations
-  const selectedAnnotations = selection();
+  // Get selected annotations (returns a getter function)
+  const getSelectedAnnotations = selection();
 
   // Only support single selection for now
-  const annotation = $derived(selectedAnnotations[0]);
+  const annotation = $derived(getSelectedAnnotations()[0]);
 
   /**
    * Update SVG transform to match OpenSeadragon viewport
@@ -118,7 +118,8 @@
 >
   <g class="annota-transform-group" {transform} style="pointer-events: all;">
     {#if editor}
-      <svelte:component this={editor.component} {...editor.props} />
+      {@const EditorComponent = editor.component}
+      <EditorComponent {...editor.props} />
     {/if}
   </g>
 </svg>

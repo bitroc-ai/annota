@@ -1,7 +1,7 @@
 /**
  * Function for managing the push tool cursor visualization
  *
- * Returns cursor position and radius for rendering the push cursor overlay.
+ * Returns getter functions for cursor position and radius for rendering the push cursor overlay.
  * Uses Svelte's reactivity to automatically track changes to viewer, handler, and enabled state.
  */
 
@@ -11,7 +11,7 @@ export function pushToolCursor(
   viewer: () => OpenSeadragon.Viewer | undefined,
   handler: () => { getCursorPosition(): { x: number; y: number } | null; getPushRadius(): number } | null,
   enabled: () => boolean
-): { cursorPos: { x: number; y: number } | null; radiusInPixels: number } {
+): { cursorPos: () => { x: number; y: number } | null; radiusInPixels: () => number } {
   let cursorPos: { x: number; y: number } | null = $state(null);
   let radiusInPixels: number = $state(0);
 
@@ -63,6 +63,10 @@ export function pushToolCursor(
     };
   });
 
-  return { cursorPos, radiusInPixels };
+  // Return getter functions to maintain reactivity
+  return { 
+    cursorPos: () => cursorPos, 
+    radiusInPixels: () => radiusInPixels 
+  };
 }
 
