@@ -1,32 +1,31 @@
 /// <reference types="astro/client" />
+/// <reference path="./starlight.d.ts" />
 
-declare module '*.mdx' {
+declare module "*.mdx" {
   let MDXComponent: (props: any) => JSX.Element;
   export default MDXComponent;
 }
 
-declare module 'hast' {
+declare module "hast" {
   export interface Root {
-    type: 'root';
+    type: "root";
     children: Array<Element | Text | Comment>;
   }
-  
+
   export interface Element {
-    type: 'element';
+    type: "element";
     tagName: string;
     properties?: Record<string, any>;
     children: Array<Element | Text | Comment>;
   }
-  
+
   export interface Text {
-    type: 'text';
+    type: "text";
     value: string;
   }
-  
+
   export interface Comment {
-    type: 'comment';
+    type: "comment";
     value: string;
   }
 }
-
-

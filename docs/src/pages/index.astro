@@ -1,24 +1,18 @@
 ---
 import '../app.css';
+import SharedHeader from "../components/shared-header.astro";
 import FeatureCard from "../lib/components/landing/feature-card.svelte";
 import Footer from "../lib/components/landing/footer.svelte";
 import AnnotaDemo from "../lib/components/demo/annota-demo.svelte";
 import FrameworkTabs from "../lib/components/landing/framework-tabs.astro";
 import FrameworkTab from "../lib/components/landing/framework-tab.astro";
 import Code from "../lib/components/md/code.astro";
-import ThemeSwitcher from "../lib/components/theme-switcher.svelte";
 import { ChevronRight } from "lucide-svelte";
 
 // SVG logos for Svelte and React
 const svelteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="107" height="128" viewBox="0 0 107 128"><title>svelte-logo</title><path d="M94.1566,22.8189c-10.4-14.8851-30.94-19.2971-45.7914-9.8348L22.2825,29.6078A29.9234,29.9234,0,0,0,8.7639,49.6506a31.5136,31.5136,0,0,0,3.1076,20.2318A30.0061,30.0061,0,0,0,7.3953,81.0653a31.8886,31.8886,0,0,0,5.4473,24.1157c10.4022,14.8865,30.9423,19.2966,45.7914,9.8348L84.7167,98.3921A29.9177,29.9177,0,0,0,98.2353,78.3493,31.5263,31.5263,0,0,0,95.13,58.117a30,30,0,0,0,4.4743-11.1824,31.88,31.88,0,0,0-5.4473-24.1157" style="fill:#ff3e00"/><path d="M45.8171,106.5815A20.7182,20.7182,0,0,1,23.58,98.3389a19.1739,19.1739,0,0,1-3.2766-14.5025,18.1886,18.1886,0,0,1,.6233-2.4357l.4912-1.4978,1.3363.9815a33.6443,33.6443,0,0,0,10.203,5.0978l.9694.2941-.0893.9675a5.8474,5.8474,0,0,0,1.052,3.8781,6.2389,6.2389,0,0,0,6.6952,2.485,5.7449,5.7449,0,0,0,1.6021-.7041L69.27,76.281a5.4306,5.4306,0,0,0,2.4506-3.631,5.7948,5.7948,0,0,0-.9875-4.3712,6.2436,6.2436,0,0,0-6.6978-2.4864,5.7427,5.7427,0,0,0-1.6.7036l-9.9532,6.3449a19.0329,19.0329,0,0,1-5.2965,2.3259,20.7181,20.7181,0,0,1-22.2368-8.2427,19.1725,19.1725,0,0,1-3.2766-14.5024,17.9885,17.9885,0,0,1,8.13-12.0513L55.8833,23.7472a19.0038,19.0038,0,0,1,5.3-2.3287A20.7182,20.7182,0,0,1,83.42,29.6611a19.1739,19.1739,0,0,1,3.2766,14.5025,18.4,18.4,0,0,1-.6233,2.4357l-.4912,1.4978-1.3356-.98a33.6175,33.6175,0,0,0-10.2037-5.1l-.9694-.2942.0893-.9675a5.8588,5.8588,0,0,0-1.052-3.878,6.2389,6.2389,0,0,0-6.6952-2.485,5.7449,5.7449,0,0,0-1.6021.7041L37.73,51.719a5.4218,5.4218,0,0,0-2.4487,3.63,5.7862,5.7862,0,0,0,.9856,4.3717,6.2437,6.2437,0,0,0,6.6978,2.4864,5.7652,5.7652,0,0,0,1.602-.7041l9.9519-6.3425a18.978,18.978,0,0,1,5.2959-2.3278,20.7181,20.7181,0,0,1,22.2368,8.2427,19.1725,19.1725,0,0,1,3.2766,14.5024,17.9977,17.9977,0,0,1-8.13,12.0532L51.1167,104.2528a19.0038,19.0038,0,0,1-5.3,2.3287" style="fill:#fff"/></svg>`;
 
 const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348"><title>React Logo</title><circle cx="0" cy="0" r="2.05" fill="#61dafb"/><g stroke="#61dafb" stroke-width="1" fill="none"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`;
-
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/getting-started/installation/', label: 'Docs' },
-  { href: '/playground/', label: 'Playground' },
-];
 
 const currentPath = Astro.url.pathname;
 ---
@@ -61,35 +55,7 @@ const currentPath = Astro.url.pathname;
   </head>
   <body>
     <div class="layout">
-      <header class="header">
-        <div class="header-left">
-          <a href="/" class="logo">
-            <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="2" width="28" height="28" rx="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-              <circle cx="16" cy="16" r="6" fill="currentColor"/>
-            </svg>
-            <span>Annota</span>
-          </a>
-          <nav>
-            {navLinks.map(link => (
-              <a 
-                href={link.href}
-                class:list={{ active: currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href)) }}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-        <div class="header-right">
-          <ThemeSwitcher client:load />
-          <a href="https://github.com/bitroc-ai/annota" target="_blank" rel="noreferrer" class="github" aria-label="GitHub">
-            <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-            </svg>
-          </a>
-        </div>
-      </header>
+      <SharedHeader currentPath={currentPath} />
       <main>
         <!-- Hero Section -->
         <section class="hero">
@@ -289,6 +255,7 @@ function App() {
     --sl-color-bg-nav: #f8f9fa;
     --sl-color-text: #1e293b;
     --sl-color-gray-2: #64748b;
+    --sl-color-gray-5: #cbd5e1;
     --sl-color-gray-6: #e2e8f0;
     --sl-color-hairline: #e2e8f0;
     --sl-color-accent: #3b82f6;
@@ -300,6 +267,7 @@ function App() {
     --sl-color-bg-nav: #0f0f0f;
     --sl-color-text: #fafafa;
     --sl-color-gray-2: #a1a1aa;
+    --sl-color-gray-5: #3f3f46;
     --sl-color-gray-6: #27272a;
     --sl-color-hairline: #27272a;
     --sl-color-accent: #60a5fa;
@@ -329,110 +297,12 @@ function App() {
     min-height: 100vh;
   }
 
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 4rem;
-    padding-inline: 1.5rem;
-    background: var(--sl-color-bg-nav);
-    border-bottom: 1px solid var(--sl-color-hairline);
-    backdrop-filter: blur(12px);
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+  /* Shared header wrapper styles */
+  .layout :global(.shared-header) {
     position: sticky;
     top: 0;
     z-index: 50;
-  }
-
-  @media (min-width: 1024px) {
-    .header {
-      padding-inline: 2.5rem;
-    }
-  }
-
-  @media (min-width: 1280px) {
-    .header {
-      padding-inline: 3rem;
-    }
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--sl-color-text);
-    text-decoration: none;
-    letter-spacing: -0.025em;
-    transition: color 0.15s ease;
-  }
-
-  .logo svg {
-    opacity: 0.9;
-    transition: opacity 0.15s ease;
-  }
-
-  .logo:hover {
-    color: var(--sl-color-text);
-  }
-
-  .logo:hover svg {
-    opacity: 1;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  nav {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  nav a {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--sl-color-gray-2);
-    text-decoration: none;
-    transition: color 0.15s ease, background-color 0.15s ease;
-    border-radius: 0.375rem;
-  }
-
-  nav a:hover {
-    color: var(--sl-color-text);
-    background: var(--sl-color-gray-6);
-  }
-
-  nav a.active {
-    color: var(--sl-color-text);
-    background: var(--sl-color-gray-6);
-  }
-
-  .github {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    color: var(--sl-color-gray-2);
-    border-radius: 0.5rem;
-    transition: color 0.15s ease, background-color 0.15s ease;
-  }
-
-  .github:hover {
-    color: var(--sl-color-text);
-    background: var(--sl-color-gray-6);
+    backdrop-filter: blur(12px);
   }
 
   main {

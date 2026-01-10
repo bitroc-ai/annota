@@ -1,19 +1,16 @@
 ---
 /**
- * Custom Header for Starlight docs pages
- * Matches the visual style of the shared header used on Home/Playground
+ * Shared Header Component
+ * Used across Home, Playground, and Docs pages for consistent navigation
  */
-import config from "virtual:starlight/user-config";
-import Search from "virtual:starlight/components/Search";
-import ThemeSelect from "virtual:starlight/components/ThemeSelect";
+import ThemeSwitcher from "../lib/components/theme-switcher.svelte";
 
-// Determine if search should be rendered
-const shouldRenderSearch =
-  config.pagefind ||
-  config.components.Search !== "@astrojs/starlight/components/Search.astro";
+interface Props {
+  currentPath: string;
+  showSearch?: boolean;
+}
 
-// Get current path for active state
-const currentPath = Astro.url.pathname;
+const { currentPath, showSearch = false } = Astro.props;
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -27,7 +24,7 @@ function isActive(href: string, current: string): boolean {
 }
 ---
 
-<div class="header">
+<header class="shared-header">
   <div class="header-left">
     <a href="/" class="logo">
       <svg
@@ -65,16 +62,16 @@ function isActive(href: string, current: string): boolean {
     </nav>
   </div>
   <div class="header-center">
-    {shouldRenderSearch && <Search />}
+    {showSearch && <slot name="search" />}
   </div>
   <div class="header-right">
-    <ThemeSelect />
+    <ThemeSwitcher client:load />
     <a
       href="https://github.com/anthropics/annota"
       target="_blank"
       rel="noreferrer"
       class="github-link"
-      aria-label="View on GitHub"
+      aria-label="GitHub"
     >
       <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor">
         <path
@@ -83,15 +80,17 @@ function isActive(href: string, current: string): boolean {
       </svg>
     </a>
   </div>
-</div>
+</header>
 
 <style>
-  .header {
+  .shared-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 100%;
-    gap: var(--sl-nav-gap, 1rem);
+    height: var(--header-height, 4rem);
+    padding: 0 1.5rem;
+    background: var(--sl-color-bg-nav, var(--color-bg, #0a0a0a));
+    border-bottom: 1px solid var(--sl-color-hairline, var(--color-border, #1a1a1a));
   }
 
   .header-left {
