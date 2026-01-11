@@ -7,6 +7,11 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+.svelte-kit/
+
+# Generated declaration files in src (should only be in dist/)
+src/**/*.d.ts
+src/**/*.d.ts.map
 
 # Logs
 logs
