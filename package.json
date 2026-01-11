@@ -1,6 +1,6 @@
 {
   "name": "annota",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "type": "module",
   "description": "An annotation framework for React and Svelte",
   "main": "dist/index.cjs",
@@ -45,9 +45,9 @@
       "require": "./dist/index.cjs"
     },
     "./svelte": {
-      "types": "./src/svelte/index.ts",
-      "svelte": "./src/svelte/index.ts",
-      "default": "./src/svelte/index.ts"
+      "types": "./dist/svelte/index.d.ts",
+      "svelte": "./dist/svelte/index.js",
+      "default": "./dist/svelte/index.js"
     },
     "./dist/index.css": "./dist/index.css"
   },
