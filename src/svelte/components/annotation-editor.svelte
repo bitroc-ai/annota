@@ -9,7 +9,7 @@
   import { onMount } from "svelte";
   import OpenSeadragon from "openseadragon";
   import { selection } from "../selection.svelte";
-  import type { Shape, RectangleShape } from "../../core/types";
+  import type { Shape, RectangleShape } from "annota";
   import RectangleEditor from "./editors/rectangle-editor.svelte";
 
   interface Props {

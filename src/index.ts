@@ -82,6 +82,7 @@ export type {
 } from "./react/hooks";
 
 export { AnnotationPopup } from "./react/popup";
+export type { PopupPosition, PopupAnchor, PopupOptions } from "./react/types";
 
 export {
   ContextMenu,
@@ -118,11 +119,18 @@ export type {
 // Annotator Instance Type
 // ============================================
 
-export type {
-  OpenSeadragonAnnotator as AnnotatorInstance,
-  AnnotatorEvent,
-  AnnotatorEventHandler,
+export {
+  createOpenSeadragonAnnotator,
+  type OpenSeadragonAnnotator,
+  type OpenSeadragonAnnotator as AnnotatorInstance,
+  type OpenSeadragonAnnotatorOptions,
+  type AnnotatorEvent,
+  type AnnotatorEventHandler,
 } from "./adapters/openseadragon/annotator";
+
+export { pointerEventToImage } from "./adapters/openseadragon/coordinates";
+
+export type { ToolHandler } from "./tools/types";
 
 // ============================================
 // Keyboard Shortcuts

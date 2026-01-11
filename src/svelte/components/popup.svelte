@@ -1,11 +1,12 @@
 <script lang="ts">
   import OpenSeadragon from "openseadragon";
-  import type { Annotation, Bounds } from "../../core/types";
   import type {
+    Annotation,
+    Bounds,
     PopupPosition,
     PopupAnchor,
     PopupOptions,
-  } from "../../react/types";
+  } from "annota";
 
   interface Props {
     viewer: OpenSeadragon.Viewer | undefined;

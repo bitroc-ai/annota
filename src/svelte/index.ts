@@ -29,4 +29,4 @@ export type {
   AnnotationStyle,
   Shape,
   ShapeType
-} from "../core/types";
+} from "annota";

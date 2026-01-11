@@ -1,5 +1,5 @@
 import OpenSeadragon from "openseadragon";
-import type { ToolHandler } from "../tools/types";
+import type { ToolHandler } from "annota";
 import { getAnnotator } from "./annotator";
 
 interface ToolOptions {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { setContext } from "svelte";
   import { ANNOTA_CONTEXT_KEY, type AnnotaContextValue } from "../context";
-  import type { OpenSeadragonAnnotator } from "../../adapters/openseadragon/annotator";
+  import type { OpenSeadragonAnnotator } from "annota";
 
   interface Props {
     children: import("svelte").Snippet;

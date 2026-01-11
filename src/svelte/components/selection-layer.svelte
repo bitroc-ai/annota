@@ -11,8 +11,7 @@
   import { onMount } from "svelte";
   import type OpenSeadragon from "openseadragon";
   import { RectangleEditor } from "./editors";
-  import type { Annotation, Shape, RectangleShape } from "../../core/types";
-  import type { OpenSeadragonAnnotator } from "../../adapters/openseadragon/annotator";
+  import type { Annotation, Shape, RectangleShape, OpenSeadragonAnnotator } from "annota";
 
   interface Props {
     annotator: OpenSeadragonAnnotator;

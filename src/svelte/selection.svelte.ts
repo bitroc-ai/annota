@@ -4,7 +4,7 @@
  */
 
 import { getAnnotator } from "./annotator";
-import type { Annotation } from "../core/types";
+import type { Annotation } from "annota";
 
 export function selection(): () => Annotation[] {
   const getAnnotatorFn = getAnnotator();

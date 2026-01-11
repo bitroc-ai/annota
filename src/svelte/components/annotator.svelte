@@ -5,7 +5,7 @@
     createOpenSeadragonAnnotator,
     type OpenSeadragonAnnotatorOptions,
     type OpenSeadragonAnnotator,
-  } from "../../adapters/openseadragon/annotator";
+  } from "annota";
   import { setAnnotator } from "../annotator";
 
   interface Props extends Omit<OpenSeadragonAnnotatorOptions, "store"> {

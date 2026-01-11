@@ -8,8 +8,8 @@
    */
   import { createEventDispatcher } from "svelte";
   import type OpenSeadragon from "openseadragon";
-  import type { Shape } from "../../../core/types";
-  import { pointerEventToImage } from "../../../adapters/openseadragon/coordinates";
+  import type { Shape } from "annota";
+  import { pointerEventToImage } from "annota";
 
   const dispatch = createEventDispatcher<{
     grab: PointerEvent;

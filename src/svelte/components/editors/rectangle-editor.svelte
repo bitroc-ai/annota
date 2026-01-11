@@ -9,7 +9,7 @@
   import Handle from "./handle.svelte";
   import Editor from "./editor.svelte";
   import type OpenSeadragon from "openseadragon";
-  import type { Shape, RectangleShape, Bounds } from "../../../core/types";
+  import type { Shape, RectangleShape, Bounds } from "annota";
 
   interface Props {
     shape: RectangleShape;
