@@ -1,6 +1,6 @@
 {
   "name": "annota",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "An annotation framework for React and Svelte",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -45,8 +45,8 @@
     },
     "./svelte": {
       "types": "./src/svelte/index.ts",
-      "import": "./src/svelte/index.ts",
-      "svelte": "./src/svelte/index.ts"
+      "svelte": "./src/svelte/index.ts",
+      "default": "./src/svelte/index.ts"
     },
     "./dist/index.css": "./dist/index.css"
   },
