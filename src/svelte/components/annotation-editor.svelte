@@ -48,7 +48,7 @@
 
     // Get viewport bounds in image coordinates (same as Pixi.js)
     const viewportBounds = viewer.viewport.viewportToImageRectangle(
-      viewer.viewport.getBounds(true)
+      viewer.viewport.getBounds(true),
     );
 
     // Calculate position (same as Pixi.js)
@@ -122,7 +122,7 @@
   class="annota-svg-layer"
   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; z-index: 1000; pointer-events: none;"
 >
-  <g class="annota-transform-group" {transform} style="pointer-events: all;">
+  <g class="annota-transform-group" {transform} style="pointer-events: none;">
     {#if editor}
       {@const EditorComponent = editor.component}
       <EditorComponent {...editor.props} />

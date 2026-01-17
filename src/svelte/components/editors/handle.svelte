@@ -13,6 +13,7 @@
     scale: number;
     selected?: boolean;
     class?: string;
+    cursor?: string;
     onpointerdown?: (evt: PointerEvent) => void;
   }
 
@@ -22,6 +23,7 @@
     scale,
     selected = false,
     class: className = "",
+    cursor = "pointer",
     onpointerdown,
   }: Props = $props();
 
@@ -57,6 +59,7 @@
       cy={y}
       r={handleRadius + 10 / scale}
       class="a9s-handle-buffer"
+      style="cursor: {cursor};"
       role="button"
       tabindex="0"
       onpointerdown={handlePointerDown}
@@ -72,6 +75,7 @@
       cx={x}
       cy={y}
       r={handleRadius + 6 / scale}
+      style="cursor: {cursor};"
       role="button"
       tabindex="0"
       onpointerdown={handlePointerDown}
@@ -99,7 +103,6 @@
 <style>
   .a9s-handle-buffer {
     fill: transparent;
-    cursor: pointer;
     pointer-events: all;
   }
 

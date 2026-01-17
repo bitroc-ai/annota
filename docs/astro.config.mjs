@@ -150,7 +150,7 @@ export default defineConfig({
     resolve: {
       alias: {
         'annota/svelte': path.resolve(__dirname, '../src/svelte/index.ts'),
-        'annota': path.resolve(__dirname, '../dist/index.mjs'),
+        'annota': path.resolve(__dirname, '../src/index.ts'),
         '$lib': path.resolve(__dirname, './src/lib'),
       },
     },

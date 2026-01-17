@@ -180,6 +180,7 @@
     <!-- Corner handles -->
     <Handle
       class="a9s-corner-handle-topleft"
+      cursor="nwse-resize"
       onpointerdown={grab("TOP_LEFT")}
       x={geom.x}
       y={geom.y}
@@ -188,6 +189,7 @@
 
     <Handle
       class="a9s-corner-handle-topright"
+      cursor="nesw-resize"
       onpointerdown={grab("TOP_RIGHT")}
       x={geom.x + geom.w}
       y={geom.y}
@@ -196,6 +198,7 @@
 
     <Handle
       class="a9s-corner-handle-bottomright"
+      cursor="nwse-resize"
       onpointerdown={grab("BOTTOM_RIGHT")}
       x={geom.x + geom.w}
       y={geom.y + geom.h}
@@ -204,6 +207,7 @@
 
     <Handle
       class="a9s-corner-handle-bottomleft"
+      cursor="nesw-resize"
       onpointerdown={grab("BOTTOM_LEFT")}
       x={geom.x}
       y={geom.y + geom.h}
