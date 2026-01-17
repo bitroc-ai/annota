@@ -7,6 +7,7 @@
     type OpenSeadragonAnnotator,
   } from "annota";
   import { setAnnotator } from "../annotator";
+  import AnnotationEditor from "./annotation-editor.svelte";
 
   interface Props extends Omit<OpenSeadragonAnnotatorOptions, "store"> {
     viewer: OpenSeadragon.Viewer | undefined;
@@ -46,5 +47,9 @@
     };
   });
 </script>
+
+{#if viewer}
+  <AnnotationEditor {viewer} />
+{/if}
 
 {@render children?.()}
