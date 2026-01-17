@@ -9,6 +9,7 @@
   import { onMount } from "svelte";
   import OpenSeadragon from "openseadragon";
   import { selection } from "../selection.svelte";
+  import { getAnnotator } from "../annotator";
   import type { Shape, RectangleShape } from "annota";
   import RectangleEditor from "./editors/rectangle-editor.svelte";
 
@@ -27,6 +28,10 @@
 
   // Only support single selection for now
   const annotation = $derived(getSelectedAnnotations()[0]);
+
+  // Get annotator instance from context
+  const getAnnotatorFn = getAnnotator();
+  const annotator = $derived(getAnnotatorFn());
 
   /**
    * Update SVG transform to match OpenSeadragon viewport
@@ -75,10 +80,11 @@
    * Handle shape change - update annotation in store
    */
   const handleChange = (newShape: Shape) => {
-    if (!annotation) return;
-    // TODO: Update annotation in store via annotator
-    // For now, just log
-    console.log("[AnnotationEditor] Shape changed:", newShape);
+    if (!annotation || !annotator) return;
+    annotator.updateAnnotation(annotation.id, {
+      ...annotation,
+      shape: newShape,
+    });
   };
 
   /**
