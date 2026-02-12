@@ -31,12 +31,23 @@ export interface ComputedStyle {
 }
 
 /**
+ * Cache for parsed colors to avoid repeated PIXI.Color instantiation
+ */
+const colorCache = new Map<string, number>();
+
+/**
  * Parse color string to PIXI color number
  */
 function parseColor(color: string): number {
+  const cached = colorCache.get(color);
+  if (cached !== undefined) return cached;
+
   try {
-    return new PIXI.Color(color).toNumber();
+    const result = new PIXI.Color(color).toNumber();
+    colorCache.set(color, result);
+    return result;
   } catch {
+    colorCache.set(color, DEFAULT_FILL);
     return DEFAULT_FILL;
   }
 }
