@@ -57,11 +57,16 @@ export function selection(): () => Annotation[] {
     };
   });
 
-  // Return a getter function to maintain reactivity
-  return () => {
+  // Memoize the selected annotations
+  const selectedAnnotations = $derived.by(() => {
     const annotator = getAnnotatorFn();
     const store = annotator?.state.store;
     if (!store) return [];
-    return selectedIds.map((id) => store.get(id)).filter(Boolean) as Annotation[];
-  };
+    return selectedIds
+      .map((id) => store.get(id))
+      .filter(Boolean) as Annotation[];
+  });
+
+  // Return a getter function to maintain reactivity
+  return () => selectedAnnotations;
 }
