@@ -1,6 +1,3 @@
----
-import DynamicIcon from "./dynamic-icon.svelte";
-
 interface Props {
   title: string;
   iconName?: string;
@@ -19,7 +16,9 @@ const isActive = currentPath === href || currentPath.startsWith(href + "/");
 >
   {iconName && (
     <div class="p-4 card-icon-wrapper" style="color: var(--muted-foreground);">
-      <DynamicIcon client:load name={iconName} class="w-6 h-6 card-icon" />
+      <span class="w-6 h-6 card-icon inline-flex items-center justify-center text-xs font-semibold">
+        {iconName.slice(0, 1).toUpperCase()}
+      </span>
     </div>
   )}
   <div class="flex-1 p-4 pt-0">
@@ -29,4 +28,3 @@ const isActive = currentPath === href || currentPath.startsWith(href + "/");
     </div>
   </div>
 </a>
-

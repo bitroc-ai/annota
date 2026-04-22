@@ -1,196 +1,100 @@
 ---
 import '../app.css';
-import SharedHeader from "../components/shared-header.astro";
-import FeatureCard from "../lib/components/landing/feature-card.svelte";
-import Footer from "../lib/components/landing/footer.svelte";
-import AnnotaDemo from "../lib/components/demo/annota-demo.svelte";
-import FrameworkTabs from "../lib/components/landing/framework-tabs.astro";
-import FrameworkTab from "../lib/components/landing/framework-tab.astro";
-import Code from "../lib/components/md/code.astro";
-import { ChevronRight } from "lucide-svelte";
-
-// SVG logos for Svelte and React
-const svelteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="107" height="128" viewBox="0 0 107 128"><title>svelte-logo</title><path d="M94.1566,22.8189c-10.4-14.8851-30.94-19.2971-45.7914-9.8348L22.2825,29.6078A29.9234,29.9234,0,0,0,8.7639,49.6506a31.5136,31.5136,0,0,0,3.1076,20.2318A30.0061,30.0061,0,0,0,7.3953,81.0653a31.8886,31.8886,0,0,0,5.4473,24.1157c10.4022,14.8865,30.9423,19.2966,45.7914,9.8348L84.7167,98.3921A29.9177,29.9177,0,0,0,98.2353,78.3493,31.5263,31.5263,0,0,0,95.13,58.117a30,30,0,0,0,4.4743-11.1824,31.88,31.88,0,0,0-5.4473-24.1157" style="fill:#ff3e00"/><path d="M45.8171,106.5815A20.7182,20.7182,0,0,1,23.58,98.3389a19.1739,19.1739,0,0,1-3.2766-14.5025,18.1886,18.1886,0,0,1,.6233-2.4357l.4912-1.4978,1.3363.9815a33.6443,33.6443,0,0,0,10.203,5.0978l.9694.2941-.0893.9675a5.8474,5.8474,0,0,0,1.052,3.8781,6.2389,6.2389,0,0,0,6.6952,2.485,5.7449,5.7449,0,0,0,1.6021-.7041L69.27,76.281a5.4306,5.4306,0,0,0,2.4506-3.631,5.7948,5.7948,0,0,0-.9875-4.3712,6.2436,6.2436,0,0,0-6.6978-2.4864,5.7427,5.7427,0,0,0-1.6.7036l-9.9532,6.3449a19.0329,19.0329,0,0,1-5.2965,2.3259,20.7181,20.7181,0,0,1-22.2368-8.2427,19.1725,19.1725,0,0,1-3.2766-14.5024,17.9885,17.9885,0,0,1,8.13-12.0513L55.8833,23.7472a19.0038,19.0038,0,0,1,5.3-2.3287A20.7182,20.7182,0,0,1,83.42,29.6611a19.1739,19.1739,0,0,1,3.2766,14.5025,18.4,18.4,0,0,1-.6233,2.4357l-.4912,1.4978-1.3356-.98a33.6175,33.6175,0,0,0-10.2037-5.1l-.9694-.2942.0893-.9675a5.8588,5.8588,0,0,0-1.052-3.878,6.2389,6.2389,0,0,0-6.6952-2.485,5.7449,5.7449,0,0,0-1.6021.7041L37.73,51.719a5.4218,5.4218,0,0,0-2.4487,3.63,5.7862,5.7862,0,0,0,.9856,4.3717,6.2437,6.2437,0,0,0,6.6978,2.4864,5.7652,5.7652,0,0,0,1.602-.7041l9.9519-6.3425a18.978,18.978,0,0,1,5.2959-2.3278,20.7181,20.7181,0,0,1,22.2368,8.2427,19.1725,19.1725,0,0,1,3.2766,14.5024,17.9977,17.9977,0,0,1-8.13,12.0532L51.1167,104.2528a19.0038,19.0038,0,0,1-5.3,2.3287" style="fill:#fff"/></svg>`;
-
-const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348"><title>React Logo</title><circle cx="0" cy="0" r="2.05" fill="#61dafb"/><g stroke="#61dafb" stroke-width="1" fill="none"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`;
+import SharedHeader from '../components/shared-header.astro';
+import FrameworkTabs from '../lib/components/landing/framework-tabs.astro';
+import FrameworkTab from '../lib/components/landing/framework-tab.astro';
+import Code from '../lib/components/md/code.astro';
 
 const currentPath = Astro.url.pathname;
+const features = [
+  {
+    title: 'High Performance',
+    description:
+      '60 FPS rendering with hardware acceleration, viewport culling, and R-tree spatial indexing.',
+  },
+  {
+    title: 'React-First',
+    description:
+      'First-class React APIs with hooks and components for production annotation workflows.',
+  },
+  {
+    title: 'Multi-Layer Support',
+    description:
+      'Organize annotations by layer with independent visibility, opacity, and styles.',
+  },
+  {
+    title: 'Comprehensive Tools',
+    description: 'Rectangle, polygon, brush, point, and SAM-assisted annotation tools out of the box.',
+  },
+  {
+    title: 'Pathology-Focused',
+    description: 'Designed for whole slide imaging and digital pathology datasets at scale.',
+  },
+  {
+    title: 'Event-Driven',
+    description: 'Observe annotation lifecycle events to integrate analytics and workflow automation.',
+  },
+];
+const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23174 23 20.46348"><circle cx="0" cy="0" r="2.05" fill="#61dafb"/><g stroke="#61dafb" stroke-width="1" fill="none"><ellipse rx="11" ry="4.2"/><ellipse rx="11" ry="4.2" transform="rotate(60)"/><ellipse rx="11" ry="4.2" transform="rotate(120)"/></g></svg>`;
 ---
 
 <!doctype html>
 <html lang="en" data-theme>
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Annota - High-performance annotation framework for whole slide imaging and digital pathology" />
+    <meta
+      name="description"
+      content="Annota - High-performance annotation framework for whole slide imaging and digital pathology"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Annota | High-performance annotation framework</title>
-    <script>
-      // Sync theme with Starlight's theme system
-      function initTheme() {
-        const theme = localStorage.getItem('starlight-theme') ||
-          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-theme', theme);
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-
-      initTheme();
-
-      // Listen for theme changes from Starlight (storage event from other tabs)
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'starlight-theme') {
-          initTheme();
-        }
-      });
-
-      // Listen for theme changes from same page (custom event)
-      window.addEventListener('theme-change', () => {
-        initTheme();
-      });
-    </script>
+    <title>Annota | React Annotation Framework</title>
   </head>
   <body>
     <div class="layout">
       <SharedHeader currentPath={currentPath} />
       <main>
-        <!-- Hero Section -->
         <section class="hero">
           <div class="hero-content">
             <h1 class="hero-title">Annota</h1>
             <p class="hero-tagline">
-              High-performance annotation framework for whole slide imaging and digital pathology
+              High-performance annotation framework for whole slide imaging and digital pathology.
             </p>
             <div class="hero-actions">
-              <a href="/getting-started/installation/" class="btn-primary">
-                Get Started
-                <ChevronRight class="icon" />
-              </a>
-              <a href="/playground/" class="btn-secondary">
-                Playground
-              </a>
+              <a href="/getting-started/installation/" class="btn-primary">Get Started</a>
+              <a href="/playground/" class="btn-secondary">Playground</a>
             </div>
           </div>
         </section>
 
-        <!-- Features Section -->
         <section class="features">
           <div class="container">
-            <h2 class="section-title">Why Choose Annota?</h2>
+            <h2 class="section-title">Why Annota</h2>
             <div class="features-grid">
-              <FeatureCard
-                client:load
-                iconName="Zap"
-                title="High Performance"
-                description="60 FPS rendering with hardware acceleration, viewport culling, and R-tree spatial indexing"
-              />
-              <FeatureCard
-                client:load
-                iconName="Code2"
-                title="Svelte & React"
-                description="Works seamlessly with both Svelte 5 and React 18+. Choose the framework that fits your stack"
-              />
-              <FeatureCard
-                client:load
-                iconName="Layers"
-                title="Multi-Layer Support"
-                description="Organize annotations into layers with independent visibility, opacity, and styling controls"
-              />
-              <FeatureCard
-                client:load
-                iconName="Package"
-                title="Comprehensive Tools"
-                description="Point, rectangle, polygon, freehand, and SAM segmentation tools out of the box"
-              />
-              <FeatureCard
-                client:load
-                iconName="Microscope"
-                title="Pathology-Focused"
-                description="Built specifically for whole slide imaging and digital pathology workflows"
-              />
-              <FeatureCard
-                client:load
-                iconName="Brain"
-                title="Event-Driven"
-                description="Comprehensive event system for responding to annotation changes in real-time"
-              />
+              {features.map((feature) => (
+                <article class="feature-card">
+                  <h3>{feature.title}</h3>
+                  <p>{feature.description}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        <!-- Interactive Demo Section -->
-        <section class="demo">
-          <div class="container">
-            <div class="demo-content">
-              <h2 class="section-title">Try It Now</h2>
-              <p class="demo-description">
-                Interactive demo: Click and drag to draw a rectangle annotation, or
-                select and resize the existing one.
-              </p>
-              <div class="demo-wrapper">
-                <AnnotaDemo client:only="svelte" />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Quick Start Section -->
         <section class="quickstart">
-          <div class="container">
-            <div class="quickstart-content">
-              <h2 class="section-title">Quick Start</h2>
-              <FrameworkTabs
-                items={[
-                  { label: "Svelte", icon: svelteIcon },
-                  { label: "React", icon: reactIcon },
-                ]}
-              >
-                <FrameworkTab>
-                  <div class="code-wrapper">
-                    <Code
-                      code={`import { AnnotaProvider, Viewer, Annotator, tool } from 'annota/svelte';
-import { RectangleTool } from 'annota';
-
-<script lang="ts">
-  import { AnnotaProvider, Viewer, Annotator, tool } from 'annota/svelte';
-  import { RectangleTool } from 'annota';
-  
-  let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);
-  const rectangleTool = new RectangleTool();
-  
-  tool({
-    viewer: () => viewer,
-    handler: () => rectangleTool,
-    enabled: () => !!viewer,
-  });
-</script>
-
-<AnnotaProvider slideId="my-slide">
-  <Viewer
-    options={{ tileSources: "/image.dzi" }}
-    onViewerReady={(v) => viewer = v}
-  />
-  <Annotator viewer={viewer} />
-</AnnotaProvider>`}
-                      lang="svelte"
-                    />
-                  </div>
-                </FrameworkTab>
-                <FrameworkTab>
-                  <div class="code-wrapper">
-                    <Code
-                      code={`import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota';
-import { useTool } from 'annota';
+          <div class="container quickstart-content">
+            <h2 class="section-title">React Quick Start</h2>
+            <FrameworkTabs items={[{ label: 'React', icon: reactIcon }]}>
+              <FrameworkTab>
+                <Code
+                  code={`import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from 'annota';
 import { RectangleTool } from 'annota';
 import { useState } from 'react';
 
 function App() {
   const [viewer, setViewer] = useState(null);
   const rectangleTool = new RectangleTool();
-  
+
   useTool({
     viewer,
     handler: rectangleTool,
@@ -200,49 +104,29 @@ function App() {
   return (
     <AnnotaProvider slideId="my-slide">
       <AnnotaViewer
-        options={{ tileSources: "/image.dzi" }}
+        options={{ tileSources: '/image.dzi' }}
         onViewerReady={setViewer}
       />
       <Annotator viewer={viewer} />
     </AnnotaProvider>
   );
 }`}
-                      lang="tsx"
-                    />
-                  </div>
-                </FrameworkTab>
-              </FrameworkTabs>
-              <div class="quickstart-link">
-                <a href="/getting-started/quick-start/" class="link">
-                  Read the full guide
-                  <ChevronRight class="icon" />
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- CTA Section -->
-        <section class="cta">
-          <div class="container">
-            <h2 class="cta-title">Ready to Start Annotating?</h2>
-            <p class="cta-description">
-              Build powerful annotation tools for digital pathology with Annota's
-              comprehensive framework
+                  lang="tsx"
+                />
+              </FrameworkTab>
+            </FrameworkTabs>
+            <p class="quickstart-link">
+              <a href="/getting-started/quick-start/react/">Read the full guide</a>
             </p>
-            <div class="cta-actions">
-              <a href="/getting-started/installation/" class="btn-primary">
-                Read Documentation
-                <ChevronRight class="icon" />
-              </a>
-              <a href="/api/" class="btn-secondary">
-                API
-              </a>
-            </div>
           </div>
         </section>
 
-        <Footer client:load />
+        <footer class="footer">
+          <div class="container footer-inner">
+            <p>Built by BitRoc Lab.</p>
+            <a href="https://github.com/bitroc-ai/annota" target="_blank" rel="noreferrer">GitHub</a>
+          </div>
+        </footer>
       </main>
     </div>
   </body>
@@ -255,40 +139,30 @@ function App() {
     padding: 0;
   }
 
-  html, body {
-    height: 100%;
-  }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
     background: var(--sl-color-bg);
     color: var(--sl-color-text);
-    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .layout {
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-  }
-
-  /* Shared header wrapper styles */
-  .layout :global(.shared-header) {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    backdrop-filter: blur(12px);
   }
 
   main {
     flex: 1;
   }
 
-  /* Hero Section */
+  .hero,
+  .features,
+  .quickstart {
+    padding: 4rem 1.5rem;
+  }
+
   .hero {
-    padding: 6rem 1.5rem;
     text-align: center;
-    background: var(--sl-color-bg);
   }
 
   .hero-content {
@@ -297,209 +171,112 @@ function App() {
   }
 
   .hero-title {
-    font-size: 4rem;
+    font-size: clamp(2.5rem, 7vw, 4rem);
     font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.025em;
-    color: var(--sl-color-text);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   .hero-tagline {
-    font-size: 1.25rem;
-    line-height: 1.75;
     color: var(--sl-color-gray-2);
-    margin-bottom: 2.5rem;
+    font-size: 1.125rem;
+    margin-bottom: 1.75rem;
   }
 
   .hero-actions {
     display: flex;
-    gap: 1rem;
     justify-content: center;
     flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
-  .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--sl-color-white);
-    background: var(--sl-color-accent);
-    border-radius: 0.5rem;
-    text-decoration: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .btn-primary:hover {
-    opacity: 0.9;
-  }
-
-  .btn-primary .icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
+  .btn-primary,
   .btn-secondary {
     display: inline-flex;
     align-items: center;
-    padding: 0.75rem 1.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--sl-color-text);
-    border: 1px solid var(--sl-color-hairline);
-    border-radius: 0.5rem;
+    justify-content: center;
     text-decoration: none;
-    transition: background-color 0.2s ease;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.2rem;
+    font-weight: 600;
+    border: 1px solid transparent;
   }
 
-  .btn-secondary:hover {
-    background: var(--sl-color-gray-6);
+  .btn-primary {
+    background: var(--sl-color-accent);
+    color: var(--sl-color-white);
   }
 
-  /* Features Section */
-  .features {
-    padding: 5rem 1.5rem;
-    background: var(--sl-color-bg);
+  .btn-secondary {
+    border-color: var(--sl-color-hairline);
+    color: var(--sl-color-text);
   }
 
   .container {
-    max-width: 80rem;
+    max-width: 76rem;
     margin: 0 auto;
   }
 
   .section-title {
-    font-size: 2.5rem;
-    font-weight: 700;
     text-align: center;
-    color: var(--sl-color-text);
-    margin-bottom: 3rem;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    margin-bottom: 2rem;
   }
 
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
 
-  /* Demo Section */
-  .demo {
-    padding: 5rem 1.5rem;
-    background: var(--sl-color-gray-6);
-  }
-
-  .demo-content {
-    max-width: 64rem;
-    margin: 0 auto;
-  }
-
-  .demo-description {
-    text-align: center;
-    color: var(--sl-color-gray-2);
-    margin-bottom: 2rem;
-  }
-
-  .demo-wrapper {
-    border-radius: 0.5rem;
-    overflow: hidden;
+  .feature-card {
     border: 1px solid var(--sl-color-hairline);
-    background: var(--sl-color-bg);
-    height: 550px;
-    position: relative;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: color-mix(in srgb, var(--sl-color-bg) 96%, var(--sl-color-accent) 4%);
   }
 
-  .demo-wrapper :global(> *:not(script):not(style)) {
-    width: 100%;
-    height: 100%;
-    display: block;
+  .feature-card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
   }
 
-  /* Quick Start Section */
-  .quickstart {
-    padding: 5rem 1.5rem;
-    background: var(--sl-color-bg);
+  .feature-card p {
+    color: var(--sl-color-gray-2);
+    line-height: 1.6;
+    font-size: 0.95rem;
   }
 
   .quickstart-content {
-    max-width: 48rem;
-    margin: 0 auto;
-  }
-
-  .code-wrapper {
-    padding: 0;
-    background: transparent;
-    border: none;
-    overflow: visible;
+    max-width: 56rem;
   }
 
   .quickstart-link {
+    margin-top: 1rem;
     text-align: center;
-    margin-top: 2rem;
   }
 
-  .link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
+  .quickstart-link a {
     color: var(--sl-color-accent);
     text-decoration: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .link:hover {
-    opacity: 0.8;
-    text-decoration: underline;
-  }
-
-  .link .icon {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  /* CTA Section */
-  .cta {
-    padding: 4rem 1.5rem;
-    background: linear-gradient(to bottom right, var(--sl-color-accent), color-mix(in srgb, var(--sl-color-accent) 80%, var(--sl-color-bg)));
-    text-align: center;
-  }
-
-  .cta-title {
-    font-size: 2.5rem;
     font-weight: 600;
-    color: var(--sl-color-white);
-    margin-bottom: 1rem;
   }
 
-  .cta-description {
-    font-size: 1rem;
-    color: var(--sl-color-white);
-    opacity: 0.9;
-    margin-bottom: 2rem;
-    max-width: 36rem;
-    margin-left: auto;
-    margin-right: auto;
+  .footer {
+    border-top: 1px solid var(--sl-color-hairline);
+    padding: 1rem 1.5rem;
   }
 
-  .cta-actions {
+  .footer-inner {
     display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-2);
   }
 
-  @media (max-width: 768px) {
-    .hero-title {
-      font-size: 2.5rem;
-    }
-
-    .section-title {
-      font-size: 2rem;
-    }
-
-    .features-grid {
-      grid-template-columns: 1fr;
-    }
+  .footer a {
+    color: var(--sl-color-text);
+    text-decoration: none;
   }
 </style>

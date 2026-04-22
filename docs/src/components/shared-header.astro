@@ -1,9 +1,9 @@
 ---
 /**
  * Shared Header Component
- * Used across Home, Playground, and Docs pages for consistent navigation
+ * Used across Home, Playground, and Docs pages for consistent navigation.
  */
-import ThemeSwitcher from "../lib/components/theme-switcher.svelte";
+import ThemeSelect from "virtual:starlight/components/ThemeSelect";
 
 interface Props {
   currentPath: string;
@@ -65,7 +65,7 @@ function isActive(href: string, current: string): boolean {
     {showSearch && <slot name="search" />}
   </div>
   <div class="header-right">
-    <ThemeSwitcher client:load />
+    <ThemeSelect />
     <a
       href="https://github.com/bitroc-ai/annota"
       target="_blank"

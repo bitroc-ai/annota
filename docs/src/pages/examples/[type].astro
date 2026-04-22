@@ -1,12 +1,11 @@
 ---
-import BareLayout from "../../layouts/bare-layout.astro";
-import ExampleContent from "../../lib/components/examples/example-content.svelte";
+import BareLayout from '../../layouts/bare-layout.astro';
 
 export function getStaticPaths() {
   return [
-    { params: { type: "rectangle" } },
-    { params: { type: "polygon" } },
-    { params: { type: "points" } },
+    { params: { type: 'rectangle' } },
+    { params: { type: 'polygon' } },
+    { params: { type: 'points' } },
   ];
 }
 
@@ -14,5 +13,39 @@ const { type } = Astro.params;
 ---
 
 <BareLayout title={`Annota Example - ${type}`}>
-  <ExampleContent client:only="svelte" type={type} />
+  <section class="example-placeholder">
+    <h1>{type} example (React migration in progress)</h1>
+    <p>
+      The embedded Svelte demo has been removed as part of the docs migration. Use the React quick start
+      page for currently supported examples.
+    </p>
+    <p>
+      <a href="/getting-started/quick-start/react/">Open React Quick Start</a>
+    </p>
+  </section>
 </BareLayout>
+
+<style>
+  .example-placeholder {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+  }
+
+  h1 {
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    margin-bottom: 0.8rem;
+  }
+
+  p {
+    color: var(--sl-color-gray-2);
+    line-height: 1.7;
+    margin-bottom: 0.8rem;
+  }
+
+  a {
+    color: var(--sl-color-accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>

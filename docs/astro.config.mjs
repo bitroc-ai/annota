@@ -1,6 +1,5 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import svelte from '@astrojs/svelte';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
@@ -38,7 +37,6 @@ export default defineConfig({
             { label: 'Framework Selection', slug: 'framework-selection' },
             { label: 'Installation', slug: 'getting-started/installation' },
             { label: 'React Quick Start', slug: 'getting-started/quick-start/react' },
-            { label: 'Svelte Quick Start', slug: 'getting-started/quick-start/svelte' },
             { label: 'Core Concepts', slug: 'getting-started/concepts' },
           ],
         },
@@ -85,16 +83,7 @@ export default defineConfig({
                 { label: 'React Components', slug: 'api/react/components' },
               ],
             },
-            {
-              label: 'Svelte API',
-              collapsed: true,
-              items: [
-                { label: 'Svelte Overview', slug: 'api/svelte' },
-                { label: 'Svelte Stores', slug: 'api/svelte/stores' },
-                { label: 'Svelte Components', slug: 'api/svelte/components' },
-              ],
-            },
-          ],
+          ]
         },
         {
           label: 'Resources',
@@ -109,7 +98,6 @@ export default defineConfig({
         },
       ],
     }),
-    svelte(),
     react(),
   ],
   output: 'static',
@@ -125,7 +113,7 @@ export default defineConfig({
   },
   vite: {
     ssr: {
-      noExternal: ['annota', 'lucide-svelte', 'openseadragon'],
+      noExternal: ['annota', 'openseadragon'],
     },
     plugins: [
       {
@@ -149,7 +137,6 @@ export default defineConfig({
     ],
     resolve: {
       alias: {
-        'annota/svelte': path.resolve(__dirname, '../src/svelte/index.ts'),
         'annota': path.resolve(__dirname, '../src/index.ts'),
         '$lib': path.resolve(__dirname, './src/lib'),
       },

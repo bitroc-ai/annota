@@ -1,6 +1,4 @@
 ---
-import DocsLayoutComponent from '../lib/components/layout/docs-layout.svelte';
-
 interface Props {
   title?: string;
   frontmatter?: {
@@ -10,12 +8,22 @@ interface Props {
 
 const { title, frontmatter } = Astro.props;
 const displayTitle = title || frontmatter?.title;
-const currentPath = Astro.url.pathname;
 ---
 
-<DocsLayoutComponent client:load currentPath={currentPath}>
+<div class="docs-layout">
+  {displayTitle && <h1 class="docs-title">{displayTitle}</h1>}
   <div class="prose max-w-none">
     <slot />
   </div>
-</DocsLayoutComponent>
+</div>
 
+<style>
+  .docs-layout {
+    width: 100%;
+    padding: 2rem 1.5rem;
+  }
+
+  .docs-title {
+    margin-bottom: 1rem;
+  }
+</style>

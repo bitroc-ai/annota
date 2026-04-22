@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     watch: false,
     environment: 'jsdom',
+    setupFiles: ['./test/vitest.setup.ts'],
   },
 });
