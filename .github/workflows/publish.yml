@@ -72,7 +72,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Run tests
-        run: pnpm test run
+        run: pnpm test -- --run
 
       - name: Build package
         run: pnpm build
@@ -147,6 +147,23 @@ jobs:
           git add docs/src/content/docs/changelog.mdx
           git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
           git push origin HEAD:main || echo "No changes to push"
+
+      - name: Verify npm auth and package ownership
+        run: |
+          NPM_USER=$(npm whoami)
+          echo "Authenticated npm user: ${NPM_USER}"
+
+          OWNER_USERS=$(npm owner ls annota | awk '{print $1}')
+          echo "annota owners:"
+          echo "${OWNER_USERS}"
+
+          if ! echo "${OWNER_USERS}" | grep -Fxq "${NPM_USER}"; then
+            echo "::error::NPM_TOKEN authenticates as '${NPM_USER}', which is not an owner of 'annota'."
+            echo "::error::Use an npm token from an annota owner account (currently includes: ${OWNER_USERS})."
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm
         run: pnpm publish --no-git-checks --access public
