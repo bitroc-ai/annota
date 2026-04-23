@@ -9,29 +9,29 @@ interface Props {
 
 const { code, lang = 'typescript', filename } = Astro.props;
 
-// Map language aliases
 const langMap: Record<string, string> = {
-  'svelte': 'html', // Svelte uses HTML-like syntax
-  'tsx': 'tsx',
-  'jsx': 'jsx',
-  'ts': 'typescript',
-  'js': 'javascript',
+  svelte: 'html',
+  tsx: 'tsx',
+  jsx: 'jsx',
+  ts: 'typescript',
+  js: 'javascript',
 };
 
 const shikiLang = langMap[lang] || lang;
-
-// Generate filename from lang if not provided
 const displayFilename = filename || (lang ? `example.${lang}` : 'example.ts');
 
 let html = '';
+
 try {
   html = await codeToHtml(code, {
     lang: shikiLang,
     theme: 'github-dark',
   });
-} catch (e) {
-  // Fallback to plain code if highlighting fails
-  html = `<pre><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+} catch {
+  html = `<pre><code>${code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')}</code></pre>`;
 }
 ---
 
@@ -128,18 +128,6 @@ try {
     overflow-x: auto;
     background: #1e1e1e !important;
     border: none;
-  }
-  
-  :global(.code-window-content pre.shiki code) {
-    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.875rem;
-    line-height: 1.7;
-    display: block;
-    width: 100%;
-  }
-
-  /* Smooth scrolling for long code blocks */
-  :global(.code-window-content pre.shiki) {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   }
@@ -159,5 +147,13 @@ try {
 
   :global(.code-window-content pre.shiki::-webkit-scrollbar-thumb:hover) {
     background: rgba(255, 255, 255, 0.3);
+  }
+
+  :global(.code-window-content pre.shiki code) {
+    font-family: 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.7;
+    display: block;
+    width: 100%;
   }
 </style>

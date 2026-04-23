@@ -12,6 +12,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
+  "overrides": {
+    "vite": "^7"
+  },
   "dependencies": {
     "@astrojs/mdx": "^5.0.3",
     "@astrojs/react": "^5.0.3",
@@ -20,10 +23,12 @@
     "annota": "file:..",
     "astro": "^6.1.8",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.8.0",
     "mermaid": "^11.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "serve": "^14.2.6",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {

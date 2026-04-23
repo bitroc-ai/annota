@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useRef, type ReactNode, type MouseEvent } from 'react';
+import './editor.css';
 
 export interface ContextMenuPosition {
   x: number;
