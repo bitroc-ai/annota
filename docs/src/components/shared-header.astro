@@ -11,6 +11,7 @@ interface Props {
 }
 
 const { currentPath, showSearch = false } = Astro.props;
+const isHome = currentPath === "/";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -24,7 +25,7 @@ function isActive(href: string, current: string): boolean {
 }
 ---
 
-<header class="shared-header">
+<header class:list={["shared-header", { "shared-header-home": isHome }]}>
   <div class="header-left">
     <a href="/" class="logo">
       <svg
@@ -93,6 +94,23 @@ function isActive(href: string, current: string): boolean {
     border-bottom: 1px solid var(--sl-color-hairline, var(--color-border, #1a1a1a));
   }
 
+  .shared-header-home {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: linear-gradient(180deg, rgba(234, 240, 251, 0.82), rgba(221, 232, 248, 0.78) 62%, rgba(217, 229, 247, 0.76));
+    border-bottom: 1px solid rgba(180, 201, 232, 0.75);
+    -webkit-backdrop-filter: blur(10px) saturate(115%);
+    backdrop-filter: blur(10px) saturate(115%);
+  }
+
+  html.dark .shared-header-home {
+    background: linear-gradient(145deg, rgba(11, 20, 38, 0.74), rgba(18, 37, 67, 0.7) 45%, rgba(15, 31, 56, 0.66));
+    border-bottom-color: rgba(63, 88, 125, 0.72);
+    -webkit-backdrop-filter: blur(10px) saturate(115%);
+    backdrop-filter: blur(10px) saturate(115%);
+  }
+
   .header-left {
     display: flex;
     align-items: center;
@@ -108,6 +126,14 @@ function isActive(href: string, current: string): boolean {
     color: var(--sl-color-text);
     text-decoration: none;
     transition: opacity 0.15s ease;
+  }
+
+  .shared-header-home .logo {
+    color: #102245;
+  }
+
+  html.dark .shared-header-home .logo {
+    color: #e3ebff;
   }
 
   .logo:hover {
@@ -142,15 +168,45 @@ function isActive(href: string, current: string): boolean {
     transition: color 0.15s ease, background-color 0.15s ease;
   }
 
+  .shared-header-home .nav-link {
+    color: #3d5689;
+  }
+
+  html.dark .shared-header-home .nav-link {
+    color: #a9bbdc;
+  }
+
   .nav-link:hover {
     color: var(--sl-color-text);
     background-color: var(--sl-color-gray-6);
+  }
+
+  .shared-header-home .nav-link:hover {
+    color: #142a55;
+    background-color: rgba(119, 150, 220, 0.16);
+  }
+
+  html.dark .shared-header-home .nav-link:hover {
+    color: #eef4ff;
+    background-color: rgba(148, 163, 184, 0.2);
   }
 
   .nav-link.active,
   .nav-link[aria-current="page"] {
     color: var(--sl-color-text);
     background-color: var(--sl-color-gray-5);
+  }
+
+  .shared-header-home .nav-link.active,
+  .shared-header-home .nav-link[aria-current="page"] {
+    color: #142a55;
+    background-color: rgba(79, 125, 255, 0.2);
+  }
+
+  html.dark .shared-header-home .nav-link.active,
+  html.dark .shared-header-home .nav-link[aria-current="page"] {
+    color: #f3f7ff;
+    background-color: rgba(96, 165, 250, 0.24);
   }
 
   .header-center {
@@ -174,7 +230,23 @@ function isActive(href: string, current: string): boolean {
     transition: color 0.15s ease;
   }
 
+  .shared-header-home .github-link {
+    color: #506792;
+  }
+
+  html.dark .shared-header-home .github-link {
+    color: #9fb0d1;
+  }
+
   .github-link:hover {
     color: var(--sl-color-text);
+  }
+
+  .shared-header-home .github-link:hover {
+    color: #142a55;
+  }
+
+  html.dark .shared-header-home .github-link:hover {
+    color: #eef4ff;
   }
 </style>
