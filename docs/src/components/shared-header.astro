@@ -3,7 +3,7 @@
  * Shared Header Component
  * Used across Home, Playground, and Docs pages for consistent navigation.
  */
-import ThemeSelect from "virtual:starlight/components/ThemeSelect";
+import ThemeSwitcher from "./theme-switcher.astro";
 
 interface Props {
   currentPath: string;
@@ -65,7 +65,7 @@ function isActive(href: string, current: string): boolean {
     {showSearch && <slot name="search" />}
   </div>
   <div class="header-right">
-    <ThemeSelect />
+    <ThemeSwitcher />
     <a
       href="https://github.com/bitroc-ai/annota"
       target="_blank"
