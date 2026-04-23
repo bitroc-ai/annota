@@ -1,64 +1,68 @@
 ---
-import '../app.css';
-import SharedHeader from '../components/shared-header.astro';
-import FrameworkTabs from '../lib/components/landing/framework-tabs.astro';
-import FrameworkTab from '../lib/components/landing/framework-tab.astro';
-import Code from '../lib/components/md/code.astro';
+import "../app.css";
+import SharedHeader from "../components/shared-header.astro";
+import FrameworkTabs from "../lib/components/landing/framework-tabs.astro";
+import FrameworkTab from "../lib/components/landing/framework-tab.astro";
+import HeroDemo from "../lib/components/landing/hero-demo";
+import Code from "../lib/components/md/code.astro";
 
 const currentPath = Astro.url.pathname;
 
 const metrics = [
-  { value: '60 FPS', label: 'Interactive Rendering' },
-  { value: '5 Core Tools', label: 'Annotation Modes' },
-  { value: 'React + Svelte', label: 'Framework Support' },
-  { value: 'WSI Ready', label: 'Pathology Scale' },
+  { value: "60 FPS", label: "Interactive Rendering" },
+  { value: "5 Core Tools", label: "Annotation Modes" },
+  { value: "React + Svelte", label: "Framework Support" },
+  { value: "WSI Ready", label: "Pathology Scale" },
 ];
 
 const features = [
   {
-    title: 'Slide-Scale Performance',
+    title: "Slide-Scale Performance",
     description:
-      'Pan, zoom, and annotate large whole-slide imagery with predictable interaction and high rendering throughput.',
+      "Pan, zoom, and annotate large whole-slide imagery with predictable interaction and high rendering throughput.",
   },
   {
-    title: 'Operational Layer Controls',
+    title: "Operational Layer Controls",
     description:
-      'Organize work into independent layers with lock state, visibility, opacity control, and export-level separation.',
+      "Organize work into independent layers with lock state, visibility, opacity control, and export-level separation.",
   },
   {
-    title: 'Production Toolchain',
+    title: "Production Toolchain",
     description:
-      'Move fluidly across point, polygon, rectangle, curve, split, and SAM-assisted segmentation in one workspace.',
+      "Move fluidly across point, polygon, rectangle, curve, split, and SAM-assisted segmentation in one workspace.",
   },
   {
-    title: 'Integration Surface',
+    title: "Integration Surface",
     description:
-      'Use annotation lifecycle events and structured exports to plug into QA, analytics, and downstream automation.',
+      "Use annotation lifecycle events and structured exports to plug into QA, analytics, and downstream automation.",
   },
   {
-    title: 'Framework Parity',
+    title: "Framework Parity",
     description:
-      'Build against aligned APIs in React and Svelte with equivalent concepts, examples, and runtime behavior.',
+      "Build against aligned APIs in React and Svelte with equivalent concepts, examples, and runtime behavior.",
   },
   {
-    title: 'Pathology-Focused Defaults',
+    title: "Pathology-Focused Defaults",
     description:
-      'Designed around real pathology constraints instead of generic drawing demos or one-off proof-of-concepts.',
+      "Designed around real pathology constraints instead of generic drawing demos or one-off proof-of-concepts.",
   },
 ];
 
 const workflow = [
   {
-    title: 'Ingest and Navigate',
-    description: 'Load high-resolution imagery and maintain stable viewport control for clinical annotation sessions.',
+    title: "Ingest and Navigate",
+    description:
+      "Load high-resolution imagery and maintain stable viewport control for clinical annotation sessions.",
   },
   {
-    title: 'Annotate with Precision',
-    description: 'Switch tools instantly while preserving context, layer boundaries, and editing consistency.',
+    title: "Annotate with Precision",
+    description:
+      "Switch tools instantly while preserving context, layer boundaries, and editing consistency.",
   },
   {
-    title: 'Export and Automate',
-    description: 'Deliver structured outputs and event signals directly into your review and model pipelines.',
+    title: "Export and Automate",
+    description:
+      "Deliver structured outputs and event signals directly into your review and model pipelines.",
   },
 ];
 
@@ -89,20 +93,22 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
 
           <div class="container landing-hero-layout">
             <div class="hero-copy">
-              <p class="hero-eyebrow">Open-Source Pathology Annotation Toolkit</p>
+              <p class="hero-eyebrow">
+                Open-Source Pathology Annotation Toolkit
+              </p>
               <h1>Open Annotation for Whole-Slide Workflows</h1>
               <p class="hero-description">
-                Annota is a community-driven toolkit for building precise, high-performance
-                annotation workflows with React or Svelte.
+                Annota is a community-driven toolkit for building precise,
+                high-performance annotation workflows with React or Svelte.
               </p>
               <div class="hero-actions">
-                <a href="/getting-started/installation/" class="hero-btn hero-btn-primary">Get Started</a>
-                <a href="/playground/" class="hero-btn hero-btn-secondary">Open Playground</a>
-              </div>
-              <div class="hero-chip-row">
-                <span>Whole-Slide Imaging</span>
-                <span>Review-Ready Exports</span>
-                <span>React + Svelte</span>
+                <a
+                  href="/getting-started/installation/"
+                  class="hero-btn hero-btn-primary">Get Started</a
+                >
+                <a href="/playground/" class="hero-btn hero-btn-secondary"
+                  >Open Playground</a
+                >
               </div>
             </div>
 
@@ -111,24 +117,21 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
                 <div class="stage-header">
                   <span class="stage-dot"></span>
                   <span>Annota Workspace</span>
-                  <span class="stage-tag">Live Tooling</span>
                 </div>
                 <div class="stage-canvas">
-                  <div class="stage-layer stage-layer-a"></div>
-                  <div class="stage-layer stage-layer-b"></div>
-                  <div class="stage-pin stage-pin-a"></div>
-                  <div class="stage-pin stage-pin-b"></div>
-                  <div class="stage-pin stage-pin-c"></div>
-                  <div class="stage-toolbox">
-                    <span>Point</span>
-                    <span>Polygon</span>
-                    <span>SAM</span>
-                  </div>
+                  <HeroDemo client:only="react">
+                    <div slot="fallback" class="stage-canvas-fallback">
+                      Loading live demo canvas...
+                    </div>
+                  </HeroDemo>
                 </div>
               </div>
               <div class="stage-note">
                 <strong>Layer-aware operations</strong>
-                <p>Visibility, lock state, and export settings are preserved per layer.</p>
+                <p>
+                  Visibility, lock state, and export settings are preserved per
+                  layer.
+                </p>
               </div>
             </aside>
           </div>
@@ -147,16 +150,21 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
 
         <section class="landing-section landing-section-features">
           <div class="container">
-            <h2 class="landing-section-title">Built in the Open for Real Annotation Work</h2>
+            <h2 class="landing-section-title">
+              Built in the Open for Real Annotation Work
+            </h2>
             <p class="landing-section-subtitle">
-              The project focuses on practical workflows, maintainable APIs, and transparent design
-              decisions that contributors can reason about and extend.
+              The project focuses on practical workflows, maintainable APIs, and
+              transparent design decisions that contributors can reason about
+              and extend.
             </p>
             <div class="feature-grid">
               {
                 features.map((feature, index) => (
                   <article class="feature-card">
-                    <span class="feature-index">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="feature-index">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                     <h3>{feature.title}</h3>
                     <p>{feature.description}</p>
                   </article>
@@ -168,7 +176,9 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
 
         <section class="landing-section workflow-band">
           <div class="container">
-            <h2 class="landing-section-title">From Slide Ingestion to Structured Output</h2>
+            <h2 class="landing-section-title">
+              From Slide Ingestion to Structured Output
+            </h2>
             <div class="workflow-grid">
               {
                 workflow.map((step, index) => (
@@ -188,11 +198,16 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
             <div class="quickstart-head">
               <h2 class="landing-section-title">Quick Start</h2>
               <p class="landing-section-subtitle">
-                Start quickly in either framework with the same core concepts and predictable tool
-                integration model.
+                Start quickly in either framework with the same core concepts
+                and predictable tool integration model.
               </p>
             </div>
-            <FrameworkTabs items={[{ label: 'React', icon: reactIcon }, { label: 'Svelte', icon: svelteIcon }]}> 
+            <FrameworkTabs
+              items={[
+                { label: "React", icon: reactIcon },
+                { label: "Svelte", icon: svelteIcon },
+              ]}
+            >
               <FrameworkTab>
                 <Code
                   code={`import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from 'annota';
@@ -259,7 +274,11 @@ function App() {
         <footer class="landing-footer">
           <div class="container landing-footer-inner">
             <p>Built by BitRoc Lab.</p>
-            <a href="https://github.com/bitroc-ai/annota" target="_blank" rel="noreferrer">GitHub</a>
+            <a
+              href="https://github.com/bitroc-ai/annota"
+              target="_blank"
+              rel="noreferrer">GitHub</a
+            >
           </div>
         </footer>
       </main>
@@ -312,8 +331,16 @@ function App() {
     padding: 5.5rem 0 3.25rem;
     border-bottom: 1px solid var(--landing-border);
     background:
-      radial-gradient(circle at 10% -6%, rgba(96, 165, 250, 0.2), transparent 34%),
-      radial-gradient(circle at 95% 110%, rgba(45, 212, 191, 0.16), transparent 30%),
+      radial-gradient(
+        circle at 10% -6%,
+        rgba(96, 165, 250, 0.2),
+        transparent 34%
+      ),
+      radial-gradient(
+        circle at 95% 110%,
+        rgba(45, 212, 191, 0.16),
+        transparent 30%
+      ),
       linear-gradient(180deg, #eaf0fb, #dde8f8 52%, #d7e3f6);
     color: var(--landing-text);
   }
@@ -321,8 +348,16 @@ function App() {
   html.dark .landing-hero {
     border-bottom-color: #2c405f;
     background:
-      radial-gradient(circle at 12% -4%, rgba(96, 165, 250, 0.18), transparent 34%),
-      radial-gradient(circle at 95% 108%, rgba(45, 212, 191, 0.14), transparent 30%),
+      radial-gradient(
+        circle at 12% -4%,
+        rgba(96, 165, 250, 0.18),
+        transparent 34%
+      ),
+      radial-gradient(
+        circle at 95% 108%,
+        rgba(45, 212, 191, 0.14),
+        transparent 30%
+      ),
       linear-gradient(145deg, #0b1426, #122543 45%, #0f1f38);
   }
 
@@ -367,7 +402,7 @@ function App() {
   }
 
   .hero-copy h1 {
-    font-family: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
     font-weight: 760;
     letter-spacing: -0.03em;
     line-height: 1.02;
@@ -380,16 +415,17 @@ function App() {
 
   .hero-eyebrow {
     width: fit-content;
-    border-radius: 999px;
-    border: 1px solid rgba(67, 97, 179, 0.35);
-    background: rgba(79, 125, 255, 0.12);
     color: #2141a1;
-    font-size: 0.77rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    padding: 0.35rem 0.78rem;
+    opacity: 0.88;
     margin-bottom: 1rem;
+  }
+
+  html.dark .hero-eyebrow {
+    color: #a9c2ff;
   }
 
   .hero-description {
@@ -416,7 +452,10 @@ function App() {
     font-weight: 700;
     text-decoration: none;
     border: 1px solid transparent;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      background-color 0.15s ease;
   }
 
   .hero-btn:hover {
@@ -439,27 +478,6 @@ function App() {
     color: #e5ecff;
     border-color: rgba(148, 163, 184, 0.4);
     background: rgba(15, 26, 47, 0.72);
-  }
-
-  .hero-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.42rem;
-  }
-
-  .hero-chip-row span {
-    display: inline-flex;
-    padding: 0.28rem 0.62rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.58);
-    border: 1px solid rgba(67, 97, 179, 0.3);
-    color: #3b5284;
-    font-size: 0.74rem;
-    font-weight: 650;
-  }
-
-  html.dark .hero-chip-row span {
-    background: rgba(221, 235, 255, 0.04);
   }
 
   .hero-stage {
@@ -496,109 +514,38 @@ function App() {
     width: 0.6rem;
     height: 0.6rem;
     border-radius: 999px;
-    background: linear-gradient(155deg, var(--landing-accent), var(--landing-accent-2));
-  }
-
-  .stage-tag {
-    margin-left: auto;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    color: var(--landing-accent);
-    border: 1px solid var(--landing-border);
-    border-radius: 999px;
-    padding: 0.16rem 0.5rem;
-    background: rgba(79, 125, 255, 0.12);
+    background: linear-gradient(
+      155deg,
+      var(--landing-accent),
+      var(--landing-accent-2)
+    );
   }
 
   .stage-canvas {
     position: relative;
+    height: 260px;
     min-height: 260px;
-    background: radial-gradient(circle at 18% 12%, #dbe8ff, transparent 55%),
+    background:
+      radial-gradient(circle at 18% 12%, #dbe8ff, transparent 55%),
       radial-gradient(circle at 83% 87%, #bfdbfe, transparent 45%),
       linear-gradient(140deg, #f8fbff, #edf2ff 56%, #e8f5ff);
+    overflow: hidden;
   }
 
   html.dark .stage-canvas {
-    background: radial-gradient(circle at 20% 16%, #1e3a5f, transparent 55%),
+    background:
+      radial-gradient(circle at 20% 16%, #1e3a5f, transparent 55%),
       radial-gradient(circle at 85% 86%, #104355, transparent 45%),
       linear-gradient(145deg, #132033, #121f35 52%, #102130);
   }
 
-  .stage-layer {
-    position: absolute;
-    border: 2px solid rgba(30, 64, 175, 0.4);
-    background: rgba(30, 64, 175, 0.13);
-    border-radius: 0.5rem;
-  }
-
-  .stage-layer-a {
-    width: 46%;
-    height: 38%;
-    top: 16%;
-    left: 11%;
-  }
-
-  .stage-layer-b {
-    width: 42%;
-    height: 30%;
-    right: 13%;
-    bottom: 15%;
-    border-color: rgba(15, 118, 110, 0.48);
-    background: rgba(15, 118, 110, 0.14);
-  }
-
-  .stage-pin {
-    position: absolute;
-    width: 0.82rem;
-    height: 0.82rem;
-    border-radius: 999px;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.4);
-    background: #3b82f6;
-  }
-
-  .stage-pin-a {
-    top: 32%;
-    left: 29%;
-  }
-
-  .stage-pin-b {
-    top: 58%;
-    right: 34%;
-    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.55);
-    background: #14b8a6;
-  }
-
-  .stage-pin-c {
-    top: 44%;
-    right: 20%;
-  }
-
-  .stage-toolbox {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
+  .stage-canvas-fallback {
+    height: 100%;
     display: flex;
-    gap: 0.35rem;
-    padding: 0.35rem;
-    border-radius: 0.6rem;
-    border: 1px solid rgba(148, 163, 184, 0.48);
-    background: rgba(255, 255, 255, 0.8);
-  }
-
-  html.dark .stage-toolbox {
-    background: rgba(11, 18, 32, 0.84);
-    border-color: rgba(148, 163, 184, 0.35);
-  }
-
-  .stage-toolbox span {
-    border-radius: 0.42rem;
-    padding: 0.2rem 0.48rem;
-    background: var(--landing-card-2);
-    border: 1px solid var(--landing-border);
-    font-size: 0.69rem;
-    font-weight: 700;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--landing-muted);
   }
 
   .stage-note {
@@ -635,7 +582,7 @@ function App() {
   }
 
   .metric-value {
-    font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
     font-size: 0.95rem;
     font-weight: 760;
     margin-bottom: 0.1rem;
@@ -652,29 +599,49 @@ function App() {
   }
 
   .landing-section-features {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.02));
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.32),
+      rgba(255, 255, 255, 0.02)
+    );
   }
 
   .landing-section-quickstart {
-    background: linear-gradient(180deg, rgba(148, 163, 184, 0.08), rgba(148, 163, 184, 0.03));
+    background: linear-gradient(
+      180deg,
+      rgba(148, 163, 184, 0.08),
+      rgba(148, 163, 184, 0.03)
+    );
   }
 
   html.dark .landing-section-features {
-    background: linear-gradient(180deg, rgba(30, 41, 59, 0.36), rgba(17, 24, 39, 0.08));
+    background: linear-gradient(
+      180deg,
+      rgba(30, 41, 59, 0.36),
+      rgba(17, 24, 39, 0.08)
+    );
   }
 
   html.dark .landing-section-quickstart {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.5), rgba(15, 23, 42, 0.2));
+    background: linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.5),
+      rgba(15, 23, 42, 0.2)
+    );
   }
 
   .workflow-band {
-    background: linear-gradient(180deg, rgba(79, 125, 255, 0.12), rgba(45, 212, 191, 0.06));
+    background: linear-gradient(
+      180deg,
+      rgba(79, 125, 255, 0.12),
+      rgba(45, 212, 191, 0.06)
+    );
     border-top: 1px solid var(--landing-border);
     border-bottom: 1px solid var(--landing-border);
   }
 
   .landing-section-title {
-    font-family: 'Avenir Next', 'Segoe UI', sans-serif;
+    font-family: "Avenir Next", "Segoe UI", sans-serif;
     font-weight: 760;
     letter-spacing: -0.02em;
     font-size: clamp(1.75rem, 2.75vw, 2.6rem);
@@ -700,21 +667,36 @@ function App() {
   .feature-card {
     border: 1px solid var(--landing-border);
     border-radius: 0.95rem;
-    background: linear-gradient(180deg, var(--landing-card), rgba(239, 245, 255, 0.9));
+    background: linear-gradient(
+      180deg,
+      var(--landing-card),
+      rgba(239, 245, 255, 0.9)
+    );
     box-shadow: var(--landing-shadow);
     padding: 1rem;
     min-height: 182px;
-    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.12s ease,
+      border-color 0.12s ease;
   }
 
   .feature-card:hover {
     transform: translateY(-1px);
-    border-color: color-mix(in oklab, var(--landing-accent) 34%, var(--landing-border));
+    border-color: color-mix(
+      in oklab,
+      var(--landing-accent) 34%,
+      var(--landing-border)
+    );
     box-shadow: 0 22px 44px -30px rgba(15, 23, 42, 0.42);
   }
 
   html.dark .feature-card {
-    background: linear-gradient(180deg, var(--landing-card), rgba(24, 41, 70, 0.88));
+    background: linear-gradient(
+      180deg,
+      var(--landing-card),
+      rgba(24, 41, 70, 0.88)
+    );
   }
 
   .feature-index {
@@ -753,20 +735,35 @@ function App() {
   .workflow-card {
     border: 1px solid var(--landing-border);
     border-radius: 0.95rem;
-    background: linear-gradient(180deg, var(--landing-card), rgba(235, 249, 246, 0.64));
+    background: linear-gradient(
+      180deg,
+      var(--landing-card),
+      rgba(235, 249, 246, 0.64)
+    );
     box-shadow: var(--landing-shadow);
     padding: 1rem;
-    transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+    transition:
+      transform 0.12s ease,
+      box-shadow 0.12s ease,
+      border-color 0.12s ease;
   }
 
   .workflow-card:hover {
     transform: translateY(-1px);
-    border-color: color-mix(in oklab, var(--landing-accent-2) 36%, var(--landing-border));
+    border-color: color-mix(
+      in oklab,
+      var(--landing-accent-2) 36%,
+      var(--landing-border)
+    );
     box-shadow: 0 22px 44px -30px rgba(15, 23, 42, 0.42);
   }
 
   html.dark .workflow-card {
-    background: linear-gradient(180deg, var(--landing-card), rgba(16, 67, 85, 0.28));
+    background: linear-gradient(
+      180deg,
+      var(--landing-card),
+      rgba(16, 67, 85, 0.28)
+    );
   }
 
   .workflow-step {
@@ -795,7 +792,11 @@ function App() {
   .quickstart-shell {
     border: 1px solid var(--landing-border);
     border-radius: 1rem;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), var(--landing-card));
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.95),
+      var(--landing-card)
+    );
     box-shadow: var(--landing-shadow);
     padding: clamp(1rem, 2.1vw, 1.5rem);
   }
@@ -855,7 +856,11 @@ function App() {
   }
 
   html.dark .quickstart-shell {
-    background: linear-gradient(180deg, rgba(24, 41, 70, 0.86), rgba(15, 27, 50, 0.92));
+    background: linear-gradient(
+      180deg,
+      rgba(24, 41, 70, 0.86),
+      rgba(15, 27, 50, 0.92)
+    );
   }
 
   .landing-footer-inner {
