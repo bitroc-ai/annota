@@ -262,8 +262,8 @@ function App() {
         </section>
 
         <footer class="landing-footer">
-          <div class="container landing-footer-shell">
-            <div class="landing-footer-brand-block">
+          <div class="container landing-footer-main">
+            <section class="landing-footer-brand-block">
               <a href="/" class="landing-footer-logo" aria-label="Annota home">
                 <svg
                   width="22"
@@ -289,27 +289,41 @@ function App() {
                 Open-source pathology annotation toolkit for digital pathology
                 teams shipping production annotation workflows.
               </p>
-            </div>
-            <div class="landing-footer-grid">
-              <nav class="landing-footer-col" aria-label="Popular links">
-                <p class="landing-footer-col-title">Popular Links</p>
-                <a href="/getting-started/installation/">Installation</a>
-                <a href="/getting-started/quick-start/">Quick Start</a>
-                <a href="/playground/">Playground</a>
-                <a href="/guides/tools/">Tools Guide</a>
-              </nav>
-              <nav class="landing-footer-col" aria-label="Developer links">
-                <p class="landing-footer-col-title">Developers</p>
-                <a href="/api/">API Reference</a>
-                <a href="/guides/integration/">Integration Guide</a>
-                <a href="/changelog/">Changelog</a>
-                <a
-                  href="https://github.com/bitroc-ai/annota"
-                  target="_blank"
-                  rel="noreferrer">GitHub Repository</a
-                >
-              </nav>
-            </div>
+              <a
+                href="https://github.com/bitroc-ai/annota"
+                class="landing-footer-cta"
+                target="_blank"
+                rel="noreferrer">Star on GitHub</a
+              >
+            </section>
+
+            <nav class="landing-footer-col" aria-label="Popular links">
+              <p class="landing-footer-col-title">Popular Links</p>
+              <ul class="landing-footer-list">
+                <li>
+                  <a href="/getting-started/installation/">Installation</a>
+                </li>
+                <li><a href="/getting-started/quick-start/">Quick Start</a></li>
+                <li><a href="/playground/">Playground</a></li>
+                <li><a href="/guides/tools/">Tools Guide</a></li>
+              </ul>
+            </nav>
+
+            <nav class="landing-footer-col" aria-label="Developer links">
+              <p class="landing-footer-col-title">Developers</p>
+              <ul class="landing-footer-list">
+                <li><a href="/api/">API Reference</a></li>
+                <li><a href="/guides/integration/">Integration Guide</a></li>
+                <li><a href="/changelog/">Changelog</a></li>
+                <li>
+                  <a
+                    href="https://github.com/bitroc-ai/annota"
+                    target="_blank"
+                    rel="noreferrer">GitHub Repository</a
+                  >
+                </li>
+              </ul>
+            </nav>
           </div>
           <div class="container landing-footer-bottom">
             <p>© {currentYear} BitRoc Lab</p>
@@ -831,11 +845,11 @@ function App() {
 
   .landing-footer {
     border-top: 1px solid var(--landing-border);
-    padding: 1.35rem 0 0.9rem;
+    padding: 1.55rem 0 0.9rem;
     background: linear-gradient(
       180deg,
-      rgba(120, 137, 166, 0.16),
-      rgba(120, 137, 166, 0.05)
+      rgba(120, 137, 166, 0.18),
+      rgba(120, 137, 166, 0.06)
     );
   }
 
@@ -862,14 +876,20 @@ function App() {
     );
   }
 
-  .landing-footer-shell {
+  .landing-footer-main {
     display: grid;
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.25rem 1.8rem;
+    align-items: start;
+  }
+
+  .landing-footer-main > * {
+    min-width: 0;
   }
 
   .landing-footer-brand-block {
     display: grid;
-    gap: 0.4rem;
+    gap: 0.55rem;
     max-width: 52ch;
   }
 
@@ -878,60 +898,103 @@ function App() {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #102245;
+    color: #0f234a;
     text-decoration: none;
-    font-size: 1.07rem;
+    font-size: 1.08rem;
     font-weight: 760;
     letter-spacing: -0.02em;
   }
 
   .landing-footer-logo:hover {
-    opacity: 0.86;
-  }
-
-  .landing-footer-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.95rem;
+    opacity: 0.9;
   }
 
   .landing-footer-col {
     display: grid;
-    gap: 0.28rem;
+    align-content: start;
+    gap: 0.42rem;
   }
 
   .landing-footer-col-title {
-    color: #2141a1;
+    color: color-mix(in oklab, var(--landing-muted) 88%, #23385f);
     font-size: 0.72rem;
-    font-weight: 760;
-    letter-spacing: 0.08em;
+    font-weight: 560;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
-    margin-bottom: 0.12rem;
+    margin-top: 0;
+    margin-bottom: 0.04rem;
   }
 
-  .landing-footer-col a {
+  .landing-footer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.34rem;
+  }
+
+  .landing-footer-list li {
+    margin: 0;
+    padding: 0;
+    display: block;
+  }
+
+  .landing-footer-list a {
+    display: inline-flex;
     width: fit-content;
-    color: #1d386f;
+    color: color-mix(in oklab, var(--landing-text) 78%, var(--landing-muted));
     text-decoration: none;
-    font-size: 0.87rem;
-    font-weight: 650;
+    font-size: 0.88rem;
+    font-weight: 400;
     line-height: 1.45;
     border-bottom: 1px solid transparent;
+    transition:
+      color 0.14s ease,
+      border-bottom-color 0.14s ease;
   }
 
-  .landing-footer-col a:hover {
-    color: #163676;
+  .landing-footer-list a:hover {
+    color: var(--landing-text);
     border-bottom-color: color-mix(
       in oklab,
-      var(--landing-accent) 46%,
+      var(--landing-text) 18%,
       transparent
     );
   }
 
   .landing-footer-copy {
     color: var(--landing-muted);
-    font-size: 0.86rem;
+    font-size: 0.87rem;
     line-height: 1.55;
+    margin: 0;
+  }
+
+  .landing-footer-cta {
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.68rem;
+    border: 1px solid rgba(34, 71, 159, 0.42);
+    background: rgba(255, 255, 255, 0.72);
+    color: #15377a;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.4rem 0.64rem;
+    transition:
+      transform 0.14s ease,
+      border-color 0.14s ease,
+      background-color 0.14s ease;
+  }
+
+  .landing-footer-cta:hover {
+    transform: translateY(-1px);
+    border-color: rgba(34, 71, 159, 0.62);
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .landing-footer-bottom {
@@ -954,35 +1017,46 @@ function App() {
   html.dark .landing-footer {
     background: linear-gradient(
       180deg,
-      rgba(32, 47, 74, 0.56),
-      rgba(16, 28, 50, 0.28)
+      rgba(32, 47, 74, 0.6),
+      rgba(16, 28, 50, 0.32)
     );
   }
 
   html.dark .landing-footer-logo {
-    color: #e6efff;
+    color: #f2f7ff;
   }
 
   html.dark .landing-footer-copy {
-    color: #9fb0cd;
+    color: #a8b8d4;
   }
 
   html.dark .landing-footer-col-title {
-    color: #9ec0ff;
+    color: #8f9fba;
   }
 
-  html.dark .landing-footer-col a {
+  html.dark .landing-footer-list a {
+    color: #b8c5db;
+  }
+
+  html.dark .landing-footer-list a:hover {
+    color: #eef4ff;
+    border-bottom-color: rgba(238, 244, 255, 0.22);
+  }
+
+  html.dark .landing-footer-cta {
+    background: rgba(11, 23, 43, 0.8);
+    border-color: rgba(124, 162, 234, 0.5);
     color: #dbe7ff;
   }
 
-  html.dark .landing-footer-col a:hover {
-    color: #eef4ff;
-    border-bottom-color: rgba(120, 170, 255, 0.72);
+  html.dark .landing-footer-cta:hover {
+    background: rgba(20, 35, 61, 0.96);
+    border-color: rgba(152, 187, 255, 0.7);
   }
 
   html.dark .landing-footer-bottom {
     border-top-color: rgba(148, 163, 184, 0.25);
-    color: #9fb0cd;
+    color: #a7b6d1;
   }
 
   @media (min-width: 980px) {
@@ -1015,6 +1089,16 @@ function App() {
       height: 380px;
       min-height: 380px;
     }
+
+    .landing-footer-main {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.1rem;
+    }
+
+    .landing-footer-brand-block {
+      grid-column: 1 / -1;
+      max-width: none;
+    }
   }
 
   @media (max-width: 620px) {
@@ -1033,6 +1117,11 @@ function App() {
     .stage-canvas {
       height: 300px;
       min-height: 300px;
+    }
+
+    .landing-footer-main {
+      grid-template-columns: 1fr;
+      gap: 0.95rem;
     }
 
     .landing-footer-bottom {
