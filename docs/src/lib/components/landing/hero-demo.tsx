@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type OpenSeadragon from "openseadragon";
-import { AnnotaProvider, AnnotaViewer, Annotator, useAnnotator } from "annota";
+import {
+  AnnotaProvider,
+  AnnotaViewer,
+  Annotator,
+  AnnotationEditor,
+  PointTool,
+  PolygonTool,
+  RectangleTool,
+  useAnnotations,
+  useAnnotator,
+  useTool,
+} from "annota";
 
 const DEMO_IMAGE = "/playground/images/test/0.png";
 const DEMO_ANNOTATION_IDS = [
@@ -8,6 +19,8 @@ const DEMO_ANNOTATION_IDS = [
   "hero-ann-secondary-roi",
   "hero-ann-focus-point",
 ] as const;
+
+type MiniTool = "pan" | "point" | "rectangle" | "polygon";
 
 function createDemoAnnotations(width: number, height: number) {
   const primaryRoi = {
@@ -108,7 +121,7 @@ function createDemoAnnotations(width: number, height: number) {
   ];
 }
 
-function DemoAnnotations({
+function DemoSeedAnnotations({
   viewer,
 }: {
   viewer: OpenSeadragon.Viewer | undefined;
@@ -157,6 +170,207 @@ function DemoAnnotations({
   }, [annotator, imageSize]);
 
   return null;
+}
+
+function MiniPlaygroundControls({
+  viewer,
+}: {
+  viewer: OpenSeadragon.Viewer | undefined;
+}) {
+  const annotator = useAnnotator();
+  const annotations = useAnnotations();
+  const [activeTool, setActiveTool] = useState<MiniTool>("pan");
+
+  const pointTool = useMemo(
+    () =>
+      new PointTool({
+        annotationStyle: {
+          fill: "#facc15",
+          stroke: "#f8fafc",
+          strokeWidth: 2,
+          fillOpacity: 1,
+          strokeOpacity: 1,
+        },
+      }),
+    []
+  );
+
+  const rectangleTool = useMemo(
+    () =>
+      new RectangleTool({
+        annotationStyle: {
+          stroke: "#f97316",
+          strokeWidth: 3,
+          strokeOpacity: 0.96,
+          fill: "#f97316",
+          fillOpacity: 0.16,
+        },
+      }),
+    []
+  );
+
+  const polygonTool = useMemo(
+    () =>
+      new PolygonTool({
+        annotationStyle: {
+          stroke: "#22d3ee",
+          strokeWidth: 3,
+          strokeOpacity: 0.96,
+          fill: "#22d3ee",
+          fillOpacity: 0.14,
+        },
+      }),
+    []
+  );
+
+  useTool({
+    viewer,
+    handler: pointTool,
+    enabled: activeTool === "point",
+  });
+
+  useTool({
+    viewer,
+    handler: rectangleTool,
+    enabled: activeTool === "rectangle",
+  });
+
+  useTool({
+    viewer,
+    handler: polygonTool,
+    enabled: activeTool === "polygon",
+  });
+
+  const tools: Array<{ id: MiniTool; label: string }> = [
+    { id: "pan", label: "Pan" },
+    { id: "point", label: "Point" },
+    { id: "rectangle", label: "Rect" },
+    { id: "polygon", label: "Polygon" },
+  ];
+
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          top: "0.55rem",
+          left: "0.55rem",
+          zIndex: 3,
+          display: "flex",
+          gap: "0.35rem",
+          padding: "0.35rem",
+          borderRadius: "0.65rem",
+          border: "1px solid rgba(148, 163, 184, 0.42)",
+          background: "rgba(7, 16, 34, 0.62)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+        }}
+      >
+        {tools.map((tool) => (
+          <button
+            key={tool.id}
+            type="button"
+            onClick={() => setActiveTool(tool.id)}
+            aria-pressed={activeTool === tool.id}
+            style={{
+              border: "1px solid",
+              borderColor:
+                activeTool === tool.id
+                  ? "rgba(99, 179, 237, 0.95)"
+                  : "rgba(148, 163, 184, 0.5)",
+              background:
+                activeTool === tool.id
+                  ? "rgba(59, 130, 246, 0.3)"
+                  : "rgba(15, 23, 42, 0.55)",
+              color: "#e2e8f0",
+              borderRadius: "0.45rem",
+              fontSize: "0.68rem",
+              fontWeight: 650,
+              lineHeight: 1.1,
+              padding: "0.25rem 0.4rem",
+              cursor: "pointer",
+              minWidth: tool.id === "polygon" ? "3.7rem" : "2.7rem",
+            }}
+          >
+            {tool.label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: "0.55rem",
+          right: "0.55rem",
+          zIndex: 3,
+          display: "flex",
+          gap: "0.35rem",
+        }}
+      >
+        <button
+          type="button"
+          aria-label="Clear all annotations"
+          onClick={() => annotator?.clearAnnotations()}
+          style={{
+            borderRadius: "0.45rem",
+            border: "1px solid rgba(148, 163, 184, 0.45)",
+            background: "rgba(7, 16, 34, 0.62)",
+            color: "#e2e8f0",
+            fontSize: "0.68rem",
+            fontWeight: 650,
+            lineHeight: 1.2,
+            padding: "0.26rem 0.46rem",
+            cursor: "pointer",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          aria-label="Reset demo view"
+          onClick={() => viewer?.viewport.goHome(true)}
+          style={{
+            borderRadius: "0.45rem",
+            border: "1px solid rgba(148, 163, 184, 0.45)",
+            background: "rgba(255, 255, 255, 0.78)",
+            color: "#334155",
+            fontSize: "0.68rem",
+            fontWeight: 650,
+            lineHeight: 1.2,
+            padding: "0.26rem 0.46rem",
+            cursor: "pointer",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          Reset
+        </button>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: "0.55rem",
+          bottom: "0.55rem",
+          zIndex: 3,
+          borderRadius: "0.45rem",
+          border: "1px solid rgba(148, 163, 184, 0.42)",
+          background: "rgba(7, 16, 34, 0.62)",
+          color: "#e2e8f0",
+          fontSize: "0.67rem",
+          fontWeight: 620,
+          lineHeight: 1.2,
+          padding: "0.22rem 0.45rem",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+        }}
+      >
+        {annotations.length} annotations · {activeTool}
+      </div>
+    </>
+  );
 }
 
 export default function HeroDemo() {
@@ -222,35 +436,14 @@ export default function HeroDemo() {
         />
 
         {viewer && (
-          <Annotator viewer={viewer}>
-            <DemoAnnotations viewer={viewer} />
-          </Annotator>
+          <>
+            <Annotator viewer={viewer}>
+              <DemoSeedAnnotations viewer={viewer} />
+              <MiniPlaygroundControls viewer={viewer} />
+            </Annotator>
+            <AnnotationEditor viewer={viewer} />
+          </>
         )}
-
-        <button
-          type="button"
-          aria-label="Reset demo view"
-          onClick={() => viewer?.viewport.goHome(true)}
-          style={{
-            position: "absolute",
-            top: "0.55rem",
-            right: "0.55rem",
-            zIndex: 2,
-            borderRadius: "0.4rem",
-            border: "1px solid rgba(148, 163, 184, 0.42)",
-            background: "rgba(255, 255, 255, 0.78)",
-            color: "#334155",
-            fontSize: "0.68rem",
-            fontWeight: 650,
-            lineHeight: 1.2,
-            padding: "0.24rem 0.42rem",
-            cursor: "pointer",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-          }}
-        >
-          Reset View
-        </button>
       </div>
     </AnnotaProvider>
   );

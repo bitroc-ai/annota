@@ -7,6 +7,7 @@ import HeroDemo from "../lib/components/landing/hero-demo";
 import Code from "../lib/components/md/code.astro";
 
 const currentPath = Astro.url.pathname;
+const currentYear = new Date().getFullYear();
 
 const metrics = [
   { value: "60 FPS", label: "Interactive Rendering" },
@@ -114,10 +115,6 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
 
             <aside class="hero-stage" aria-label="Workspace preview">
               <div class="stage-window">
-                <div class="stage-header">
-                  <span class="stage-dot"></span>
-                  <span>Annota Workspace</span>
-                </div>
                 <div class="stage-canvas">
                   <HeroDemo client:only="react">
                     <div slot="fallback" class="stage-canvas-fallback">
@@ -125,13 +122,6 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
                     </div>
                   </HeroDemo>
                 </div>
-              </div>
-              <div class="stage-note">
-                <strong>Layer-aware operations</strong>
-                <p>
-                  Visibility, lock state, and export settings are preserved per
-                  layer.
-                </p>
               </div>
             </aside>
           </div>
@@ -273,12 +263,22 @@ function App() {
 
         <footer class="landing-footer">
           <div class="container landing-footer-inner">
-            <p>Built by BitRoc Lab.</p>
-            <a
-              href="https://github.com/bitroc-ai/annota"
-              target="_blank"
-              rel="noreferrer">GitHub</a
-            >
+            <div class="landing-footer-brand">
+              <p class="landing-footer-title">Annota</p>
+              <p class="landing-footer-copy">
+                Open-source pathology annotation toolkit. © {currentYear}
+                BitRoc Lab.
+              </p>
+            </div>
+            <nav class="landing-footer-links" aria-label="Footer">
+              <a href="/getting-started/">Get Started</a>
+              <a href="/playground/">Playground</a>
+              <a
+                href="https://github.com/bitroc-ai/annota"
+                target="_blank"
+                rel="noreferrer">GitHub</a
+              >
+            </nav>
           </div>
         </footer>
       </main>
@@ -413,6 +413,11 @@ function App() {
     text-wrap: balance;
   }
 
+  html.dark .hero-copy h1 {
+    color: #e8f1ff;
+    text-shadow: 0 1px 10px rgba(6, 14, 30, 0.36);
+  }
+
   .hero-eyebrow {
     width: fit-content;
     color: #2141a1;
@@ -481,12 +486,10 @@ function App() {
   }
 
   .hero-stage {
-    display: grid;
-    gap: 0.72rem;
+    display: block;
   }
 
-  .stage-window,
-  .stage-note {
+  .stage-window {
     border: 1px solid rgba(191, 213, 255, 0.4);
     border-radius: 1rem;
     background: rgba(248, 251, 255, 0.93);
@@ -499,32 +502,10 @@ function App() {
     backdrop-filter: blur(8px);
   }
 
-  .stage-header {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.7rem 0.9rem;
-    border-bottom: 1px solid var(--landing-border);
-    font-size: 0.83rem;
-    font-weight: 700;
-    color: #1e293b;
-  }
-
-  .stage-dot {
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 999px;
-    background: linear-gradient(
-      155deg,
-      var(--landing-accent),
-      var(--landing-accent-2)
-    );
-  }
-
   .stage-canvas {
     position: relative;
-    height: 260px;
-    min-height: 260px;
+    height: 440px;
+    min-height: 440px;
     background:
       radial-gradient(circle at 18% 12%, #dbe8ff, transparent 55%),
       radial-gradient(circle at 83% 87%, #bfdbfe, transparent 45%),
@@ -546,22 +527,6 @@ function App() {
     justify-content: center;
     font-size: 0.8rem;
     color: var(--landing-muted);
-  }
-
-  .stage-note {
-    padding: 0.72rem 0.82rem;
-  }
-
-  .stage-note strong {
-    display: block;
-    font-size: 0.9rem;
-    margin-bottom: 0.22rem;
-  }
-
-  .stage-note p {
-    color: var(--landing-muted);
-    font-size: 0.84rem;
-    line-height: 1.5;
   }
 
   .metrics-strip {
@@ -831,19 +796,18 @@ function App() {
 
   .landing-footer {
     border-top: 1px solid var(--landing-border);
-    padding: 1rem 0;
-    background: rgba(120, 137, 166, 0.08);
+    padding: 1.05rem 0 1.2rem;
+    background: linear-gradient(
+      180deg,
+      rgba(120, 137, 166, 0.12),
+      rgba(120, 137, 166, 0.04)
+    );
   }
 
   html.dark .stage-window,
-  html.dark .stage-note,
   html.dark .metric-tile {
     border-color: rgba(148, 163, 184, 0.4);
     background: rgba(15, 27, 50, 0.9);
-    color: #dbe7ff;
-  }
-
-  html.dark .stage-header {
     color: #dbe7ff;
   }
 
@@ -867,25 +831,94 @@ function App() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    color: var(--landing-muted);
-    font-size: 0.9rem;
+    gap: 1.2rem;
   }
 
-  .landing-footer a {
+  .landing-footer-brand {
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .landing-footer-title {
+    font-size: 1rem;
+    font-weight: 760;
+    letter-spacing: -0.02em;
+    color: color-mix(in oklab, var(--landing-text) 90%, #1e3a8a);
+  }
+
+  .landing-footer-copy {
+    color: var(--landing-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .landing-footer-links {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .landing-footer-links a {
     color: var(--landing-text);
     font-weight: 700;
     text-decoration: none;
+    font-size: 0.82rem;
+    border: 1px solid var(--landing-border);
+    border-radius: 999px;
+    padding: 0.34rem 0.62rem;
+    background: rgba(255, 255, 255, 0.62);
+    transition:
+      border-color 0.14s ease,
+      transform 0.14s ease,
+      background-color 0.14s ease;
   }
 
-  .landing-footer a:hover {
-    text-decoration: underline;
+  .landing-footer-links a:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(
+      in oklab,
+      var(--landing-accent) 34%,
+      var(--landing-border)
+    );
+    background: rgba(255, 255, 255, 0.88);
+  }
+
+  html.dark .landing-footer {
+    background: linear-gradient(
+      180deg,
+      rgba(32, 47, 74, 0.42),
+      rgba(16, 28, 50, 0.22)
+    );
+  }
+
+  html.dark .landing-footer-title {
+    color: #e6efff;
+  }
+
+  html.dark .landing-footer-copy {
+    color: #9fb0cd;
+  }
+
+  html.dark .landing-footer-links a {
+    background: rgba(11, 23, 43, 0.72);
+    border-color: rgba(148, 163, 184, 0.35);
+    color: #dbe7ff;
+  }
+
+  html.dark .landing-footer-links a:hover {
+    background: rgba(20, 35, 61, 0.92);
+    border-color: rgba(93, 154, 255, 0.56);
   }
 
   @media (min-width: 980px) {
     .landing-hero-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(360px, 460px);
+      grid-template-columns: minmax(0, 1fr) minmax(500px, 660px);
       gap: 2.1rem;
+    }
+
+    .stage-canvas {
+      height: 500px;
+      min-height: 500px;
     }
 
     .metrics-strip {
@@ -907,6 +940,11 @@ function App() {
       flex-direction: column;
       align-items: flex-start;
     }
+
+    .stage-canvas {
+      height: 380px;
+      min-height: 380px;
+    }
   }
 
   @media (max-width: 620px) {
@@ -920,6 +958,11 @@ function App() {
 
     .metrics-strip {
       grid-template-columns: 1fr;
+    }
+
+    .stage-canvas {
+      height: 300px;
+      min-height: 300px;
     }
   }
 </style>
