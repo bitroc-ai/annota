@@ -36,10 +36,10 @@ export function useSelection(): Annotation[] {
   useEffect(() => {
     if (!store || selectedIds.length === 0) return;
 
+    const selectedIdSet = new Set(selectedIds);
     const handleStoreChange = (event: any) => {
       // Check if any updated annotations are in the selection
-      const updatedIds = event.updated.map((u: any) => u.newValue.id);
-      const hasSelectedUpdate = updatedIds.some((id: string) => selectedIds.includes(id));
+      const hasSelectedUpdate = event.updated.some((u: any) => selectedIdSet.has(u.newValue.id));
 
       if (hasSelectedUpdate) {
         // Force re-render to get updated annotations from store
