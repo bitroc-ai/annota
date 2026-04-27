@@ -62,6 +62,11 @@ export function selection(): () => Annotation[] {
     const annotator = getAnnotatorFn();
     const store = annotator?.state.store;
     if (!store) return [];
-    return selectedIds.map((id) => store.get(id)).filter(Boolean) as Annotation[];
+    const result: Annotation[] = [];
+    for (let i = 0; i < selectedIds.length; i++) {
+      const item = store.get(selectedIds[i]);
+      if (item) result.push(item);
+    }
+    return result;
   };
 }
