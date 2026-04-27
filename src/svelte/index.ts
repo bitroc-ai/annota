@@ -6,7 +6,6 @@ export { default as Viewer } from "./components/viewer.svelte";
 export { default as Popup } from "./components/popup.svelte";
 export { default as ContextMenu } from "./components/context-menu.svelte";
 export { default as ContextMenuItem } from "./components/context-menu-item.svelte";
-export { default as ContextMenuDivider } from "./components/context-menu-divider.svelte";
 export { default as AnnotationEditor } from "./components/annotation-editor.svelte";
 
 // Utilities

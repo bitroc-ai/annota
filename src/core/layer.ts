@@ -265,7 +265,14 @@ export function createLayerManager(): LayerManager {
 // Layer Utility Functions
 // ============================================
 
+// Cache for property values by annotation array and property key
+const propertyValuesCache = new WeakMap<Annotation[], Map<string, any[]>>();
+
+// Cache for property summaries by annotation array
+const propertySummaryCache = new WeakMap<Annotation[], Record<string, any[]>>();
+
 /**
+
  * Extract unique values for a given property key from a collection of annotations
  * @param annotations Array of annotations to analyze
  * @param propertyKey The property key to extract values from
@@ -279,6 +286,15 @@ export function createLayerManager(): LayerManager {
  * // Returns: ['child', 'youth', 'adult', 'elderly']
  */
 export function getPropertyValues(annotations: Annotation[], propertyKey: string): any[] {
+  let map = propertyValuesCache.get(annotations);
+  if (map) {
+    const cached = map.get(propertyKey);
+    if (cached) return cached;
+  } else {
+    map = new Map();
+    propertyValuesCache.set(annotations, map);
+  }
+
   const values = new Set<any>();
   for (const annotation of annotations) {
     const value = annotation.properties?.[propertyKey];
@@ -286,7 +302,10 @@ export function getPropertyValues(annotations: Annotation[], propertyKey: string
       values.add(value);
     }
   }
-  return Array.from(values);
+
+  const result = Array.from(values);
+  map.set(propertyKey, result);
+  return result;
 }
 
 /**
@@ -303,13 +322,20 @@ export function getPropertyValues(annotations: Annotation[], propertyKey: string
  * // }
  */
 export function getPropertySummary(annotations: Annotation[]): Record<string, any[]> {
+  const cached = propertySummaryCache.get(annotations);
+  if (cached) return cached;
+
   const summary: Record<string, Set<any>> = {};
 
   for (const annotation of annotations) {
-    if (annotation.properties) {
-      for (const [key, value] of Object.entries(annotation.properties)) {
+    const properties = annotation.properties;
+    if (properties) {
+      const keys = Object.keys(properties);
+      for (const key of keys) {
         // Skip internal properties (prefixed with _)
-        if (key.startsWith('_')) continue;
+        if (key.charCodeAt(0) === 95 /* '_' */) continue;
+
+        const value = properties[key];
 
         if (!summary[key]) {
           summary[key] = new Set();
@@ -321,11 +347,24 @@ export function getPropertySummary(annotations: Annotation[]): Record<string, an
     }
   }
 
+  // Get or create the propertyValues map to pre-populate it
+  let valuesMap = propertyValuesCache.get(annotations);
+  if (!valuesMap) {
+    valuesMap = new Map();
+    propertyValuesCache.set(annotations, valuesMap);
+  }
+
   // Convert Sets to Arrays
   const result: Record<string, any[]> = {};
-  for (const [key, valueSet] of Object.entries(summary)) {
-    result[key] = Array.from(valueSet);
+  const summaryKeys = Object.keys(summary);
+  for (const key of summaryKeys) {
+    const arr = Array.from(summary[key]);
+    result[key] = arr;
+    // Pre-populate the individual property values cache
+    valuesMap.set(key, arr);
   }
+
+  propertySummaryCache.set(annotations, result);
   return result;
 }
 
