@@ -28,14 +28,21 @@
     // Untrack options so we only re-init when viewer changes, matching React behavior
     const opts = untrack(() => options) as OpenSeadragonAnnotatorOptions;
 
-    createOpenSeadragonAnnotator(viewer, opts).then((annotator) => {
-      if (cancelled) {
-        annotator.destroy();
-        return;
-      }
-      annotatorInstance = annotator;
-      setAnnotatorFn(annotator);
-    });
+    createOpenSeadragonAnnotator(viewer, opts)
+      .then((annotator) => {
+        if (cancelled) {
+          annotator.destroy();
+          return;
+        }
+        annotatorInstance = annotator;
+        setAnnotatorFn(annotator);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("[Annota] Failed to create OpenSeadragon annotator:", error);
+          setAnnotatorFn(undefined);
+        }
+      });
 
     return () => {
       cancelled = true;

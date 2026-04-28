@@ -33,14 +33,21 @@ export function Annotator({ viewer, children, ...options }: AnnotatorProps) {
     let cancelled = false;
     let annotatorInstance: OpenSeadragonAnnotator | undefined;
 
-    createOpenSeadragonAnnotator(viewer, options).then(annotator => {
-      if (cancelled) {
-        annotator.destroy();
-        return;
-      }
-      annotatorInstance = annotator;
-      setAnnotator(annotator);
-    });
+    createOpenSeadragonAnnotator(viewer, options)
+      .then(annotator => {
+        if (cancelled) {
+          annotator.destroy();
+          return;
+        }
+        annotatorInstance = annotator;
+        setAnnotator(annotator);
+      })
+      .catch(error => {
+        if (!cancelled) {
+          console.error('[Annota] Failed to create OpenSeadragon annotator:', error);
+          setAnnotator(undefined);
+        }
+      });
 
     return () => {
       cancelled = true;

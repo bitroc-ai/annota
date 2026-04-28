@@ -77,6 +77,7 @@ export class PixiStage {
   private scale: number;
   private redrawRafId: number | null;
   private boundHandleLayerChange: (() => void) | null;
+  private destroyed: boolean;
 
   private constructor(
     app: PIXI.Application,
@@ -97,6 +98,7 @@ export class PixiStage {
     this.scale = 1.0;
     this.redrawRafId = null;
     this.boundHandleLayerChange = null;
+    this.destroyed = false;
     this.interacting = false;
     this.captureSnapshotOnNextRedraw = false;
     this.snapshotDirty = true;
@@ -134,6 +136,7 @@ export class PixiStage {
    * only update container transform + render, skip per-annotation culling and LOD work.
    */
   beginInteraction(): void {
+    if (this.destroyed) return;
     if (this.interacting) return;
     this.interacting = true;
     this.captureSnapshotOnNextRedraw = true;
@@ -141,6 +144,7 @@ export class PixiStage {
   }
 
   endInteraction(): void {
+    if (this.destroyed) return;
     if (!this.interacting) return;
     this.interacting = false;
     this.captureSnapshotOnNextRedraw = false;
@@ -263,6 +267,8 @@ export class PixiStage {
    * Add annotation to stage
    */
   addAnnotation(annotation: Annotation): void {
+    if (this.destroyed) return;
+
     // Note: We intentionally keep all annotations on the stage even when filtered out.
     // Filter is applied during rendering/culling so changing filters can reveal previously-hidden annotations.
 
@@ -290,6 +296,8 @@ export class PixiStage {
    * Update annotation on stage
    */
   updateAnnotation(oldAnnotation: Annotation, newAnnotation: Annotation): void {
+    if (this.destroyed) return;
+
     const entry = this.annotationMap.get(oldAnnotation.id);
     if (!entry) {
       // Annotation doesn't exist, add it
@@ -315,6 +323,8 @@ export class PixiStage {
    * Remove annotation from stage
    */
   removeAnnotation(annotation: Annotation | string): void {
+    if (this.destroyed) return;
+
     const id = typeof annotation === "string" ? annotation : annotation.id;
     const entry = this.annotationMap.get(id);
 
@@ -491,6 +501,8 @@ export class PixiStage {
    * Set style expression
    */
   setStyle(style?: StyleExpression): void {
+    if (this.destroyed) return;
+
     this.style = style;
     // Invalidate all caches since style affects rendering
     this.annotationMap.forEach((entry) => {
@@ -505,6 +517,8 @@ export class PixiStage {
    * Set filter
    */
   setFilter(filter?: Filter): void {
+    if (this.destroyed) return;
+
     this.filter = filter;
     this.redraw();
     this.snapshotDirty = true;
@@ -514,6 +528,8 @@ export class PixiStage {
    * Set visibility
    */
   setVisible(visible: boolean): void {
+    if (this.destroyed) return;
+
     this.visible = visible;
     this.container.visible = visible;
     if (this.snapshotSprite) this.snapshotSprite.visible = false;
@@ -524,6 +540,8 @@ export class PixiStage {
    * Set hovered annotation
    */
   setHovered(id?: string): void {
+    if (this.destroyed) return;
+
     if (this.hoveredId === id) return;
 
     const prevHoveredId = this.hoveredId;
@@ -545,6 +563,8 @@ export class PixiStage {
    * Set selected annotations
    */
   setSelected(ids: string[]): void {
+    if (this.destroyed) return;
+
     const prevSelectedIds = new Set(this.selectedIds);
     this.selectedIds = new Set(ids);
 
@@ -570,6 +590,8 @@ export class PixiStage {
    * Redraw all annotations (immediate execution for perfect sync)
    */
   redraw(): void {
+    if (this.destroyed) return;
+
     if (this.redrawRafId !== null) {
       cancelAnimationFrame(this.redrawRafId);
       this.redrawRafId = null;
@@ -581,9 +603,12 @@ export class PixiStage {
    * Schedule a redraw on the next animation frame (coalesces bursts of viewport events)
    */
   requestRedraw(): void {
+    if (this.destroyed) return;
+
     if (this.redrawRafId !== null) return;
     this.redrawRafId = requestAnimationFrame(() => {
       this.redrawRafId = null;
+      if (this.destroyed) return;
       this.performRedraw();
     });
   }
@@ -592,7 +617,7 @@ export class PixiStage {
    * Perform the actual redraw (called by RAF throttle)
    */
   private performRedraw(): void {
-    if (!this.viewer.viewport) return;
+    if (this.destroyed || !this.viewer.viewport) return;
 
     // ANNOTORIOUS PATTERN: Get current scale
     // From stageRenderer.ts line 185-189
@@ -768,6 +793,8 @@ export class PixiStage {
    * Resize the stage
    */
   resize(width: number, height: number): void {
+    if (this.destroyed) return;
+
     this.app.renderer.resize(width, height);
     this.snapshotDirty = true;
     this.redraw();
@@ -777,6 +804,8 @@ export class PixiStage {
    * Handle layer visibility/opacity changes
    */
   private handleLayerChange(): void {
+    if (this.destroyed) return;
+
     // Optimized: Only update visibility and alpha of existing graphics
     // instead of full re-render
     this.annotationMap.forEach((entry) => {
@@ -813,6 +842,14 @@ export class PixiStage {
    * Destroy the stage
    */
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
+    if (this.redrawRafId !== null) {
+      cancelAnimationFrame(this.redrawRafId);
+      this.redrawRafId = null;
+    }
+
     // Unobserve layer changes
     if (this.layerManager) {
       if (this.boundHandleLayerChange) {
@@ -840,10 +877,6 @@ export class PixiStage {
       this.snapshotTexture = null;
     }
 
-    if (this.redrawRafId !== null) {
-      cancelAnimationFrame(this.redrawRafId);
-      this.redrawRafId = null;
-    }
     this.app.destroy(true, { children: true, texture: true });
   }
 }

@@ -155,6 +155,17 @@ export async function createOpenSeadragonAnnotator(
   let currentFilter: Filter | undefined = options.filter;
   let suppressHoverUntil = 0;
   let interactionEndTimer: number | null = null;
+  let destroyed = false;
+
+  const getLiveViewerCanvas = () => {
+    const viewerCanvas = viewer.canvas;
+
+    if (!(viewerCanvas instanceof HTMLElement) || !viewerCanvas.isConnected) {
+      return undefined;
+    }
+
+    return viewerCanvas;
+  };
 
   const markViewportInteraction = () => {
     // During fast pan/zoom the pointer position changes constantly; hover hit-testing is wasted work.
@@ -180,8 +191,9 @@ export async function createOpenSeadragonAnnotator(
     ['notification', new Set()],
   ]);
 
-  // Check if viewer canvas is ready
-  if (!viewer.canvas) {
+  // Check if viewer canvas is ready and still mounted
+  const viewerCanvas = getLiveViewerCanvas();
+  if (!viewerCanvas) {
     throw new Error(
       'OpenSeadragon viewer canvas not ready. Wait for "open" event before creating annotator.'
     );
@@ -201,16 +213,17 @@ export async function createOpenSeadragonAnnotator(
   canvas.style.pointerEvents = 'auto'; // Enable clicks for selection
 
   // Canvas resolution - matches viewer canvas pixel dimensions
-  const { offsetWidth, offsetHeight } = viewer.canvas;
+  const { offsetWidth, offsetHeight } = viewerCanvas;
   canvas.width = offsetWidth;
   canvas.height = offsetHeight;
 
-  // Append to OSD canvas container
+  // Find the OSD canvas container before async Pixi initialization, but don't
+  // attach the overlay until initialization succeeds. React/Svelte dev
+  // lifecycles can cancel an annotator while Pixi is still starting.
   const osdCanvas = viewer.element.querySelector('.openseadragon-canvas');
   if (!osdCanvas) {
     throw new Error('OpenSeadragon canvas not found');
   }
-  osdCanvas.appendChild(canvas);
 
   // Create PixiJS stage
   const stage = await createPixiStage(viewer, canvas, {
@@ -219,6 +232,14 @@ export async function createOpenSeadragonAnnotator(
     visible: options.visible,
     layerManager,
   });
+
+  if (!getLiveViewerCanvas() || !osdCanvas.isConnected) {
+    stage.destroy();
+    canvas.remove();
+    throw new Error('OpenSeadragon viewer was destroyed before annotator initialization completed.');
+  }
+
+  osdCanvas.appendChild(canvas);
 
   // Load existing annotations from store
   store.all().forEach(annotation => {
@@ -300,7 +321,12 @@ export async function createOpenSeadragonAnnotator(
 
   // Handle resize
   const onResize = () => {
-    const { offsetWidth, offsetHeight } = viewer.canvas;
+    if (destroyed || !canvas.isConnected) return;
+
+    const liveViewerCanvas = getLiveViewerCanvas();
+    if (!liveViewerCanvas) return;
+
+    const { offsetWidth, offsetHeight } = liveViewerCanvas;
     canvas.width = offsetWidth;
     canvas.height = offsetHeight;
     stage.resize(offsetWidth, offsetHeight);
@@ -312,7 +338,15 @@ export async function createOpenSeadragonAnnotator(
   const resizeObserver = new ResizeObserver(() => {
     onResize();
   });
-  resizeObserver.observe(viewer.canvas);
+
+  const observedCanvas = getLiveViewerCanvas();
+  if (!observedCanvas) {
+    resizeObserver.disconnect();
+    stage.destroy();
+    canvas.remove();
+    throw new Error('OpenSeadragon viewer canvas was removed before annotator initialization completed.');
+  }
+  resizeObserver.observe(observedCanvas);
 
   // Helper to create a filter that combines user filter with layer visibility
   const createVisibilityFilter = (): Filter => {
@@ -766,6 +800,9 @@ export async function createOpenSeadragonAnnotator(
     },
 
     destroy() {
+      if (destroyed) return;
+      destroyed = true;
+
       store.unobserve(onStoreChange);
       layerManager.unobserve(onLayerChange);
       viewer.removeHandler('update-viewport', onViewportUpdate);
