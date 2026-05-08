@@ -20,7 +20,7 @@ export interface MaskLoaderOptions {
   /** Layer to assign annotations to (default: 'masks') */
   layer?: string;
   /** Mask type - auto-detects if not specified */
-  maskType?: 'auto' | 'binary' | 'instance8' | 'instance16';
+  maskType?: 'auto' | 'binary' | 'instance8' | 'instance16' | 'instance_rgb';
 }
 
 /**
@@ -500,6 +500,151 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
 }
 
 /**
+ * Load RGB-encoded instance mask (BC Cell API format)
+ * Encoding: R = cell_id >> 8 (high byte), G = cell_id & 0xFF (low byte), B = class
+ * Reconstructs 16-bit cell IDs from R and G channels
+ */
+async function loadMaskRGB(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
+  try {
+    const img = UPNG.decode(arrayBuffer);
+    const rawData = new Uint8Array(img.data);
+
+    const hasAlpha = img.ctype === 6;
+    const bytesPerPixel = hasAlpha ? 4 : 3;
+
+    try {
+      await initOpenCV();
+    } catch (error) {
+      return [];
+    }
+
+    if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
+      return [];
+    }
+
+    const cv = (window as any).cv;
+    const annotations: Annotation[] = [];
+    const { calculateBounds } = await import('../core/types');
+
+    // Reconstruct 16-bit cell IDs from R (high byte) and G (low byte) channels
+    const bboxes = new Map<number, {minX: number, minY: number, maxX: number, maxY: number, count: number}>();
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        const pixelOffset = (y * img.width + x) * bytesPerPixel;
+        const rVal = rawData[pixelOffset];
+        const gVal = rawData[pixelOffset + 1];
+        const cellId = (rVal << 8) | gVal;
+
+        if (cellId > 0) {
+          let b = bboxes.get(cellId);
+          if (!b) {
+            b = { minX: x, minY: y, maxX: x, maxY: y, count: 0 };
+            bboxes.set(cellId, b);
+          }
+          if (x < b.minX) b.minX = x;
+          if (x > b.maxX) b.maxX = x;
+          if (y < b.minY) b.minY = y;
+          if (y > b.maxY) b.maxY = y;
+          b.count++;
+        }
+      }
+    }
+
+    for (const [instanceId, b] of bboxes.entries()) {
+      if (b.count < 15) continue;
+
+      const w = b.maxX - b.minX + 1;
+      const h = b.maxY - b.minY + 1;
+      const sw = w + 2;
+      const sh = h + 2;
+
+      const subBinaryData = new Uint8Array(sw * sh);
+      for (let y = 0; y < h; y++) {
+        const srcRow = (y + b.minY) * img.width + b.minX;
+        const dstRow = (y + 1) * sw + 1;
+        for (let x = 0; x < w; x++) {
+          const pixelOffset = (srcRow + x) * bytesPerPixel;
+          const rVal = rawData[pixelOffset];
+          const gVal = rawData[pixelOffset + 1];
+          const cellId = (rVal << 8) | gVal;
+          if (cellId === instanceId) {
+            subBinaryData[dstRow + x] = 255;
+          }
+        }
+      }
+
+      const gray = new cv.Mat(sh, sw, cv.CV_8UC1);
+      gray.data.set(subBinaryData);
+
+      const binary = new cv.Mat();
+      cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
+
+      const contours = new cv.MatVector();
+      const hierarchy = new cv.Mat();
+      cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i);
+        const area = cv.contourArea(contour);
+
+        if (area < 15) continue;
+
+        const approx = new cv.Mat();
+        const perimeter = cv.arcLength(contour, true);
+        const epsilon = 0.005 * perimeter;
+        cv.approxPolyDP(contour, approx, epsilon, true);
+
+        const points: import('../core/types').Point[] = [];
+        for (let j = 0; j < approx.data32S.length; j += 2) {
+          points.push({
+            x: approx.data32S[j] + b.minX - 1,
+            y: approx.data32S[j + 1] + b.minY - 1,
+          });
+        }
+        approx.delete();
+
+        if (points.length >= 3) {
+          annotations.push({
+            id: `mask-rgb-${instanceId}-${i}`,
+            shape: {
+              type: 'polygon',
+              points,
+              bounds: calculateBounds({
+                type: 'polygon',
+                points,
+                bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+              }),
+            },
+            properties: {
+              source: 'png-mask',
+              type: 'region',
+              instanceId,
+              area,
+              layer: 'masks',
+            },
+            style: {
+              fill: '#FFFF00',
+              fillOpacity: 0.3,
+              stroke: '#FFFF00',
+              strokeWidth: 2,
+            },
+          });
+        }
+      }
+
+      gray.delete();
+      binary.delete();
+      contours.delete();
+      hierarchy.delete();
+    }
+
+    return annotations;
+  } catch (error) {
+    return [];
+  }
+}
+
+/**
  * Load PNG mask and extract polygon contours
  * Auto-detects mask type (binary, 8-bit instance, or 16-bit instance)
  */
@@ -507,6 +652,11 @@ async function loadMask(
   arrayBuffer: ArrayBuffer,
   maskType: MaskLoaderOptions['maskType'] = 'auto'
 ): Promise<Annotation[]> {
+  // Handle instance_rgb explicitly
+  if (maskType === 'instance_rgb') {
+    return loadMaskRGB(arrayBuffer);
+  }
+
   // Decode PNG to determine bit depth
   const img = UPNG.decode(arrayBuffer);
   const bitDepth = img.depth;
@@ -524,6 +674,11 @@ async function loadMask(
     if (bitDepth === 16) {
       actualType = 'instance16';
     } else if (bitDepth === 8 || bitDepth === 1) {
+      // For RGB images, auto-detect as instance_rgb (BC Cell API format)
+      if (img.ctype === 2 || img.ctype === 6) {
+        return loadMaskRGB(arrayBuffer);
+      }
+
       // Check if it's binary or instance mask by sampling pixel values
       const rawData = new Uint8Array(img.data);
       const uniqueValues = new Set<number>();
