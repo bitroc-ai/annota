@@ -50,6 +50,7 @@ class AnnotationStoreImpl implements AnnotationStore {
   private index: Map<string, Annotation>;
   private spatialIndex: SpatialIndex;
   private observers: StoreObserver[];
+  private cachedAll: Annotation[] | null = null;
 
   constructor() {
     this.index = new Map();
@@ -78,6 +79,7 @@ class AnnotationStoreImpl implements AnnotationStore {
 
     this.index.set(annotation.id, annotation);
     this.spatialIndex.insert(annotation);
+    this.cachedAll = null;
     this.emit({ created: [annotation], updated: [], deleted: [] });
   }
 
@@ -96,6 +98,7 @@ class AnnotationStoreImpl implements AnnotationStore {
       this.index.set(annotation.id, annotation);
       this.spatialIndex.insert(annotation);
     });
+    this.cachedAll = null;
 
     this.emit({
       created: annotations,
@@ -121,6 +124,7 @@ class AnnotationStoreImpl implements AnnotationStore {
 
     this.index.set(id, annotation);
     this.spatialIndex.insert(annotation); // Will remove old entry first
+    this.cachedAll = null;
 
     this.emit({
       created: [],
@@ -138,6 +142,7 @@ class AnnotationStoreImpl implements AnnotationStore {
 
     this.index.delete(id);
     this.spatialIndex.remove(id);
+    this.cachedAll = null;
 
     this.emit({
       created: [],
@@ -151,6 +156,7 @@ class AnnotationStoreImpl implements AnnotationStore {
 
     this.index.clear();
     this.spatialIndex.clear();
+    this.cachedAll = null;
 
     this.emit({
       created: [],
@@ -160,7 +166,10 @@ class AnnotationStoreImpl implements AnnotationStore {
   }
 
   all(): Annotation[] {
-    return Array.from(this.index.values());
+    if (!this.cachedAll) {
+      this.cachedAll = Array.from(this.index.values());
+    }
+    return this.cachedAll;
   }
 
   getAt(x: number, y: number, filter?: Filter, buffer = 0): Annotation | undefined {
