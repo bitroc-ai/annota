@@ -116,6 +116,7 @@
     "upng-js": "^2.1.0"
   },
   "devDependencies": {
+    "@astrojs/compiler": "3.0.1",
     "@sveltejs/package": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@types/openseadragon": "^5.0.2",

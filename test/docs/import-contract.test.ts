@@ -20,8 +20,10 @@ describe('documentation import contract', () => {
       'test/fixtures/docs-imports/indented-code-valid.mdx',
       'test/fixtures/docs-imports/html-comment-valid.astro',
       'test/fixtures/docs-imports/astro-comment-valid.astro',
+      'test/fixtures/docs-imports/astro-markup-position-valid.astro',
       'test/fixtures/docs-imports/backtick-info-valid.mdx',
-      'test/fixtures/docs-imports/namespace-dynamic-key-valid.mdx'
+      'test/fixtures/docs-imports/namespace-dynamic-key-valid.mdx',
+      'test/fixtures/docs-imports/namespace-reassignment-valid.mdx'
     );
     expect(fixture.status, fixture.stderr).toBe(0);
 
@@ -117,6 +119,26 @@ describe('documentation import contract', () => {
     expect(adjacent.stderr).toContain('"useAnnotator" must be imported from "annota/react"');
     expect(adjacent.stderr).not.toContain('"PointTool" must be imported');
     expect(adjacent.stderr).not.toContain('"loadH5Masks" must be imported');
+  });
+
+  it('only scans Code components in real Astro markup positions', () => {
+    const valid = checkDocs('test/fixtures/docs-imports/astro-markup-position-valid.astro');
+    expect(valid.status, valid.stderr).toBe(0);
+
+    const invalid = checkDocs('test/fixtures/docs-imports/astro-markup-position-invalid.astro');
+    expect(invalid.status).toBe(1);
+    expect(invalid.stderr.match(/"useTool" must be imported from "annota\/react"/g)).toHaveLength(1);
+    expect(invalid.stderr).not.toContain('"PointTool" must be imported');
+    expect(invalid.stderr).not.toContain('"loadH5Masks" must be imported');
+  });
+
+  it('updates or invalidates namespace aliases in source order', () => {
+    const invalid = checkDocs('test/fixtures/docs-imports/namespace-reassignment-invalid.mdx');
+    expect(invalid.status).toBe(1);
+    expect(invalid.stderr.match(/"PointTool" must be imported from "annota\/tools"/g)).toHaveLength(6);
+
+    const valid = checkDocs('test/fixtures/docs-imports/namespace-reassignment-valid.mdx');
+    expect(valid.status, valid.stderr).toBe(0);
   });
 
   it('rejects backticks in backtick-fence info without affecting later fence state', () => {

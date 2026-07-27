@@ -1,0 +1,32 @@
+# Invalidated namespace aliases
+
+```tsx
+import * as RootApi from 'annota';
+import * as ToolApi from 'annota/tools';
+
+let Alias = RootApi;
+Alias = { PointTool: class LocalPointTool {} };
+new Alias.PointTool();
+
+let FirstAlias = RootApi;
+let SecondAlias = FirstAlias;
+FirstAlias = { PointTool: class FirstLocalPointTool {} };
+SecondAlias = FirstAlias;
+new FirstAlias.PointTool();
+new SecondAlias.PointTool();
+
+let CanonicalAlias = ToolApi;
+new CanonicalAlias.PointTool();
+
+let BranchAlias = RootApi;
+if (shouldReplace) {
+  BranchAlias = { PointTool: class BranchLocalPointTool {} };
+}
+new BranchAlias.PointTool();
+
+let LoopAlias = RootApi;
+while (shouldContinue) {
+  LoopAlias = { PointTool: class LoopLocalPointTool {} };
+}
+new LoopAlias.PointTool();
+```

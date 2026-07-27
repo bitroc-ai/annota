@@ -71,12 +71,16 @@ framework-neutral 根入口导入 React API，或从非 canonical 入口导入 t
 - backtick fence 的 info string 含 backtick 时不得视为 opening fence；tilde fence 的
   info string 仍可包含 backtick，非法 opener 不能改变后续 fence parser 状态。
 - Astro 扫描必须忽略 HTML 与 Astro/JSX 注释中的 `<Code>`，同时保留真实代码字符串里的
-  comment-like 文本，并继续扫描注释相邻的真实 `<Code>`。
+  comment-like 文本，并继续扫描注释相邻的真实 `<Code>`；组件识别必须来自真实 Astro
+  markup AST 节点，其他 tag attribute、普通 JS/string/template 或表达式文本中的
+  component-like 字符串不属于用户代码示例。
 - 静态门禁应从 TypeScript 公共入口推导完整 export contract，检查 named、default、
   type、alias 和 namespace 用法，且不得依赖 docs Vite alias、构建后的 `dist` 或单个文件。
 - namespace source 必须沿静态 alias 链追踪，并覆盖 namespace/type namespace import、
   require/dynamic import、property/element access、静态 computed destructuring 以及后续
-  destructuring assignment；动态 computed key 不得产生臆测性违规。
+  destructuring assignment；alias 状态按 source order 更新，线性无条件重赋必须覆盖或
+  失效旧来源，分支/循环出口仅保留所有路径一致的来源；动态 computed key 与不确定来源
+  不得产生臆测性违规。
 
 ## Verification
 
@@ -97,5 +101,7 @@ pnpm --dir docs build
 - 文档 import 静态门禁在当前文档上通过，并对受控违规 fixture 返回失败。
 - Astro comment boundary、CommonMark backtick info string 和 namespace alias/usage
   回归 fixture 均通过。
+- Astro markup position 与 namespace reassign-before/after-use、两级 alias、分支/循环
+  保守失效 fixture 均通过。
 - 使用临时 changelog 内容按 publish 顺序运行 docs build 成功，且不污染工作区。
 - `git diff --check` 与最终工作区状态干净。

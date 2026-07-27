@@ -1,0 +1,44 @@
+# Position-sensitive namespace aliases
+
+```tsx
+import * as RootApi from 'annota';
+import * as ToolApi from 'annota/tools';
+
+let Alias = RootApi;
+Alias.PointTool;
+Alias = { PointTool: class LocalPointTool {} };
+new Alias.PointTool();
+Alias = RootApi;
+Alias.PointTool;
+
+let FirstAlias = RootApi;
+let SecondAlias = FirstAlias;
+FirstAlias = { PointTool: class FirstLocalPointTool {} };
+new FirstAlias.PointTool();
+new SecondAlias.PointTool();
+SecondAlias = { PointTool: class SecondLocalPointTool {} };
+new SecondAlias.PointTool();
+
+let CanonicalAlias = ToolApi;
+new CanonicalAlias.PointTool();
+CanonicalAlias = RootApi;
+new CanonicalAlias.PointTool();
+CanonicalAlias = ToolApi;
+new CanonicalAlias.PointTool();
+
+let BranchAlias = RootApi;
+if (shouldReplace) {
+  new BranchAlias.PointTool();
+  BranchAlias = { PointTool: class BranchLocalPointTool {} };
+  new BranchAlias.PointTool();
+}
+new BranchAlias.PointTool();
+
+let LoopAlias = RootApi;
+while (shouldContinue) {
+  new LoopAlias.PointTool();
+  LoopAlias = { PointTool: class LoopLocalPointTool {} };
+  new LoopAlias.PointTool();
+}
+new LoopAlias.PointTool();
+```

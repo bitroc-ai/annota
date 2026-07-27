@@ -1,0 +1,19 @@
+---
+const frontmatterString = '<Code code={"import { PointTool } from \\'annota\\';"} />';
+const frontmatterTemplate = `<Code code={'import { loadH5Masks } from "annota";'} />`;
+---
+
+<div data-example={'<Code code={"import { PointTool } from \'annota\';"} />'} />
+<div data-template={`<Code code={'import { loadH5Masks } from "annota";'} />`} />
+<div data-quoted='<Code code={"import { useTool } from \"annota\";"} />' />
+
+<script>
+  const scriptString = '<Code code={"import { PointTool } from \\'annota\\';"} />';
+</script>
+
+{'<Code code={"import { loadH5Masks } from \\'annota\\';"} />'}
+&lt;Code code={'ordinary text'} />
+
+<Code code={`import { PointTool } from 'annota/tools';`} />
+<Code code={'import { loadH5Masks } from \'annota/loaders\';'}></Code>
+<Code code={"import { useTool } from \"annota/react\";"} />

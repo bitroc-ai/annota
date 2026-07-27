@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { parse as parseAstro } from '@astrojs/compiler';
 import ts from 'typescript';
 
 const PUBLIC_ENTRY_SOURCES = new Map([
@@ -172,105 +173,6 @@ function extractFences(source) {
   return fences;
 }
 
-function astroBodyOffset(source) {
-  if (!source.startsWith('---')) return 0;
-  const closing = /^---[ \t]*\r?$/gm;
-  closing.lastIndex = source.indexOf('\n') + 1;
-  const match = closing.exec(source);
-  return match ? match.index + match[0].length : 0;
-}
-
-function astroCommentRanges(source, bodyOffset) {
-  const ranges = [];
-  let braceDepth = 0;
-  let escaped = false;
-  let inTag = false;
-  let quote;
-
-  for (let index = bodyOffset; index < source.length; index += 1) {
-    const character = source[index];
-    if (quote) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === '\\') {
-        escaped = true;
-      } else if (character === quote) {
-        quote = undefined;
-      }
-      continue;
-    }
-
-    const htmlComment = !inTag && braceDepth === 0 && source.startsWith('<!--', index);
-    const astroComment = source.startsWith('{/*', index);
-    if (htmlComment || astroComment) {
-      const closingToken = htmlComment ? '-->' : '*/}';
-      const closingIndex = source.indexOf(
-        closingToken,
-        index + (htmlComment ? '<!--'.length : '{/*'.length)
-      );
-      const end = closingIndex === -1
-        ? source.length
-        : closingIndex + closingToken.length;
-      ranges.push({
-        end,
-        start: index,
-      });
-      index = end - 1;
-      continue;
-    }
-
-    if ((inTag || braceDepth > 0) && (character === '\'' || character === '"' || character === '`')) {
-      quote = character;
-    } else if (character === '{') {
-      braceDepth += 1;
-    } else if (character === '}') {
-      braceDepth = Math.max(0, braceDepth - 1);
-    } else if (character === '<' && braceDepth === 0) {
-      inTag = true;
-    } else if (character === '>' && braceDepth === 0) {
-      inTag = false;
-    }
-  }
-
-  return ranges;
-}
-
-function containingRange(offset, ranges) {
-  return ranges.find(range => offset >= range.start && offset < range.end);
-}
-
-function findAstroOpeningTagEnd(source, start) {
-  let quote;
-  let escaped = false;
-  let braceDepth = 0;
-
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index];
-    if (quote) {
-      if (escaped) {
-        escaped = false;
-      } else if (character === '\\') {
-        escaped = true;
-      } else if (character === quote) {
-        quote = undefined;
-      }
-      continue;
-    }
-
-    if (character === '\'' || character === '"' || character === '`') {
-      quote = character;
-    } else if (character === '{') {
-      braceDepth += 1;
-    } else if (character === '}') {
-      braceDepth = Math.max(0, braceDepth - 1);
-    } else if (character === '>' && braceDepth === 0) {
-      return index;
-    }
-  }
-
-  return -1;
-}
-
 function parseStaticStringLiteral(literal) {
   const sourceFile = ts.createSourceFile(
     'astro-code-attribute.ts',
@@ -284,59 +186,32 @@ function parseStaticStringLiteral(literal) {
   return initializer && ts.isStringLiteralLike(initializer) ? initializer.text : undefined;
 }
 
-function extractAstroCodeExamples(source) {
+async function extractAstroCodeExamples(source) {
   const examples = [];
-  const componentPattern = /<Code(?=[\s/>])/g;
-  const bodyOffset = astroBodyOffset(source);
-  const commentRanges = astroCommentRanges(source, bodyOffset);
-  componentPattern.lastIndex = bodyOffset;
+  const { ast } = await parseAstro(source, { position: true });
 
-  let component;
-  while ((component = componentPattern.exec(source)) !== null) {
-    const tagStart = component.index;
-    const commentRange = containingRange(tagStart, commentRanges);
-    if (commentRange) {
-      componentPattern.lastIndex = commentRange.end;
-      continue;
-    }
-
-    const tagEnd = findAstroOpeningTagEnd(source, tagStart + component[0].length);
-    if (tagEnd === -1) continue;
-
-    const openingTag = source.slice(tagStart, tagEnd + 1);
-    const codeAttribute = /(?:^|\s)code\s*=\s*\{\s*/.exec(openingTag);
-    if (!codeAttribute) continue;
-
-    const literalStart = codeAttribute.index + codeAttribute[0].length;
-    const quote = openingTag[literalStart];
-    if (quote !== '\'' && quote !== '"' && quote !== '`') continue;
-
-    let escaped = false;
-    let literalEnd = -1;
-    for (let index = literalStart + 1; index < openingTag.length; index += 1) {
-      const character = openingTag[index];
-      if (escaped) {
-        escaped = false;
-      } else if (character === '\\') {
-        escaped = true;
-      } else if (character === quote) {
-        literalEnd = index;
-        break;
+  const visit = node => {
+    if (node.type === 'component' && node.name === 'Code') {
+      const attribute = node.attributes?.find(candidate =>
+        candidate.type === 'attribute' &&
+        candidate.kind === 'expression' &&
+        candidate.name === 'code'
+      );
+      if (attribute) {
+        const content = parseStaticStringLiteral(attribute.value);
+        if (content !== undefined) {
+          examples.push({
+            allowLegacyImports: false,
+            content,
+            line: attribute.position?.start?.line ?? node.position?.start?.line ?? 1,
+          });
+        }
       }
     }
-    if (literalEnd === -1) continue;
 
-    const literal = openingTag.slice(literalStart, literalEnd + 1);
-    const content = parseStaticStringLiteral(literal);
-    if (content === undefined) continue;
-
-    examples.push({
-      allowLegacyImports: false,
-      content,
-      line: lineAt(source, tagStart + literalStart + 1),
-    });
-    componentPattern.lastIndex = tagEnd + 1;
-  }
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(ast);
 
   return examples;
 }
@@ -593,14 +468,63 @@ function namespaceRequest(names) {
 function inspectRegion(file, region, violations) {
   const analysis = createSnippetProgram(file, region.content);
   const { checker, sourceFile } = analysis;
-  const namespaceSymbols = new Map();
+  const namespaceState = new Map();
 
   const locationFor = node => ({
     file,
     line: region.line + sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line,
   });
 
-  const seedImports = node => {
+  const setNamespace = (identifier, expression, state) => {
+    const symbol = symbolForIdentifier(checker, identifier);
+    if (!symbol) return;
+    const specifier = expression
+      ? namespaceFromExpression(expression, checker, state)
+      : undefined;
+    if (specifier) state.set(symbol, specifier);
+    else state.delete(symbol);
+  };
+
+  const mergeNamespaceStates = (state, alternatives) => {
+    const symbols = new Set(alternatives.flatMap(alternative => [...alternative.keys()]));
+    state.clear();
+    for (const symbol of symbols) {
+      const specifier = alternatives[0].get(symbol);
+      if (
+        specifier !== undefined &&
+        alternatives.every(alternative => alternative.get(symbol) === specifier)
+      ) {
+        state.set(symbol, specifier);
+      }
+    }
+  };
+
+  const cloneState = state => new Map(state);
+
+  const isCompoundAssignment = node =>
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+    node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+    node.operatorToken.kind !== ts.SyntaxKind.EqualsToken;
+
+  const isShortCircuitExpression = node =>
+    ts.isBinaryExpression(node) &&
+    (
+      node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+      node.operatorToken.kind === ts.SyntaxKind.BarBarToken ||
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    );
+
+  const checkNamespaceNames = (specifier, names, node) => {
+    if (!specifier || names.length === 0) return;
+    checkSpecifier(specifier, namespaceRequest(names), locationFor(node), violations);
+  }
+
+  const inspectChildren = (node, state) => {
+    ts.forEachChild(node, child => inspectUsage(child, state));
+  };
+
+  const inspectUsage = (node, state) => {
     if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
       const specifier = node.moduleSpecifier.text;
       const request = { hasDefault: false, hasNamespace: false, names: [] };
@@ -611,14 +535,17 @@ function inspectRegion(file, region, violations) {
           for (const element of clause.namedBindings.elements) {
             request.names.push((element.propertyName ?? element.name).text);
           }
-        } else if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+        } else if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
           request.hasNamespace = true;
           const symbol = symbolForIdentifier(checker, clause.namedBindings.name);
-          if (symbol) namespaceSymbols.set(symbol, specifier);
+          if (symbol) state.set(symbol, specifier);
         }
       }
       checkSpecifier(specifier, request, locationFor(node), violations);
-    } else if (
+      return;
+    }
+
+    if (
       ts.isImportEqualsDeclaration(node) &&
       ts.isExternalModuleReference(node.moduleReference) &&
       node.moduleReference.expression &&
@@ -626,101 +553,162 @@ function inspectRegion(file, region, violations) {
     ) {
       const specifier = node.moduleReference.expression.text;
       const symbol = symbolForIdentifier(checker, node.name);
-      if (symbol) namespaceSymbols.set(symbol, specifier);
+      if (symbol) state.set(symbol, specifier);
       checkSpecifier(
         specifier,
         { hasDefault: false, hasNamespace: true, names: [] },
         locationFor(node),
         violations
       );
+      return;
     }
-    ts.forEachChild(node, seedImports);
-  };
-  seedImports(sourceFile);
 
-  let changed = true;
-  while (changed) {
-    changed = false;
-    const propagateAliases = node => {
-      let identifier;
-      let expression;
-      if (
-        ts.isVariableDeclaration(node) &&
-        ts.isIdentifier(node.name) &&
-        node.initializer
-      ) {
-        identifier = node.name;
-        expression = node.initializer;
-      } else if (
-        ts.isBinaryExpression(node) &&
-        node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-        ts.isIdentifier(node.left)
-      ) {
-        identifier = node.left;
-        expression = node.right;
-      }
+    if (ts.isVariableDeclaration(node)) {
+      if (node.type) inspectUsage(node.type, state);
+      if (node.initializer) inspectUsage(node.initializer, state);
 
-      if (identifier && expression) {
-        const specifier = namespaceFromExpression(expression, checker, namespaceSymbols);
-        const symbol = symbolForIdentifier(checker, identifier);
-        if (specifier && symbol && !namespaceSymbols.has(symbol)) {
-          namespaceSymbols.set(symbol, specifier);
-          changed = true;
-        }
-      }
-      ts.forEachChild(node, propagateAliases);
-    };
-    propagateAliases(sourceFile);
-  }
-
-  const checkNamespaceNames = (specifier, names, node) => {
-    if (!specifier || names.length === 0) return;
-    checkSpecifier(specifier, namespaceRequest(names), locationFor(node), violations);
-  };
-
-  const inspectUsage = node => {
-    if (ts.isVariableDeclaration(node) && node.initializer) {
-      const specifier = namespaceFromExpression(node.initializer, checker, namespaceSymbols);
+      const specifier = node.initializer
+        ? namespaceFromExpression(node.initializer, checker, state)
+        : undefined;
       if (specifier && ts.isObjectBindingPattern(node.name)) {
         checkNamespaceNames(specifier, objectBindingNames(node.name), node);
-      } else if (
-        specifier &&
-        ts.isIdentifier(node.name) &&
-        directModuleSpecifier(node.initializer)
-      ) {
-        checkSpecifier(
-          specifier,
-          { hasDefault: false, hasNamespace: true, names: [] },
-          locationFor(node),
-          violations
-        );
+      } else if (ts.isIdentifier(node.name)) {
+        if (specifier && node.initializer && directModuleSpecifier(node.initializer)) {
+          checkSpecifier(
+            specifier,
+            { hasDefault: false, hasNamespace: true, names: [] },
+            locationFor(node),
+            violations
+          );
+        }
+        setNamespace(node.name, node.initializer, state);
       }
-    } else if (
+      return;
+    }
+
+    if (
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.EqualsToken
     ) {
-      const specifier = namespaceFromExpression(node.right, checker, namespaceSymbols);
+      inspectUsage(node.right, state);
+      const specifier = namespaceFromExpression(node.right, checker, state);
       const left = unwrapExpression(node.left);
       if (specifier && left && ts.isObjectLiteralExpression(left)) {
         checkNamespaceNames(specifier, objectAssignmentNames(left), node);
+        inspectUsage(left, state);
+      } else if (left && ts.isIdentifier(left)) {
+        if (specifier && directModuleSpecifier(node.right)) {
+          checkSpecifier(
+            specifier,
+            { hasDefault: false, hasNamespace: true, names: [] },
+            locationFor(node),
+            violations
+          );
+        }
+        setNamespace(left, node.right, state);
+      } else {
+        inspectUsage(node.left, state);
       }
+      return;
+    }
+
+    if (isCompoundAssignment(node) && ts.isIdentifier(node.left)) {
+      inspectUsage(node.right, state);
+      setNamespace(node.left, undefined, state);
+      return;
+    }
+
+    if (ts.isIfStatement(node)) {
+      inspectUsage(node.expression, state);
+      const thenState = cloneState(state);
+      inspectUsage(node.thenStatement, thenState);
+      const elseState = cloneState(state);
+      if (node.elseStatement) inspectUsage(node.elseStatement, elseState);
+      mergeNamespaceStates(state, [thenState, elseState]);
+      return;
+    }
+
+    if (ts.isConditionalExpression(node)) {
+      inspectUsage(node.condition, state);
+      const whenTrueState = cloneState(state);
+      inspectUsage(node.whenTrue, whenTrueState);
+      const whenFalseState = cloneState(state);
+      inspectUsage(node.whenFalse, whenFalseState);
+      mergeNamespaceStates(state, [whenTrueState, whenFalseState]);
+      return;
+    }
+
+    if (isShortCircuitExpression(node)) {
+      inspectUsage(node.left, state);
+      const rightState = cloneState(state);
+      inspectUsage(node.right, rightState);
+      mergeNamespaceStates(state, [cloneState(state), rightState]);
+      return;
+    }
+
+    if (ts.isForStatement(node)) {
+      if (node.initializer) inspectUsage(node.initializer, state);
+      if (node.condition) inspectUsage(node.condition, state);
+      const skippedState = cloneState(state);
+      const iterationState = cloneState(state);
+      inspectUsage(node.statement, iterationState);
+      if (node.incrementor) inspectUsage(node.incrementor, iterationState);
+      mergeNamespaceStates(state, [skippedState, iterationState]);
+      return;
+    }
+
+    if (ts.isForInStatement(node) || ts.isForOfStatement(node)) {
+      inspectUsage(node.expression, state);
+      const skippedState = cloneState(state);
+      const iterationState = cloneState(state);
+      inspectUsage(node.initializer, iterationState);
+      inspectUsage(node.statement, iterationState);
+      mergeNamespaceStates(state, [skippedState, iterationState]);
+      return;
+    }
+
+    if (ts.isWhileStatement(node)) {
+      inspectUsage(node.expression, state);
+      const skippedState = cloneState(state);
+      const iterationState = cloneState(state);
+      inspectUsage(node.statement, iterationState);
+      mergeNamespaceStates(state, [skippedState, iterationState]);
+      return;
+    }
+
+    if (ts.isDoStatement(node)) {
+      inspectUsage(node.statement, state);
+      inspectUsage(node.expression, state);
+      return;
     }
 
     if (ts.isPropertyAccessExpression(node)) {
-      const specifier = namespaceFromExpression(node.expression, checker, namespaceSymbols);
+      const specifier = namespaceFromExpression(node.expression, checker, state);
       checkNamespaceNames(specifier, [node.name.text], node);
-    } else if (ts.isElementAccessExpression(node)) {
-      const specifier = namespaceFromExpression(node.expression, checker, namespaceSymbols);
+      inspectChildren(node, state);
+      return;
+    }
+
+    if (ts.isElementAccessExpression(node)) {
+      const specifier = namespaceFromExpression(node.expression, checker, state);
       const argument = node.argumentExpression && unwrapExpression(node.argumentExpression);
       if (specifier && argument && ts.isStringLiteralLike(argument)) {
         checkNamespaceNames(specifier, [argument.text], node);
       }
-    } else if (ts.isQualifiedName(node)) {
+      inspectChildren(node, state);
+      return;
+    }
+
+    if (ts.isQualifiedName(node)) {
       const specifier = ts.isIdentifier(node.left)
-        ? namespaceFromExpression(node.left, checker, namespaceSymbols)
+        ? namespaceFromExpression(node.left, checker, state)
         : undefined;
       checkNamespaceNames(specifier, [node.right.text], node);
-    } else if (
+      inspectChildren(node, state);
+      return;
+    }
+
+    if (
       ts.isCallExpression(node) &&
       node.arguments.length === 1 &&
       ts.isStringLiteralLike(node.arguments[0])
@@ -734,10 +722,13 @@ function inspectRegion(file, region, violations) {
           violations
         );
       }
+      inspectChildren(node, state);
+      return;
     }
-    ts.forEachChild(node, inspectUsage);
+
+    inspectChildren(node, state);
   };
-  inspectUsage(sourceFile);
+  inspectUsage(sourceFile, namespaceState);
 }
 
 function inspectExample(file, example, violations) {
@@ -781,7 +772,7 @@ const violations = [];
 for (const file of files.sort()) {
   const source = await readFile(file, 'utf8');
   const examples = path.extname(file).toLowerCase() === '.astro'
-    ? extractAstroCodeExamples(source)
+    ? await extractAstroCodeExamples(source)
     : extractFences(source);
   for (const example of examples) {
     inspectExample(path.relative(process.cwd(), file) || file, example, violations);
