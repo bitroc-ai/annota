@@ -302,7 +302,7 @@ export function defineLayerManagerContract(
       expect(manager.getLayerForAnnotation(fallback)?.id).toBe('default');
     });
 
-    it('returns frozen detached snapshots from every read and observer boundary', () => {
+    it('returns frozen detached snapshots from every read and layer event boundary', () => {
       const manager = factory();
       manager.createLayer('explicit-snapshot', {});
       manager.createLayer('filtered-snapshot', {
@@ -311,6 +311,58 @@ export function defineLayerManagerContract(
       const observer = vi.fn();
       manager.observe(observer);
       const created = manager.createLayer('event-snapshot', { visible: true });
+
+      const assertEventSnapshot = (
+        index: number,
+        type: 'created' | 'updated' | 'reordered' | 'deleted'
+      ) => {
+        const event = observer.mock.calls[index][0];
+        expect(event.type).toBe(type);
+        expect(Object.isFrozen(event)).toBe(true);
+        expect(Object.isFrozen(event.layers)).toBe(true);
+        expect(Object.isFrozen(event.layers[0])).toBe(true);
+        expect(Reflect.set(event.layers[0], 'visible', false)).toBe(false);
+        expect(Reflect.set(event.layers, 0, manager.getLayer('default'))).toBe(false);
+        return event;
+      };
+
+      const createdEvent = assertEventSnapshot(0, 'created');
+      const createdRead = manager.getLayer('event-snapshot')!;
+      expect(createdEvent.layers[0]).not.toBe(created);
+      expect(createdEvent.layers[0]).not.toBe(createdRead);
+      expect(createdRead.visible).toBe(true);
+
+      manager.updateLayer('event-snapshot', { name: 'Updated Snapshot' });
+      const updatedEvent = assertEventSnapshot(1, 'updated');
+      const updatedRead = manager.getLayer('event-snapshot')!;
+      expect(updatedEvent.layers[0]).not.toBe(createdEvent.layers[0]);
+      expect(updatedEvent.layers[0]).not.toBe(updatedRead);
+      expect(updatedRead).toMatchObject({
+        name: 'Updated Snapshot',
+        visible: true,
+      });
+
+      manager.setLayerZIndex('event-snapshot', 7);
+      const reorderedEvent = assertEventSnapshot(2, 'reordered');
+      const reorderedRead = manager.getLayer('event-snapshot')!;
+      expect(reorderedEvent.layers[0]).not.toBe(updatedEvent.layers[0]);
+      expect(reorderedEvent.layers[0]).not.toBe(reorderedRead);
+      expect(reorderedRead).toMatchObject({
+        zIndex: 7,
+        visible: true,
+      });
+
+      manager.deleteLayer('event-snapshot');
+      const deletedEvent = assertEventSnapshot(3, 'deleted');
+      expect(deletedEvent.layers[0]).not.toBe(reorderedEvent.layers[0]);
+      expect(manager.getLayer('event-snapshot')).toBeUndefined();
+      expect(new Set([createdEvent, updatedEvent, reorderedEvent, deletedEvent]).size).toBe(4);
+      expect(new Set([
+        createdEvent.layers,
+        updatedEvent.layers,
+        reorderedEvent.layers,
+        deletedEvent.layers,
+      ]).size).toBe(4);
 
       const explicitAnnotation = normalizeAnnotation({
         ...point('explicit-snapshot-ann', 1),
@@ -329,7 +381,7 @@ export function defineLayerManagerContract(
       const ordered = manager.getLayersByZIndex();
       const snapshots = [
         created,
-        manager.getLayer('event-snapshot')!,
+        manager.getLayer('explicit-snapshot')!,
         ...all,
         ...visible,
         ...ordered,
@@ -345,18 +397,11 @@ export function defineLayerManagerContract(
         expect(Object.isFrozen(snapshot)).toBe(true);
         expect(Reflect.set(snapshot, 'visible', false)).toBe(false);
       });
-      const event = observer.mock.calls[0][0];
-      expect(Object.isFrozen(event)).toBe(true);
-      expect(Object.isFrozen(event.layers)).toBe(true);
-      expect(Object.isFrozen(event.layers[0])).toBe(true);
-      expect(Reflect.set(event.layers[0], 'visible', false)).toBe(false);
-      expect(Reflect.set(event.layers, 0, manager.getLayer('default'))).toBe(false);
 
-      expect(manager.getLayer('event-snapshot')?.visible).toBe(true);
       expect(manager.getLayer('explicit-snapshot')?.visible).toBe(true);
       expect(manager.getLayer('filtered-snapshot')?.visible).toBe(true);
       expect(manager.getLayer('default')?.visible).toBe(true);
-      expect(observer).toHaveBeenCalledTimes(1);
+      expect(observer).toHaveBeenCalledTimes(4);
     });
 
     it('rejects duplicates and safely ignores missing or protected mutations', () => {
@@ -648,6 +693,70 @@ export function defineHistoryManagerContract(
       limited.undo();
       limited.undo();
       expect(limited.canUndo()).toBe(false);
+    });
+
+    it('clears a stale redo branch after a successful merge and emits the merged state once', () => {
+      const manager = factory({ enableMerging: true });
+      const state = { value: 0 };
+      let total = 1;
+      const merge = vi.fn((command: Command) => {
+        const candidate = command as Command & { amount?: number };
+        if (candidate.amount === undefined) return false;
+        total += candidate.amount;
+        return true;
+      });
+      const commandA: Command & { amount: number } = {
+        amount: 1,
+        execute: () => { state.value += 1; },
+        undo: () => { state.value -= total; },
+        redo: () => { state.value += total; },
+        merge,
+      };
+      const commandB = numericCommand(state, 10);
+      const commandC: Command & { amount: number } = {
+        amount: 2,
+        execute: () => { state.value += 2; },
+        undo: () => { state.value -= 2; },
+        redo: () => { state.value += 2; },
+      };
+
+      manager.execute(commandA);
+      manager.execute(commandB);
+      manager.undo();
+      expect(state.value).toBe(1);
+      expect(manager.getRedoSize()).toBe(1);
+      merge.mockClear();
+
+      const observer = vi.fn();
+      manager.observe(observer);
+      manager.execute(commandC);
+      expect(merge).toHaveBeenCalledTimes(1);
+      expect(state.value).toBe(3);
+      expect(manager.getUndoSize()).toBe(1);
+      expect(manager.getRedoSize()).toBe(0);
+      expect(manager.canRedo()).toBe(false);
+      expect(observer).toHaveBeenCalledTimes(1);
+      expect(observer).toHaveBeenLastCalledWith({
+        canUndo: true,
+        canRedo: false,
+        undoSize: 1,
+        redoSize: 0,
+      });
+
+      manager.redo();
+      expect(state.value).toBe(3);
+      expect(observer).toHaveBeenCalledTimes(1);
+      manager.undo();
+      expect(state.value).toBe(0);
+      expect(manager.getUndoSize()).toBe(0);
+      expect(manager.getRedoSize()).toBe(1);
+      expect(observer).toHaveBeenCalledTimes(2);
+      expect(observer).toHaveBeenLastCalledWith({
+        canUndo: false,
+        canRedo: true,
+        undoSize: 0,
+        redoSize: 1,
+      });
     });
 
     it('does not mutate an existing merge candidate when the new command fails to execute', () => {

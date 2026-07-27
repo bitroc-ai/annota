@@ -470,6 +470,7 @@ export class MemoryHistoryManager implements HistoryManager {
     if (this.enableMerging && this.undoStack.length) {
       const previous = this.undoStack[this.undoStack.length - 1];
       if (previous.merge?.(command)) {
+        this.redoStack.length = 0;
         this.emit();
         return;
       }

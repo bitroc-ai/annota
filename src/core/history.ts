@@ -348,6 +348,9 @@ class HistoryManagerImpl implements HistoryManager {
     if (this.enableMerging && this.undoStack.length > 0) {
       const lastCommand = this.undoStack[this.undoStack.length - 1];
       if (lastCommand.merge && lastCommand.merge(command)) {
+        // A successfully executed command always starts a new history branch,
+        // even when it is folded into the current undo record.
+        this.redoStack = [];
         this.emit();
         return;
       }
