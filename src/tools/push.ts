@@ -119,7 +119,7 @@ export class PushTool extends BaseTool {
     const clickPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
 
     // Check if clicking directly on annotation center (not on vertices)
-    const annotations = this.annotator.state.store.all();
+    const annotations = this.annotator.unsafeState.store.all();
     const clickedOnAnnotation = annotations.some((ann: Annotation) => {
       const { bounds } = ann.shape;
       const isInBounds =

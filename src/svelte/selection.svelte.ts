@@ -17,7 +17,7 @@ export function selection(): () => Annotation[] {
       return;
     }
 
-    const store = annotator.state.store;
+    const store = annotator.unsafeState.store;
     if (!store) {
       selectedIds = [];
       return;
@@ -25,7 +25,7 @@ export function selection(): () => Annotation[] {
 
     // Subscribe to selection changes via observer
     const handleSelectionChange = () => {
-      const currentIds = annotator.state.selection.getSelected();
+      const currentIds = annotator.unsafeState.selection.getSelected();
       selectedIds = currentIds;
     };
 
@@ -33,7 +33,7 @@ export function selection(): () => Annotation[] {
     handleSelectionChange();
 
     // Observe selection changes
-    annotator.state.selection.observe(handleSelectionChange);
+    annotator.unsafeState.selection.observe(handleSelectionChange);
 
     // Subscribe to store changes to re-render when selected annotations are updated
     const handleStoreChange = (event: any) => {
@@ -45,14 +45,14 @@ export function selection(): () => Annotation[] {
 
       if (hasSelectedUpdate) {
         // Update selectedIds to trigger reactivity
-        selectedIds = [...annotator.state.selection.getSelected()];
+        selectedIds = [...annotator.unsafeState.selection.getSelected()];
       }
     };
 
     store.observe(handleStoreChange);
 
     return () => {
-      annotator.state.selection.unobserve(handleSelectionChange);
+      annotator.unsafeState.selection.unobserve(handleSelectionChange);
       store.unobserve(handleStoreChange);
     };
   });

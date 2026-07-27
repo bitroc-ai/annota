@@ -278,7 +278,7 @@ export class CurveTool extends BaseTool {
     document.addEventListener('keydown', this.onKeyDown);
     // Set flag to tell annotator this tool wants exclusive control
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = true;
+      this.annotator.unsafeState.toolDrawing.active = true;
     }
   }
 
@@ -295,7 +295,7 @@ export class CurveTool extends BaseTool {
 
     // Clear flag so annotator can handle events again
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = false;
+      this.annotator.unsafeState.toolDrawing.active = false;
     }
 
     super.destroy();

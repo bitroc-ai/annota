@@ -187,25 +187,31 @@ async function extractContoursWithOpenCv<A>(
   const cv = getCv();
   const width = region.maxX - region.minX + 3;
   const height = region.maxY - region.minY + 3;
-  const source = new cv.Mat(height, width, cv.CV_8UC1);
-  const contours = new cv.MatVector();
-  const hierarchy = new cv.Mat();
+  let source: CvMat | undefined;
+  let contours: CvMatVector | undefined;
+  let hierarchy: CvMat | undefined;
   try {
-    source.data.fill(0);
+    const initializedSource = new cv.Mat(height, width, cv.CV_8UC1);
+    source = initializedSource;
+    const initializedContours = new cv.MatVector();
+    contours = initializedContours;
+    const initializedHierarchy = new cv.Mat();
+    hierarchy = initializedHierarchy;
+    initializedSource.data.fill(0);
     region.pixels.forEach(({ x, y }) => {
-      source.data[(y - region.minY + 1) * width + (x - region.minX + 1)] = 255;
+      initializedSource.data[(y - region.minY + 1) * width + (x - region.minX + 1)] = 255;
     });
     cv.findContours(
-      source,
-      contours,
-      hierarchy,
+      initializedSource,
+      initializedContours,
+      initializedHierarchy,
       cv.RETR_EXTERNAL,
       cv.CHAIN_APPROX_SIMPLE
     );
 
     const extracted: ExtractedContour[] = [];
-    for (let index = 0; index < contours.size(); index++) {
-      const contour = contours.get(index);
+    for (let index = 0; index < initializedContours.size(); index++) {
+      const contour = initializedContours.get(index);
       try {
         const area = cv.contourArea(contour);
         const approx = new cv.Mat();
@@ -234,9 +240,9 @@ async function extractContoursWithOpenCv<A>(
       { cause }
     );
   } finally {
-    hierarchy.delete();
-    contours.delete();
-    source.delete();
+    hierarchy?.delete();
+    contours?.delete();
+    source?.delete();
   }
 }
 

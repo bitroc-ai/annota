@@ -44,7 +44,7 @@ interface GeoJSONFeatureCollection {
  *
  * @example
  * ```ts
- * const annotations = annotator.state.store.all();
+ * const annotations = annotator.annotations.list();
  * const json = exportJson(annotations);
  *
  * // Download as file
@@ -195,7 +195,7 @@ function annotationToGeoJSONFeature(annotation: Annotation): GeoJSONFeature | nu
  *
  * @example
  * ```ts
- * const annotations = annotator.state.store.all();
+ * const annotations = annotator.annotations.list();
  * const json = exportJson(annotations);
  * downloadJson(json, 'my-annotations.geojson');
  * ```

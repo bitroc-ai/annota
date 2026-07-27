@@ -32,9 +32,8 @@ depends-on: []
 - 建立可复现 benchmark；若无法形成可信数字，则删除未经验证的性能承诺。
 - 文档站 chunk/sitemap 整理。
 
-兼容策略严格遵循分析文档第 6.8 节：不得删除现有扁平 API、旧事件或旧样式入口；
-根入口 React 导出迁移到 `annota/legacy-react` 兼容入口，以保证 canonical 根入口不
-加载 optional React peer。旧入口只能代理到新实现并附带明确 deprecated 信息。
+兼容策略严格遵循分析文档第 6.8 节：不得删除现有扁平 API、根入口 React 导出、
+旧事件或旧样式入口。旧入口只能代理到新实现并附带明确 deprecated 信息。
 
 ## Context
 

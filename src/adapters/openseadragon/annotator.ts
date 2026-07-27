@@ -91,6 +91,73 @@ export interface OpenSeadragonAnnotatorState {
   activeTool: { current: { enabled?: boolean; destroy?(): void } | undefined };
 }
 
+export type ReadonlyAnnotationStore = Readonly<
+  Pick<
+    AnnotationStore,
+    'get' | 'all' | 'getAt' | 'search' | 'getIntersecting' | 'observe' | 'unobserve'
+  >
+>;
+
+export type ReadonlyLayerManager = Readonly<
+  Pick<
+    LayerManager,
+    | 'getLayer'
+    | 'getAllLayers'
+    | 'isLayerVisible'
+    | 'isLayerLocked'
+    | 'getLayerForAnnotation'
+    | 'getVisibleLayers'
+    | 'getLayersByZIndex'
+    | 'observe'
+    | 'unobserve'
+  >
+>;
+
+export type ReadonlySelectionManager = Readonly<
+  Pick<
+    SelectionManager,
+    | 'getSelected'
+    | 'isSelected'
+    | 'hasSelection'
+    | 'getSelectionCount'
+    | 'observe'
+    | 'unobserve'
+  >
+>;
+
+export type ReadonlyHistoryManager = Readonly<
+  Pick<
+    HistoryManager,
+    | 'canUndo'
+    | 'canRedo'
+    | 'getUndoSize'
+    | 'getRedoSize'
+    | 'isEnabled'
+    | 'observe'
+    | 'unobserve'
+  >
+>;
+
+/**
+ * Read-only compatibility view. Mutations must go through the capability
+ * controllers so they receive normalization, history, and event metadata.
+ */
+export interface OpenSeadragonAnnotatorReadonlyState {
+  readonly store: ReadonlyAnnotationStore;
+  readonly layerManager: ReadonlyLayerManager;
+  readonly selection: ReadonlySelectionManager;
+  readonly history: ReadonlyHistoryManager;
+  readonly hover: Readonly<{ current: string | undefined }>;
+  readonly editing: Readonly<{
+    current: string | undefined;
+    mode: 'vertices' | undefined;
+  }>;
+  readonly toolDrawing: Readonly<{ active: boolean }>;
+  readonly activeTool: Readonly<{
+    current: Readonly<{ enabled?: boolean }> | undefined;
+  }>;
+}
+
 /**
  * Event types for annotator
  */
@@ -192,8 +259,8 @@ export interface OpenSeadragonAnnotator {
   readonly events: AnnotatorEvents<AnnotatorEventMap>;
   readonly tools: ToolController;
   readonly unsafeState: OpenSeadragonAnnotatorState;
-  /** @deprecated Since 0.11.0. Use capability controllers or `unsafeState`. Planned removal: 2.0.0. */
-  state: OpenSeadragonAnnotatorState;
+  /** @deprecated Since 1.0.0. Use capability controllers or `unsafeState`. Planned removal: 2.0.0. */
+  readonly state: OpenSeadragonAnnotatorReadonlyState;
 
   // Annotation management (convenience methods)
   /** @deprecated Since 0.11.0. Use `annotations.add`. Planned removal: 2.0.0. */
@@ -790,10 +857,7 @@ export async function createOpenSeadragonAnnotator(
     const isMultiSelectKey = originalEvent.ctrlKey || originalEvent.metaKey;
 
     // Handle different release scenarios
-    if (pressState.annotationId && hitOnRelease && pressState.annotationId !== hitOnRelease.id) {
-      // Released on different annotation - select it
-      isMultiSelectKey ? selection.toggle(hitOnRelease.id) : selection.select(hitOnRelease.id);
-    } else if (pressState.annotationId && !isClick && pressState.originalAnnotation) {
+    if (pressState.annotationId && !isClick && pressState.originalAnnotation) {
       // Dragged annotation - add to history for undo/redo
       const currentAnnotation = store.get(pressState.annotationId);
       if (
@@ -812,6 +876,10 @@ export async function createOpenSeadragonAnnotator(
           activeUpdatePreviousOverride = undefined;
         }
       }
+    } else if (pressState.annotationId && hitOnRelease && pressState.annotationId !== hitOnRelease.id) {
+      // A click released on a different annotation selects it. Drag releases
+      // are committed above even when the moved annotation overlaps another.
+      isMultiSelectKey ? selection.toggle(hitOnRelease.id) : selection.select(hitOnRelease.id);
     } else if (!pressState.annotationId && isClick && !hitOnRelease && !isMultiSelectKey) {
       // Clicked empty space - clear selection
       selection.clear();
@@ -1116,6 +1184,70 @@ export async function createOpenSeadragonAnnotator(
     activeTool,
   };
 
+  const readonlyState: OpenSeadragonAnnotatorReadonlyState = Object.freeze({
+    store: Object.freeze({
+      get: store.get.bind(store),
+      all: store.all.bind(store),
+      getAt: store.getAt.bind(store),
+      search: store.search.bind(store),
+      getIntersecting: store.getIntersecting.bind(store),
+      observe: store.observe.bind(store),
+      unobserve: store.unobserve.bind(store),
+    }),
+    layerManager: Object.freeze({
+      getLayer: layerManager.getLayer.bind(layerManager),
+      getAllLayers: layerManager.getAllLayers.bind(layerManager),
+      isLayerVisible: layerManager.isLayerVisible.bind(layerManager),
+      isLayerLocked: layerManager.isLayerLocked.bind(layerManager),
+      getLayerForAnnotation: layerManager.getLayerForAnnotation.bind(layerManager),
+      getVisibleLayers: layerManager.getVisibleLayers.bind(layerManager),
+      getLayersByZIndex: layerManager.getLayersByZIndex.bind(layerManager),
+      observe: layerManager.observe.bind(layerManager),
+      unobserve: layerManager.unobserve.bind(layerManager),
+    }),
+    selection: Object.freeze({
+      getSelected: selection.getSelected.bind(selection),
+      isSelected: selection.isSelected.bind(selection),
+      hasSelection: selection.hasSelection.bind(selection),
+      getSelectionCount: selection.getSelectionCount.bind(selection),
+      observe: selection.observe.bind(selection),
+      unobserve: selection.unobserve.bind(selection),
+    }),
+    history: Object.freeze({
+      canUndo: history.canUndo.bind(history),
+      canRedo: history.canRedo.bind(history),
+      getUndoSize: history.getUndoSize.bind(history),
+      getRedoSize: history.getRedoSize.bind(history),
+      isEnabled: history.isEnabled.bind(history),
+      observe: history.observe.bind(history),
+      unobserve: history.unobserve.bind(history),
+    }),
+    hover: Object.freeze({
+      get current() {
+        return hover.current;
+      },
+    }),
+    editing: Object.freeze({
+      get current() {
+        return editing.current;
+      },
+      get mode() {
+        return editing.mode;
+      },
+    }),
+    toolDrawing: Object.freeze({
+      get active() {
+        return toolDrawing.active;
+      },
+    }),
+    activeTool: Object.freeze({
+      get current() {
+        const tool = activeTool.current;
+        return tool ? Object.freeze({ enabled: tool.enabled }) : undefined;
+      },
+    }),
+  });
+
   return {
     viewer,
     annotations: annotationController,
@@ -1127,7 +1259,7 @@ export async function createOpenSeadragonAnnotator(
     events,
     tools: { active: activeTool, beginTransaction: beginToolTransaction },
     unsafeState,
-    state: unsafeState,
+    state: readonlyState,
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {

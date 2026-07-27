@@ -17,7 +17,7 @@ export function annotations(): () => Annotation[] {
       return;
     }
 
-    const store = annotator.state.store;
+    const store = annotator.unsafeState.store;
     if (!store) {
       annotationsList = [];
       return;

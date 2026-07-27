@@ -17,7 +17,7 @@ export function layers(): () => Layer[] {
       return;
     }
 
-    const layerManager = annotator.state.layerManager;
+    const layerManager = annotator.unsafeState.layerManager;
     if (!layerManager) {
       layersList = [];
       return;

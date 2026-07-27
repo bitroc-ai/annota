@@ -43,7 +43,7 @@ export function history(): HistoryResult {
       return;
     }
 
-    const historyManager = annotator.state.history;
+    const historyManager = annotator.unsafeState.history;
     if (!historyManager) {
       historyState = {
         canUndo: false,

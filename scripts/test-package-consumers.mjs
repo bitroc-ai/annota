@@ -38,12 +38,38 @@ function verifyPackageShape(consumer, tarball) {
   ]) {
     if (!packageJson.exports[path]) throw new Error(`Missing package export ${path}`);
   }
+  if (packageJson.version !== '1.0.0') {
+    throw new Error(`Expected packed version 1.0.0, received ${packageJson.version}`);
+  }
   if (!existsSync(join(consumer, 'node_modules/annota/dist/styles.css'))) {
     throw new Error('Stable CSS export does not exist');
   }
   const listing = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' });
   for (const forbidden of ['node_modules/', '.svelte-kit/', 'docs/dist/', 'docs/.astro/', 'test/']) {
     if (listing.includes(forbidden)) throw new Error(`Tarball contains forbidden path ${forbidden}`);
+  }
+  for (const declaration of ['legacy-react.d.ts', 'legacy-react.d.cts']) {
+    const content = readFileSync(join(consumer, 'node_modules/annota/dist', declaration), 'utf8');
+    if (
+      !content.includes('@deprecated Since 1.0.0') ||
+      !content.includes('declare const Annotator') ||
+      !content.includes('declare const AnnotaViewer')
+    ) {
+      throw new Error(`${declaration} is missing legacy React deprecation declarations`);
+    }
+  }
+  const packedDist = join(consumer, 'node_modules/annota/dist');
+  for (const suffix of ['.d.ts', '.d.cts']) {
+    const declarations = readdirSync(packedDist)
+      .filter(file => file.endsWith(suffix))
+      .map(file => readFileSync(join(packedDist, file), 'utf8'))
+      .join('\n');
+    if (
+      !declarations.includes('interface OpenSeadragonAnnotatorReadonlyState') ||
+      !declarations.includes('readonly state: OpenSeadragonAnnotatorReadonlyState')
+    ) {
+      throw new Error(`Packed ${suffix} declarations expose a writable annotator.state`);
+    }
   }
 }
 
@@ -98,8 +124,15 @@ try {
       api.createAnnotationStore();
     `,
     'consumer.ts': `
-      import { createAnnotator, type AnnotationInput } from 'annota';
+      import {
+        createAnnotator,
+        type AnnotationInput,
+        type AnnotatorInstance,
+      } from 'annota';
       const input: AnnotationInput = { id: 'root', shape: { type: 'point', point: { x: 1, y: 2 } } };
+      declare const annotator: AnnotatorInstance;
+      // @ts-expect-error The compatibility state store is read-only.
+      annotator.state.store.add(input);
       void createAnnotator;
       void input;
     `,
@@ -152,6 +185,76 @@ try {
   run('node', ['cjs.cjs'], react);
   run('pnpm', ['exec', 'tsc', '--noEmit'], react);
   run('pnpm', ['exec', 'vite', 'build'], react);
+
+  const legacy = createFixture('legacy-react', tarball, {
+    react: '^19.2.0',
+    'react-dom': '^19.2.0',
+    jsdom: '^29.0.0',
+  }, {
+    'index.html': html,
+    'entry.js': `
+      import {
+        Annotator,
+        AnnotaViewer,
+        PointTool,
+        createAnnotationStore,
+        decodeRgb16Pixel,
+      } from 'annota/legacy-react';
+      if (typeof Annotator !== 'function' || typeof AnnotaViewer !== 'function') {
+        throw new Error('Legacy React API failed to load');
+      }
+      if (!PointTool || !decodeRgb16Pixel) throw new Error('Legacy utility API failed to load');
+      createAnnotationStore();
+    `,
+    'esm.mjs': `
+      import { JSDOM } from 'jsdom';
+      const dom = new JSDOM('<!doctype html><html><body></body></html>');
+      for (const key of ['window', 'self', 'document', 'navigator', 'HTMLElement', 'HTMLCanvasElement', 'Image']) {
+        Object.defineProperty(globalThis, key, { value: dom.window[key], configurable: true });
+      }
+      HTMLCanvasElement.prototype.getContext = () => null;
+      const api = await import('annota/legacy-react');
+      if (!api.Annotator || !api.AnnotaViewer || !api.PointTool || !api.decodeRgb16Pixel) {
+        throw new Error('Legacy ESM migration proxy is incomplete');
+      }
+      api.createAnnotationStore();
+    `,
+    'cjs.cjs': `
+      const { JSDOM } = require('jsdom');
+      const dom = new JSDOM('<!doctype html><html><body></body></html>');
+      for (const key of ['window', 'self', 'document', 'navigator', 'HTMLElement', 'HTMLCanvasElement', 'Image']) {
+        Object.defineProperty(globalThis, key, { value: dom.window[key], configurable: true });
+      }
+      HTMLCanvasElement.prototype.getContext = () => null;
+      const api = require('annota/legacy-react');
+      if (!api.Annotator || !api.AnnotaViewer || !api.PointTool || !api.decodeRgb16Pixel) {
+        throw new Error('Legacy CJS migration proxy is incomplete');
+      }
+      api.createAnnotationStore();
+    `,
+    'consumer.ts': `
+      import {
+        Annotator,
+        AnnotaViewer,
+        PointTool,
+        createAnnotationStore,
+        decodeRgb16Pixel,
+        type AnnotaViewerProps,
+      } from 'annota/legacy-react';
+      const props: AnnotaViewerProps | undefined = undefined;
+      void Annotator;
+      void AnnotaViewer;
+      void PointTool;
+      void decodeRgb16Pixel;
+      void props;
+      createAnnotationStore();
+    `,
+    'tsconfig.json': tsconfig,
+  });
+  run('node', ['esm.mjs'], legacy);
+  run('node', ['cjs.cjs'], legacy);
+  run('pnpm', ['exec', 'tsc', '--noEmit'], legacy);
+  run('pnpm', ['exec', 'vite', 'build'], legacy);
 
   const svelte = createFixture('svelte-only', tarball, {
     svelte: '^5.55.0',
@@ -223,7 +326,7 @@ try {
   run('pnpm', ['exec', 'tsc', '--noEmit'], utilities);
   run('pnpm', ['exec', 'vite', 'build'], utilities);
 
-  console.log('Isolated root/React/Svelte/tools/loaders packed consumers passed.');
+  console.log('Isolated root/React/legacy-React/Svelte/tools/loaders packed consumers passed.');
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true });
 }

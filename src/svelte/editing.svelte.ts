@@ -46,8 +46,8 @@ export function editing(options: EditingOptions = {}): EditingResult {
     if (!annotator) return;
 
     const interval = setInterval(() => {
-      const currentId = annotator.state.editing.current;
-      const currentMode = annotator.state.editing.mode;
+      const currentId = annotator.unsafeState.editing.current;
+      const currentMode = annotator.unsafeState.editing.mode;
 
       if (currentId !== editingId || currentMode !== editMode) {
         editingId = currentId;
@@ -66,7 +66,7 @@ export function editing(options: EditingOptions = {}): EditingResult {
       return;
     }
 
-    const store = annotator.state.store;
+    const store = annotator.unsafeState.store;
     if (!store) {
       annotation = null;
       return;
@@ -87,8 +87,8 @@ export function editing(options: EditingOptions = {}): EditingResult {
         editingId = undefined;
         // Clear editing state in annotator
         if (annotator) {
-          annotator.state.editing.current = undefined;
-          annotator.state.editing.mode = undefined;
+          annotator.unsafeState.editing.current = undefined;
+          annotator.unsafeState.editing.mode = undefined;
         }
       }
     };
@@ -106,8 +106,8 @@ export function editing(options: EditingOptions = {}): EditingResult {
     const annotator = getAnnotatorFn();
     if (!annotator) return;
 
-    annotator.state.editing.current = annotationId;
-    annotator.state.editing.mode = mode;
+    annotator.unsafeState.editing.current = annotationId;
+    annotator.unsafeState.editing.mode = mode;
     editingId = annotationId;
     editMode = mode;
   }
@@ -116,8 +116,8 @@ export function editing(options: EditingOptions = {}): EditingResult {
     const annotator = getAnnotatorFn();
     if (!annotator) return;
 
-    annotator.state.editing.current = undefined;
-    annotator.state.editing.mode = undefined;
+    annotator.unsafeState.editing.current = undefined;
+    annotator.unsafeState.editing.mode = undefined;
     editingId = undefined;
     editMode = undefined;
   }
@@ -145,7 +145,7 @@ export function editing(options: EditingOptions = {}): EditingResult {
         new (window as any).OpenSeadragon.Point(offsetX, offsetY)
       );
 
-      const clickedAnnotation = annotator.state.store.getAt(imageCoords.x, imageCoords.y);
+      const clickedAnnotation = annotator.unsafeState.store.getAt(imageCoords.x, imageCoords.y);
 
       if (!clickedAnnotation) {
         // Clicked on empty space - exit editing mode

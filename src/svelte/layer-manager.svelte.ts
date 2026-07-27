@@ -96,7 +96,7 @@ export function layerManager(): LayerManagerResult {
   function getLayersByZIndex(): Layer[] {
     const annotator = getAnnotatorFn();
     if (!annotator) return [];
-    return annotator.state.layerManager.getLayersByZIndex();
+    return annotator.unsafeState.layerManager.getLayersByZIndex();
   }
 
   return {

@@ -41,6 +41,7 @@ describe('PolygonTool', () => {
         get: mockStore.get,
       },
     };
+    mockAnnotator.unsafeState = mockAnnotator.state;
     mockAnnotator.tools = {
       beginTransaction: vi.fn(() => ({
         add: (annotation: unknown) => mockStore.add(annotation),

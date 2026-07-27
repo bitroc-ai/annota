@@ -4,6 +4,7 @@ import { AnnotaError } from '../../src/core/errors';
 import {
   decodeInstancePixels,
   decodeRgb16Pixel,
+  instanceRegionsToAnnotations,
   loadInstanceMask,
 } from '../../src/loaders/instance-mask';
 import { loadMaskPolygons } from '../../src/loaders/masks';
@@ -147,6 +148,65 @@ describe('instance mask decoder', () => {
         ).resolves.toHaveLength(1);
       }
       expect(disposables.length).toBeGreaterThanOrEqual(5);
+      disposables.forEach(disposable => expect(disposable.delete).toHaveBeenCalledTimes(1));
+    }
+  );
+
+  it.each(['contours', 'hierarchy'] as const)(
+    'cleans earlier OpenCV allocations when the %s constructor throws',
+    async failingAllocation => {
+      const disposables: Array<{ delete: ReturnType<typeof vi.fn> }> = [];
+      let matCount = 0;
+      class Mat {
+        data = new Uint8Array(16);
+        data32S = new Int32Array();
+        delete = vi.fn();
+        constructor(..._args: unknown[]) {
+          matCount += 1;
+          if (failingAllocation === 'hierarchy' && matCount === 2) {
+            throw new Error('hierarchy allocation failed');
+          }
+          disposables.push(this);
+        }
+      }
+      class MatVector {
+        delete = vi.fn();
+        constructor() {
+          if (failingAllocation === 'contours') {
+            throw new Error('contours allocation failed');
+          }
+          disposables.push(this);
+        }
+        size() {
+          return 0;
+        }
+        get() {
+          return new Mat();
+        }
+      }
+      (globalThis as typeof globalThis & { cv: unknown }).cv = {
+        Mat,
+        MatVector,
+        CV_8UC1: 0,
+        RETR_EXTERNAL: 0,
+        CHAIN_APPROX_SIMPLE: 0,
+        findContours: vi.fn(),
+        contourArea: vi.fn(),
+        arcLength: vi.fn(),
+        approxPolyDP: vi.fn(),
+      };
+
+      await expect(instanceRegionsToAnnotations([
+        {
+          instance: { instanceId: 7 },
+          pixels: [{ x: 0, y: 0 }],
+          minX: 0,
+          minY: 0,
+          maxX: 0,
+          maxY: 0,
+        },
+      ], { minArea: 0 })).rejects.toMatchObject({ code: 'OPENCV_EXTRACTION_FAILED' });
+      expect(disposables).toHaveLength(failingAllocation === 'contours' ? 1 : 2);
       disposables.forEach(disposable => expect(disposable.delete).toHaveBeenCalledTimes(1));
     }
   );

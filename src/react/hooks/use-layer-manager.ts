@@ -145,7 +145,7 @@ export function useLayerManager(): UseLayerManagerResult {
 
   const getLayersByZIndex = useCallback(() => {
     if (!annotator) return [];
-    return annotator.state.layerManager.getLayersByZIndex();
+    return annotator.unsafeState.layerManager.getLayersByZIndex();
   }, [annotator]);
 
   return {

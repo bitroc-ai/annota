@@ -24,7 +24,7 @@ export function contextMenuBinding(
     // Use the reactive annotator from $derived
     if (!annotator?.viewer) return;
 
-    const store = annotator.state.store;
+    const store = annotator.unsafeState.store;
     const canvas = annotator.viewer.canvas;
 
     if (!canvas || !store) return;

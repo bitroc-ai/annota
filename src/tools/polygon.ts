@@ -134,7 +134,7 @@ export class PolygonTool extends BaseTool {
 
       // Signal that a tool is actively drawing to prevent interference
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = true;
+        this.annotator.unsafeState.toolDrawing.active = true;
       }
 
       const annotation: Annotation = {
@@ -236,7 +236,7 @@ export class PolygonTool extends BaseTool {
 
     // Reset tool drawing state
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = false;
+      this.annotator.unsafeState.toolDrawing.active = false;
     }
   }
 
@@ -276,7 +276,7 @@ export class PolygonTool extends BaseTool {
 
       // Reset tool drawing state
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = false;
+        this.annotator.unsafeState.toolDrawing.active = false;
       }
     }
 
@@ -299,7 +299,7 @@ export class PolygonTool extends BaseTool {
 
       // Reset tool drawing state
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = false;
+        this.annotator.unsafeState.toolDrawing.active = false;
       }
     }
   };

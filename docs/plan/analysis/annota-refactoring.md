@@ -96,8 +96,7 @@ Annota 核心必须保持领域无关：理解几何、图层、空间、交互�
 - 不新增标注工具、文件格式或模型能力。
 - 不替换 OpenSeadragon、PixiJS、React 或 Svelte。
 - 不在本轮重写整个状态管理系统。
-- 不在兼容小版本中删除现有扁平方法或 `state` 访问方式；根入口 React 导出为满足
-  framework-independent/optional-peer 契约，迁移到 `annota/legacy-react` 兼容入口。
+- 不在兼容小版本中删除现有扁平方法、根入口 React 导出或 `state` 访问方式。
 - 可以新增内部规范化类型和下一主版本接口，但必须保留兼容代理和迁移说明。
 - 不在核心类型中增加 `cellType`、`nucleusId`、`tumorGrade`、`invasiveCancer`
   等病理专用字段。
@@ -580,10 +579,8 @@ annota/styles.css   # 稳定的样式入口
 
 迁移要求：
 
-- `annota` 根入口在 1.0 重构中立即成为 framework-independent，避免 optional peer
-  通过静态依赖泄漏到 core-only consumer。
-- React 稳定入口为 `annota/react`；原根 React API 的兼容期改由带明确废弃信息的
-  `annota/legacy-react` 提供，并在 2.0 删除。
+- `annota` 根入口短期保留现有 React 导出，避免小版本破坏。
+- 新增明确的 `annota/react` 入口，并在下一个主版本收紧根入口。
 - 使用 `peerDependenciesMeta.optional` 或子包方案避免强制安装无关框架。
 - 增加 consumer fixture，验证四个入口在最小项目中安装和构建。
 - README 中的安装命令、导入名、链接和 API 表必须从实际 exports 校验。
@@ -860,7 +857,7 @@ dispose();
 | `setSelected(id)`                       | 代理到 `selection.set`          | 使用 `selection` controller       |
 | `annotator.state`                       | 保留只读兼容视图并告警          | 高级接口改名为 `unsafeState`      |
 | 旧事件名                                | 由新事件系统桥接发送            | 使用带 namespace 的类型化事件     |
-| 根入口 React 导出                       | 移至 `annota/legacy-react`       | 从 `annota/react` 导入            |
+| 根入口 React 导出                       | 小版本继续保留                  | 从 `annota/react` 导入            |
 | 调用方传入 `bounds`                     | 接受但忽略并重算                | `AnnotationInput` 不包含 `bounds` |
 | `properties.layer`                      | 规范化时映射到 `layerId`        | 使用 `AnnotationInput.layerId`    |
 | `getIntersecting(bounds)`               | 标记为候选查询并代理到 spatial  | `spatial.search(bounds)`          |

@@ -4,11 +4,11 @@
 
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, Point } from '../core/types';
+import type { ToolMutationTransaction } from '../adapters/openseadragon/annotator';
 import { BaseTool } from './base';
 import type { ToolHandlerOptions } from './types';
 import { splitAnnotation, canSplitAnnotation } from '../core/operations';
 import { isAnnotationEditable } from '../core/layer';
-import { SplitCommand } from '../core/history';
 
 /**
  * Tool for splitting annotations with a polyline (折线)
@@ -31,6 +31,7 @@ export class SplitTool extends BaseTool {
   private points: Point[] = [];
   private currentMousePos: Point | null = null;
   private previewLineId: string | null = null;
+  private transaction: ToolMutationTransaction | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
     super('split', {
@@ -44,44 +45,23 @@ export class SplitTool extends BaseTool {
    * Update the visual preview of the split line
    */
   private updatePreviewLine(): void {
-    if (!this.annotator || this.points.length === 0 || !this.currentMousePos) return;
-
-    const store = this.annotator.state.store;
-
-    // Remove old preview line if exists
-    if (this.previewLineId) {
-      const existing = store.get(this.previewLineId);
-      if (existing) {
-        store.delete(this.previewLineId);
-      }
-    }
-
-    // Create new preview line annotation
-    this.previewLineId = `split-line-${Date.now()}`;
+    if (
+      !this.annotator ||
+      !this.transaction ||
+      !this.previewLineId ||
+      this.points.length === 0 ||
+      !this.currentMousePos
+    ) return;
 
     // Combine established points with current mouse position
     const previewPoints = [...this.points, this.currentMousePos];
 
-    // Calculate bounds
-    let minX = previewPoints[0].x;
-    let minY = previewPoints[0].y;
-    let maxX = previewPoints[0].x;
-    let maxY = previewPoints[0].y;
-
-    for (const p of previewPoints) {
-      minX = Math.min(minX, p.x);
-      minY = Math.min(minY, p.y);
-      maxX = Math.max(maxX, p.x);
-      maxY = Math.max(maxY, p.y);
-    }
-
-    const previewAnnotation: Annotation = {
+    const previewAnnotation = {
       id: this.previewLineId,
       shape: {
-        type: 'freehand',
+        type: 'freehand' as const,
         points: previewPoints,
         closed: false,
-        bounds: { minX, minY, maxX, maxY },
       },
       style: {
         stroke: '#ff6b00', // Orange color for split line
@@ -95,19 +75,25 @@ export class SplitTool extends BaseTool {
       },
     };
 
-    store.add(previewAnnotation);
+    if (this.annotator.annotations.get(this.previewLineId)) {
+      this.transaction.update(this.previewLineId, {
+        shape: previewAnnotation.shape,
+        style: previewAnnotation.style,
+        properties: previewAnnotation.properties,
+      });
+    } else {
+      this.transaction.add(previewAnnotation);
+    }
   }
 
   /**
    * Remove the preview line
    */
   private removePreviewLine(): void {
-    if (!this.annotator || !this.previewLineId) return;
+    if (!this.annotator || !this.transaction || !this.previewLineId) return;
 
-    const store = this.annotator.state.store;
-    const existing = store.get(this.previewLineId);
-    if (existing) {
-      store.delete(this.previewLineId);
+    if (this.annotator.annotations.get(this.previewLineId)) {
+      this.transaction.remove(this.previewLineId);
     }
     this.previewLineId = null;
   }
@@ -156,9 +142,11 @@ export class SplitTool extends BaseTool {
       this.state = 'drawing';
       this.points = [clickPoint];
       this.currentMousePos = clickPoint;
+      this.transaction = this.annotator.tools.beginTransaction();
+      this.previewLineId = `split-preview-${this.transaction.id}`;
 
       // Disable selection while drawing
-      this.annotator.state.toolDrawing.active = true;
+      this.annotator.unsafeState.toolDrawing.active = true;
 
       console.log('[SplitTool] Started drawing split line.');
     } else {
@@ -294,10 +282,10 @@ export class SplitTool extends BaseTool {
     };
 
     // Find candidate annotations
-    const candidates = annotator.state.store.getIntersecting(searchBounds);
+    const candidates = annotator.spatial.search(searchBounds);
     const splitOps: Array<{ original: Annotation, pieces: Annotation[] }> = [];
 
-    const layerManager = annotator.state.layerManager;
+    const layerManager = annotator.unsafeState.layerManager;
 
     for (const candidate of candidates) {
       // check editability
@@ -322,29 +310,35 @@ export class SplitTool extends BaseTool {
       return;
     }
 
-    // Execute splits in batch
-    annotator.state.history.beginBatch('Split annotations');
-
+    const transaction = this.transaction;
+    if (!transaction) {
+      this.cancel();
+      return;
+    }
     const newSelection: string[] = [];
 
+    this.removePreviewLine();
     for (const op of splitOps) {
-      const command = new SplitCommand(
-        annotator.state.store,
-        op.original,
-        op.pieces
-      );
-      annotator.state.history.execute(command);
-
-      op.pieces.forEach(p => newSelection.push(p.id));
+      transaction.remove(op.original.id);
+      op.pieces.forEach(piece => {
+        const created = transaction.add({
+          ...piece,
+          layerId: op.original.layerId,
+        });
+        newSelection.push(created.id);
+      });
     }
-
-    annotator.state.history.endBatch();
+    transaction.commit();
+    this.transaction = null;
 
     // Success notification
     this.emitNotification(`Split ${splitOps.length} annotation${splitOps.length > 1 ? 's' : ''}`, 'success');
 
     // Select new pieces
-    annotator.setSelected(newSelection);
+    annotator.selection.set(newSelection, {
+      source: 'tool',
+      transactionId: transaction.id,
+    });
 
     // Reset state for next split
     this.reset();
@@ -361,7 +355,8 @@ export class SplitTool extends BaseTool {
    */
   private cancel(): void {
     console.log('[SplitTool] Split cancelled');
-    this.removePreviewLine();
+    this.transaction?.cancel();
+    this.transaction = null;
     this.reset();
   }
 
@@ -369,7 +364,6 @@ export class SplitTool extends BaseTool {
    * Reset tool state
    */
   private reset(): void {
-    this.removePreviewLine();
     this.state = 'idle';
     this.points = [];
     this.currentMousePos = null;
@@ -377,7 +371,7 @@ export class SplitTool extends BaseTool {
 
     // Re-enable external selection
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = false;
+      this.annotator.unsafeState.toolDrawing.active = false;
     }
   }
 
@@ -414,7 +408,8 @@ export class SplitTool extends BaseTool {
       this.viewer.element.removeEventListener('mousemove', this.onMouseMove);
     }
 
-    this.reset();
+    if (this.transaction) this.cancel();
+    else this.reset();
     super.destroy();
   }
 

@@ -1,21 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createAnnotationStore, type AnnotationStore } from '../../src/core/store';
-import { createLayerManager, type LayerManager } from '../../src/core/layer';
-import { createSelectionManager, type SelectionManager } from '../../src/core/selection';
+import { createAnnotationStore } from '../../src/core/store';
+import { createLayerManager } from '../../src/core/layer';
+import { createSelectionManager } from '../../src/core/selection';
 import {
   createHistoryManager,
   type Command,
-  type HistoryManager,
 } from '../../src/core/history';
-
-function customManager<T extends object>(manager: T): T {
-  return new Proxy(manager, {
-    get(target, property, receiver) {
-      const value = Reflect.get(target, property, receiver);
-      return typeof value === 'function' ? value.bind(target) : value;
-    },
-  });
-}
+import {
+  MemoryAnnotationStore,
+  MemoryHistoryManager,
+  MemoryLayerManager,
+  MemorySelectionManager,
+} from '../helpers/custom-managers';
 
 const point = (id: string, x: number) => ({
   id,
@@ -24,7 +20,7 @@ const point = (id: string, x: number) => ({
 
 describe.each([
   ['built-in', () => createAnnotationStore()],
-  ['custom adapter', () => customManager<AnnotationStore>(createAnnotationStore())],
+  ['independent custom implementation', () => new MemoryAnnotationStore()],
 ])('AnnotationStore contract: %s', (_name, factory) => {
   it('provides atomic normalized CRUD and paired observation', () => {
     const manager = factory();
@@ -42,7 +38,7 @@ describe.each([
 
 describe.each([
   ['built-in', () => createLayerManager()],
-  ['custom adapter', () => customManager<LayerManager>(createLayerManager())],
+  ['independent custom implementation', () => new MemoryLayerManager()],
 ])('LayerManager contract: %s', (_name, factory) => {
   it('supports stable z-index, opacity and paired observation', () => {
     const manager = factory();
@@ -63,7 +59,7 @@ describe.each([
 
 describe.each([
   ['built-in', () => createSelectionManager()],
-  ['custom adapter', () => customManager<SelectionManager>(createSelectionManager())],
+  ['independent custom implementation', () => new MemorySelectionManager()],
 ])('SelectionManager contract: %s', (_name, factory) => {
   it('deduplicates selection and pairs observers', () => {
     const manager = factory();
@@ -81,10 +77,7 @@ describe.each([
 
 describe.each([
   ['built-in', () => createHistoryManager({ enableMerging: false })],
-  [
-    'custom adapter',
-    () => customManager<HistoryManager>(createHistoryManager({ enableMerging: false })),
-  ],
+  ['independent custom implementation', () => new MemoryHistoryManager()],
 ])('HistoryManager contract: %s', (_name, factory) => {
   it('executes, undoes, redoes and batches as one step', () => {
     const manager = factory();
