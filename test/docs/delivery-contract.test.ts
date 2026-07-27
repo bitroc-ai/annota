@@ -5,6 +5,17 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 describe('documentation delivery contract', () => {
+  function validateReleaseVersion(candidate: string) {
+    return spawnSync(process.execPath, ['scripts/validate-release-version.mjs'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        RELEASE_VERSION_CANDIDATE: candidate,
+      },
+    });
+  }
+
   it('validates the final generated changelog before commit and publish', async () => {
     const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
     const generate = workflow.indexOf('name: Generate changelog');
@@ -38,6 +49,37 @@ describe('documentation delivery contract', () => {
     const docsBuild = workflow.indexOf('run: pnpm --dir docs build');
     expect(imports).toBeGreaterThan(-1);
     expect(docsBuild).toBeGreaterThan(imports);
+  });
+
+  it('passes workflow versions through env and validates them before shell use', async () => {
+    const workflow = await readFile('.github/workflows/publish.yml', 'utf8');
+    const extractStart = workflow.indexOf('name: Extract version from tag');
+    const generateStart = workflow.indexOf('name: Generate changelog');
+    const extractStep = workflow.slice(extractStart, generateStart);
+
+    expect(extractStep).toContain('RAW_DISPATCH_VERSION: ${{ github.event.inputs.version }}');
+    expect(extractStep).toContain('RELEASE_VERSION_CANDIDATE');
+    expect(extractStep).toContain('node scripts/validate-release-version.mjs');
+    expect(extractStep).not.toMatch(/run:[\s\S]*\$\{\{\s*github\.event\.inputs\.version\s*\}\}/);
+
+    for (const version of ['1.2.3', '0.0.0', '2.0.0-rc.1', '1.2.3-alpha-beta.7']) {
+      const result = validateReleaseVersion(version);
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stdout).toBe(version);
+    }
+
+    for (const version of [
+      '1.2',
+      '01.2.3',
+      '1.2.3-01',
+      '1.2.3+build.1',
+      '1.2.3 ',
+      '1.2.3"; printf WORKFLOW_INPUT_INJECTION; #',
+    ]) {
+      const result = validateReleaseVersion(version);
+      expect(result.status).toBe(1);
+      expect(result.stdout).not.toContain('WORKFLOW_INPUT_INJECTION');
+    }
   });
 
   it('preserves valid frontmatter while prepending a generated release', async () => {

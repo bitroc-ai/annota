@@ -94,17 +94,36 @@ jobs:
 
       - name: Extract version from tag
         id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RAW_DISPATCH_VERSION: ${{ github.event.inputs.version }}
+          RAW_GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RAW_VERSION="$RAW_DISPATCH_VERSION"
           else
-            VERSION="${GITHUB_REF#refs/tags/v}"
+            RAW_VERSION="${RAW_GITHUB_REF#refs/tags/v}"
           fi
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+          export RELEASE_VERSION_CANDIDATE="$RAW_VERSION"
+          VERSION=$(node scripts/validate-release-version.mjs)
+
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            printf 'PRERELEASE=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'PRERELEASE=false\n' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Generate changelog
         id: changelog
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          set -euo pipefail
+
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
@@ -113,18 +132,18 @@ jobs:
             CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           else
             # Get commits between tags that touched src/ or package.json
-            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           fi
 
           CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
           printf '%s\n' "$CHANGELOG" | node scripts/generate-changelog.mjs \
-            --version "${{ steps.version.outputs.VERSION }}" \
+            --version "$RELEASE_VERSION" \
             --file "$CHANGELOG_FILE"
 
           # Save changelog content for GitHub release
-          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "${CHANGELOG}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_CONTENT<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${CHANGELOG}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Validate final documentation imports
         run: pnpm check:docs-imports
@@ -133,6 +152,8 @@ jobs:
         run: pnpm --dir docs build
 
       - name: Commit changelog to docs
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
           set -euo pipefail
 
@@ -144,7 +165,7 @@ jobs:
             echo "Changelog is already up to date; nothing to commit."
           else
             git add "$CHANGELOG_FILE"
-            git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}"
+            git commit -m "docs: add changelog for v${RELEASE_VERSION}"
             git push origin HEAD:main
           fi
 
@@ -174,9 +195,10 @@ jobs:
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ env.RELEASE_VERSION }}
+          release_name: Release ${{ env.RELEASE_VERSION }}
           body: |
             ## Changes
 
@@ -185,11 +207,11 @@ jobs:
             ## Installation
 
             ```bash
-            npm install annota@${{ steps.version.outputs.VERSION }}
+            npm install annota@${{ env.RELEASE_VERSION }}
             # or
-            pnpm add annota@${{ steps.version.outputs.VERSION }}
+            pnpm add annota@${{ env.RELEASE_VERSION }}
             ```
 
             See the [full changelog](https://annota.bitroc.ai/docs/changelog) for more details.
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.version.outputs.PRERELEASE }}

@@ -3,9 +3,13 @@
 ```tsx
 import type { AnnotationInput } from 'annota';
 import { useTool } from 'annota/react';
-import { PointTool } from 'annota/tools';
+import { PointTool as CanonicalPointTool } from 'annota/tools';
 import { loadH5Masks } from 'annota/loaders';
+import * as Tools from 'annota/tools';
 import 'annota/styles.css';
+
+const comment = 'import { PointTool } from "annota" is only text';
+const rectangle = new Tools.RectangleTool();
 ```
 
 The old `annota/dist/index.css` path can still be described in prose.
@@ -23,4 +27,11 @@ import 'annota/dist/index.css';
 import { useTool } from 'annota/react';
 import { PointTool } from 'annota/tools';
 import 'annota/styles.css';
+```
+
+## Common module forms
+
+```tsx
+const { loadH5Masks: loadMasks } = await import('annota/loaders');
+const { PointTool: RequiredPointTool } = require('annota/tools');
 ```

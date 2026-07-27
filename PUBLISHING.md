@@ -101,6 +101,9 @@ git push origin v0.2.1
    - Generates dist files
 
 4. **Generate Changelog**
+   - Validates a strict SemVer release version before it reaches any shell command
+   - Accepts stable and prerelease versions (for example, `1.2.3` and `1.2.3-rc.1`)
+   - Rejects build metadata, leading-zero numeric identifiers, whitespace, and shell syntax
    - Extracts commits since last tag that touched `src/` or `package.json`
    - Prepends the release to `docs/src/content/docs/changelog.mdx`
    - Includes commit messages, hashes, and installation instructions
