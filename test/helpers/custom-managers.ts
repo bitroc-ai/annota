@@ -14,6 +14,11 @@ import type {
 } from '../../src/core/types';
 import { containsPoint } from '../../src/core/types';
 import { cloneAnnotation, normalizeAnnotation } from '../../src/core/normalization';
+import {
+  AnnotationExistsError,
+  AnnotationNotFoundError,
+  AnnotationValidationError,
+} from '../../src/core/errors';
 import type {
   Layer,
   LayerChangeEvent,
@@ -29,6 +34,7 @@ import type {
 import type {
   Command,
   HistoryManager,
+  HistoryManagerOptions,
   HistoryObserver,
   HistoryStateEvent,
 } from '../../src/core/history';
@@ -39,8 +45,34 @@ export class MemoryAnnotationStore implements AnnotationStore {
 
   private emit(event: StoreChangeEvent): void {
     if (event.created.length || event.updated.length || event.deleted.length) {
-      this.observers.forEach(observer => observer(event));
+      const snapshot: StoreChangeEvent = {
+        created: event.created.map(cloneAnnotation),
+        updated: event.updated.map(({ oldValue, newValue }) => ({
+          oldValue: cloneAnnotation(oldValue),
+          newValue: cloneAnnotation(newValue),
+        })),
+        deleted: event.deleted.map(cloneAnnotation),
+      };
+      this.observers.forEach(observer => {
+        try {
+          observer(snapshot);
+        } catch (error) {
+          console.error('Error in store observer:', error);
+        }
+      });
     }
+  }
+
+  private assertUniqueBatch(annotations: readonly Annotation[]): void {
+    const ids = new Set<string>();
+    annotations.forEach(annotation => {
+      if (ids.has(annotation.id)) {
+        throw new AnnotationValidationError(
+          `Duplicate annotation id ${annotation.id} in the same batch`
+        );
+      }
+      ids.add(annotation.id);
+    });
   }
 
   private writeAll<P extends AnnotationProperties>(
@@ -48,12 +80,11 @@ export class MemoryAnnotationStore implements AnnotationStore {
     mode: StoreWriteMode
   ): void {
     const normalized = inputs.map(input => normalizeAnnotation(input));
-    if (new Set(normalized.map(annotation => annotation.id)).size !== normalized.length) {
-      throw new Error('Duplicate annotation ID in batch');
-    }
-    if (mode === 'insert' && normalized.some(annotation => this.values.has(annotation.id))) {
-      throw new Error('Annotation already exists');
-    }
+    this.assertUniqueBatch(normalized);
+    const conflict = mode === 'insert'
+      ? normalized.find(annotation => this.values.has(annotation.id))
+      : undefined;
+    if (conflict) throw new AnnotationExistsError(conflict.id);
     const created: Annotation[] = [];
     const updated: Array<{ oldValue: Annotation; newValue: Annotation }> = [];
     normalized.forEach(annotation => {
@@ -82,6 +113,7 @@ export class MemoryAnnotationStore implements AnnotationStore {
 
   replaceAll<P extends AnnotationProperties>(inputs: readonly AnnotationInput<P>[]): void {
     const normalized = inputs.map(input => normalizeAnnotation(input));
+    this.assertUniqueBatch(normalized);
     const previous = new Map(this.values);
     this.values.clear();
     normalized.forEach(annotation => this.values.set(annotation.id, annotation));
@@ -103,8 +135,11 @@ export class MemoryAnnotationStore implements AnnotationStore {
 
   update<P extends AnnotationProperties>(id: string, input: AnnotationInput<P>): void {
     const previous = this.values.get(id);
-    if (!previous) throw new Error(`Annotation ${id} does not exist`);
-    const annotation = normalizeAnnotation({ ...input, id });
+    if (!previous) throw new AnnotationNotFoundError(id);
+    if (input.id !== id) {
+      throw new AnnotationValidationError('Cannot change annotation ID during update');
+    }
+    const annotation = normalizeAnnotation(input);
     this.values.set(id, annotation);
     this.emit({ created: [], updated: [{ oldValue: previous, newValue: annotation }], deleted: [] });
   }
@@ -128,7 +163,7 @@ export class MemoryAnnotationStore implements AnnotationStore {
 
   getAt(x: number, y: number, filter?: Filter, buffer = 0): Annotation | undefined {
     return this.all().find(annotation =>
-      (!filter || filter(annotation)) && containsPoint(annotation.shape, { x, y }, buffer)
+      (!filter || filter(annotation)) && containsPoint(annotation.shape, x, y, buffer)
     );
   }
 
@@ -173,7 +208,13 @@ export class MemoryLayerManager implements LayerManager {
 
   private emit(type: LayerChangeEvent['type'], layer: Layer): void {
     const event = { type, layers: [{ ...layer }] };
-    this.observers.forEach(observer => observer(event));
+    this.observers.forEach(observer => {
+      try {
+        observer(event);
+      } catch (error) {
+        console.error('Error in layer observer:', error);
+      }
+    });
   }
 
   createLayer(id: string, config: LayerConfig): Layer {
@@ -203,18 +244,35 @@ export class MemoryLayerManager implements LayerManager {
 
   updateLayer(id: string, updates: Partial<LayerConfig>): void {
     const layer = this.layers.get(id);
-    if (!layer) throw new Error(`Layer ${id} does not exist`);
-    Object.assign(layer, updates, {
-      opacity: updates.opacity === undefined
-        ? layer.opacity
-        : Math.max(0, Math.min(1, updates.opacity)),
-    });
-    this.emit('updated', layer);
+    if (!layer) {
+      console.warn(`Layer ${id} does not exist, cannot update`);
+      return;
+    }
+    const updatedLayer: Layer = {
+      ...layer,
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.visible !== undefined && { visible: updates.visible }),
+      ...(updates.locked !== undefined && { locked: updates.locked }),
+      ...(updates.opacity !== undefined && {
+        opacity: Math.max(0, Math.min(1, updates.opacity)),
+      }),
+      ...(updates.zIndex !== undefined && { zIndex: updates.zIndex }),
+      ...(updates.filter !== undefined && { filter: updates.filter }),
+    };
+    this.layers.set(id, updatedLayer);
+    this.emit(updates.zIndex === undefined ? 'updated' : 'reordered', updatedLayer);
   }
 
   deleteLayer(id: string): void {
+    if (id === 'default' || id === 'image') {
+      console.warn(`Cannot delete ${id} layer`);
+      return;
+    }
     const layer = this.layers.get(id);
-    if (!layer) return;
+    if (!layer) {
+      console.warn(`Layer ${id} does not exist, cannot delete`);
+      return;
+    }
     this.layers.delete(id);
     this.emit('deleted', layer);
   }
@@ -232,10 +290,7 @@ export class MemoryLayerManager implements LayerManager {
   }
 
   setLayerZIndex(id: string, zIndex: number): void {
-    const layer = this.layers.get(id);
-    if (!layer) throw new Error(`Layer ${id} does not exist`);
-    layer.zIndex = zIndex;
-    this.emit('reordered', layer);
+    this.updateLayer(id, { zIndex });
   }
 
   isLayerVisible(id: string): boolean {
@@ -258,9 +313,7 @@ export class MemoryLayerManager implements LayerManager {
   }
 
   getLayersByZIndex(): Layer[] {
-    return this.getAllLayers().sort((left, right) =>
-      left.zIndex - right.zIndex || left.id.localeCompare(right.id)
-    );
+    return this.getAllLayers().sort((left, right) => left.zIndex - right.zIndex);
   }
 
   observe(callback: LayerObserver): void {
@@ -278,14 +331,20 @@ export class MemorySelectionManager implements SelectionManager {
 
   private replace(ids: readonly string[]): void {
     const previous = this.getSelected();
-    this.selected = new Set(ids);
-    const current = this.getSelected();
-    if (
-      previous.length !== current.length ||
-      previous.some((id, index) => id !== current[index])
-    ) {
+    const current = [...new Set(ids)];
+    const previousSet = new Set(previous);
+    const changed = previous.length !== current.length ||
+      !current.every(id => previousSet.has(id));
+    if (changed) {
+      this.selected = new Set(current);
       const event: SelectionChangeEvent = { previous, current };
-      this.observers.forEach(observer => observer(event));
+      this.observers.forEach(observer => {
+        try {
+          observer(event);
+        } catch (error) {
+          console.error('Error in selection observer:', error);
+        }
+      });
     }
   }
 
@@ -358,6 +417,13 @@ export class MemoryHistoryManager implements HistoryManager {
   private readonly observers = new Set<HistoryObserver>();
   private batch: Command[] | null = null;
   private enabled = true;
+  private readonly maxHistorySize: number;
+  private readonly enableMerging: boolean;
+
+  constructor(options: HistoryManagerOptions = {}) {
+    this.maxHistorySize = options.maxHistorySize ?? 100;
+    this.enableMerging = options.enableMerging ?? true;
+  }
 
   private emit(): void {
     const event: HistoryStateEvent = {
@@ -366,34 +432,68 @@ export class MemoryHistoryManager implements HistoryManager {
       undoSize: this.getUndoSize(),
       redoSize: this.getRedoSize(),
     };
-    this.observers.forEach(observer => observer(event));
+    this.observers.forEach(observer => {
+      try {
+        observer(event);
+      } catch (error) {
+        console.error('Error in history observer:', error);
+      }
+    });
   }
 
   execute(command: Command): void {
-    command.execute();
-    if (!this.enabled) return;
-    if (this.batch) this.batch.push(command);
-    else {
-      this.undoStack.push(command);
-      this.redoStack.length = 0;
-      this.emit();
+    if (!this.enabled) {
+      command.execute();
+      return;
     }
+    if (this.batch) {
+      command.execute();
+      this.batch.push(command);
+      return;
+    }
+    if (this.enableMerging && this.undoStack.length) {
+      const previous = this.undoStack[this.undoStack.length - 1];
+      if (previous.merge?.(command)) {
+        command.execute();
+        this.emit();
+        return;
+      }
+    }
+    command.execute();
+    this.undoStack.push(command);
+    if (this.undoStack.length > this.maxHistorySize) this.undoStack.shift();
+    this.redoStack.length = 0;
+    this.emit();
   }
 
   undo(): void {
-    const command = this.undoStack.pop();
+    const command = this.undoStack[this.undoStack.length - 1];
     if (!command) return;
-    command.undo();
-    this.redoStack.push(command);
-    this.emit();
+    const wasEnabled = this.enabled;
+    this.enabled = false;
+    try {
+      command.undo();
+      this.undoStack.pop();
+      this.redoStack.push(command);
+      this.emit();
+    } finally {
+      this.enabled = wasEnabled;
+    }
   }
 
   redo(): void {
-    const command = this.redoStack.pop();
+    const command = this.redoStack[this.redoStack.length - 1];
     if (!command) return;
-    command.redo();
-    this.undoStack.push(command);
-    this.emit();
+    const wasEnabled = this.enabled;
+    this.enabled = false;
+    try {
+      command.redo();
+      this.redoStack.pop();
+      this.undoStack.push(command);
+      this.emit();
+    } finally {
+      this.enabled = wasEnabled;
+    }
   }
 
   canUndo(): boolean {
@@ -418,14 +518,15 @@ export class MemoryHistoryManager implements HistoryManager {
     return this.redoStack.length;
   }
 
-  beginBatch(): void {
-    if (!this.batch) this.batch = [];
+  beginBatch(_description?: string): void {
+    this.batch = [];
   }
 
   endBatch(): void {
     if (!this.batch) return;
     if (this.batch.length) {
       this.undoStack.push(new MemoryBatchCommand(this.batch));
+      if (this.undoStack.length > this.maxHistorySize) this.undoStack.shift();
       this.redoStack.length = 0;
     }
     this.batch = null;
