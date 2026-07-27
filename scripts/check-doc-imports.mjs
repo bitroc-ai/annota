@@ -194,11 +194,13 @@ async function extractAstroCodeExamples(source) {
     if (node.type === 'component' && node.name === 'Code') {
       const attribute = node.attributes?.find(candidate =>
         candidate.type === 'attribute' &&
-        candidate.kind === 'expression' &&
-        candidate.name === 'code'
+        candidate.name === 'code' &&
+        (candidate.kind === 'expression' || candidate.kind === 'quoted')
       );
       if (attribute) {
-        const content = parseStaticStringLiteral(attribute.value);
+        const content = attribute.kind === 'quoted'
+          ? attribute.value
+          : parseStaticStringLiteral(attribute.value);
         if (content !== undefined) {
           examples.push({
             allowLegacyImports: false,

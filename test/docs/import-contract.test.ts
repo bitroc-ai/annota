@@ -21,6 +21,7 @@ describe('documentation import contract', () => {
       'test/fixtures/docs-imports/html-comment-valid.astro',
       'test/fixtures/docs-imports/astro-comment-valid.astro',
       'test/fixtures/docs-imports/astro-markup-position-valid.astro',
+      'test/fixtures/docs-imports/astro-quoted-code-valid.astro',
       'test/fixtures/docs-imports/backtick-info-valid.mdx',
       'test/fixtures/docs-imports/namespace-dynamic-key-valid.mdx',
       'test/fixtures/docs-imports/namespace-reassignment-valid.mdx'
@@ -130,6 +131,18 @@ describe('documentation import contract', () => {
     expect(invalid.stderr.match(/"useTool" must be imported from "annota\/react"/g)).toHaveLength(1);
     expect(invalid.stderr).not.toContain('"PointTool" must be imported');
     expect(invalid.stderr).not.toContain('"loadH5Masks" must be imported');
+  });
+
+  it('scans quoted static code attributes while skipping dynamic attributes', () => {
+    const valid = checkDocs('test/fixtures/docs-imports/astro-quoted-code-valid.astro');
+    expect(valid.status, valid.stderr).toBe(0);
+
+    const invalid = checkDocs('test/fixtures/docs-imports/astro-quoted-code-invalid.astro');
+    expect(invalid.status).toBe(1);
+    expect(invalid.stderr.match(/"PointTool" must be imported from "annota\/tools"/g)).toHaveLength(1);
+    expect(invalid.stderr.match(/"loadH5Masks" must be imported from "annota\/loaders"/g)).toHaveLength(1);
+    expect(invalid.stderr.match(/"useTool" must be imported from "annota\/react"/g)).toHaveLength(1);
+    expect(invalid.stderr).not.toContain('DefinitelyFake');
   });
 
   it('updates or invalidates namespace aliases in source order', () => {
