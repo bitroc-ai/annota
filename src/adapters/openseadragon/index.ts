@@ -2,7 +2,7 @@
  * Annota Adapter - OpenSeadragon
  */
 
-export { createOpenSeadragonAnnotator } from './annotator';
+export { createAnnotator, createOpenSeadragonAnnotator } from './annotator';
 export type {
   OpenSeadragonAnnotator,
   OpenSeadragonAnnotatorOptions,

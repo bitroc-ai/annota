@@ -12,7 +12,7 @@
   interface Props extends Omit<OpenSeadragonAnnotatorOptions, "store"> {
     viewer: OpenSeadragon.Viewer | undefined;
     children?: import("svelte").Snippet;
-    [key: string]: any; // Allow other props for options
+    [key: string]: unknown; // Allow other props for options
   }
 
   let { viewer, children, ...options }: Props = $props();

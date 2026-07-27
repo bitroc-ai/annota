@@ -14,6 +14,7 @@ import {
   type LayerManager,
   type LayerConfig,
   type Layer,
+  type LayerChangeEvent,
 } from '../../core/layer';
 import {
   createHistoryManager,
@@ -36,8 +37,27 @@ import {
   canMergeAnnotations,
   // canSplitAnnotation, // Will be used for split tool
 } from '../../core/operations';
-import type { Filter, StyleExpression } from '../../core/types';
+import type {
+  Annotation,
+  AnnotationInput,
+  AnnotationPatch,
+  AnnotationProperties,
+  Bounds,
+  Filter,
+  StyleExpression,
+} from '../../core/types';
 import { translateShape } from '../../core/types';
+import { applyAnnotationPatch, normalizeAnnotation } from '../../core/normalization';
+import {
+  changeContext,
+  createTransactionId,
+  createTypedEvents,
+  type AnnotatorEventMap,
+  type AnnotatorEvents,
+  type ChangeContext,
+  type ChangeSource,
+} from '../../core/events';
+import { createGeometryController, type GeometryController } from '../../core/geometry';
 import { createPixiStage } from '../../rendering/pixi/stage';
 import { pointerEventToImage } from './coordinates';
 
@@ -53,6 +73,8 @@ export interface OpenSeadragonAnnotatorOptions {
   style?: StyleExpression;
   filter?: Filter;
   visible?: boolean;
+  annotations?: readonly AnnotationInput[];
+  reportError?: (error: unknown) => void;
 }
 
 /**
@@ -66,7 +88,7 @@ export interface OpenSeadragonAnnotatorState {
   hover: { current: string | undefined };
   editing: { current: string | undefined; mode: 'vertices' | undefined };
   toolDrawing: { active: boolean }; // Flag for tools to signal they're drawing
-  activeTool: { current: any | undefined }; // Reference to the currently active tool handler
+  activeTool: { current: { enabled?: boolean; destroy?(): void } | undefined };
 }
 
 /**
@@ -81,12 +103,86 @@ export type AnnotatorEvent =
 
 export type AnnotatorEventHandler = (data: any) => void;
 
+export interface MutationOptions {
+  source?: ChangeSource;
+  transactionId?: string;
+  transient?: boolean;
+}
+
+export interface AnnotationController {
+  add<P extends AnnotationProperties>(
+    annotation: AnnotationInput<P>,
+    options?: MutationOptions
+  ): Annotation<P>;
+  addAll<P extends AnnotationProperties>(
+    annotations: readonly AnnotationInput<P>[],
+    options?: MutationOptions
+  ): Annotation<P>[];
+  update<P extends AnnotationProperties>(
+    id: string,
+    patch: AnnotationPatch<P>,
+    options?: MutationOptions
+  ): Annotation<P>;
+  remove(id: string, options?: MutationOptions): void;
+  clear(options?: MutationOptions): void;
+  replaceAll<P extends AnnotationProperties>(
+    annotations: readonly AnnotationInput<P>[],
+    options?: MutationOptions
+  ): Annotation<P>[];
+  get(id: string): Annotation | undefined;
+  list(): Annotation[];
+}
+
+export interface SelectionController {
+  set(ids: string | readonly string[], options?: MutationOptions): void;
+  clear(options?: MutationOptions): void;
+  get(): string[];
+}
+
+export interface LayerController {
+  create(id: string, config: LayerConfig, options?: MutationOptions): Layer;
+  update(id: string, updates: Partial<LayerConfig>, options?: MutationOptions): void;
+  remove(id: string, options?: MutationOptions): void;
+  get(id: string): Layer | undefined;
+  list(): Layer[];
+  setVisibility(id: string, visible: boolean, options?: MutationOptions): void;
+  setLocked(id: string, locked: boolean, options?: MutationOptions): void;
+  setOpacity(id: string, opacity: number, options?: MutationOptions): void;
+  setZIndex(id: string, zIndex: number, options?: MutationOptions): void;
+}
+
+export interface SpatialQueryController {
+  search(bounds: Bounds, filter?: Filter): Annotation[];
+}
+
+export interface HistoryController {
+  undo(): void;
+  redo(): void;
+  canUndo(): boolean;
+  canRedo(): boolean;
+  clear(): void;
+}
+
+export interface ToolController {
+  readonly active: { current: { enabled?: boolean; destroy?(): void } | undefined };
+}
+
 /**
  * OpenSeadragon Annotator
  * Integrates annotation system with OpenSeadragon viewer
  */
 export interface OpenSeadragonAnnotator {
   viewer: OpenSeadragon.Viewer;
+  readonly annotations: AnnotationController;
+  readonly selection: SelectionController;
+  readonly layers: LayerController;
+  readonly spatial: SpatialQueryController;
+  readonly geometry: GeometryController;
+  readonly history: HistoryController;
+  readonly events: AnnotatorEvents<AnnotatorEventMap>;
+  readonly tools: ToolController;
+  readonly unsafeState: OpenSeadragonAnnotatorState;
+  /** @deprecated Since 0.11.0. Use the capability controllers or unsafeState. */
   state: OpenSeadragonAnnotatorState;
 
   // Annotation management (convenience methods)
@@ -147,15 +243,38 @@ export async function createOpenSeadragonAnnotator(
   const store = options.store || createAnnotationStore();
   const layerManager = options.layerManager || createLayerManager();
   const selection = options.selectionManager || createSelectionManager();
-  const history = options.historyManager || createHistoryManager(options.historyOptions);
+  const history = options.historyManager || createHistoryManager({
+    enableMerging: false,
+    ...options.historyOptions,
+  });
   const hover: { current: string | undefined } = { current: undefined };
   const editing: { current: string | undefined; mode: 'vertices' | undefined } = { current: undefined, mode: undefined };
   const toolDrawing: { active: boolean } = { active: false };
-  const activeTool: { current: any | undefined } = { current: undefined };
+  const activeTool: {
+    current: { enabled?: boolean; destroy?(): void } | undefined;
+  } = { current: undefined };
   let currentFilter: Filter | undefined = options.filter;
   let suppressHoverUntil = 0;
   let interactionEndTimer: number | null = null;
   let destroyed = false;
+  let activeChangeContext: ChangeContext | undefined;
+  let activeUpdatePreviousOverride: Annotation | undefined;
+  const disposers: Array<() => void> = [];
+  const events = createTypedEvents<AnnotatorEventMap>(options.reportError);
+  const geometry = createGeometryController();
+
+  const withContext = <T>(context: ChangeContext, operation: () => T): T => {
+    const previous = activeChangeContext;
+    activeChangeContext = context;
+    try {
+      return operation();
+    } finally {
+      activeChangeContext = previous;
+    }
+  };
+
+  const contextFor = (options: MutationOptions = {}, fallback: ChangeSource = 'api') =>
+    changeContext(options.source ?? fallback, options);
 
   const getLiveViewerCanvas = () => {
     const viewerCanvas = viewer.canvas;
@@ -241,13 +360,17 @@ export async function createOpenSeadragonAnnotator(
 
   osdCanvas.appendChild(canvas);
 
+  if (options.annotations && options.annotations.length > 0) {
+    store.addAll(options.annotations, { mode: 'upsert' });
+  }
+
   // Load existing annotations from store
   store.all().forEach(annotation => {
     stage.addAnnotation(annotation);
   });
 
   // Helper to emit events to registered handlers
-  const emitEvent = (event: AnnotatorEvent, data: any) => {
+  const emitEvent = (event: AnnotatorEvent, data: unknown) => {
     const handlers = eventHandlers.get(event);
     if (handlers) {
       handlers.forEach(handler => {
@@ -262,17 +385,28 @@ export async function createOpenSeadragonAnnotator(
 
   // Sync with store changes
   const onStoreChange = (event: StoreChangeEvent) => {
+    const context = activeChangeContext ?? changeContext('api');
     event.created.forEach(annotation => {
       stage.addAnnotation(annotation);
       emitEvent('createAnnotation', annotation);
+      events.emit('annotation:create', { annotation, context });
     });
     event.updated.forEach(({ oldValue, newValue }) => {
       stage.updateAnnotation(oldValue, newValue);
       emitEvent('updateAnnotation', newValue);
+      events.emit('annotation:update', {
+        previous:
+          activeUpdatePreviousOverride?.id === newValue.id
+            ? activeUpdatePreviousOverride
+            : oldValue,
+        annotation: newValue,
+        context,
+      });
     });
     event.deleted.forEach(annotation => {
       stage.removeAnnotation(annotation);
       emitEvent('deleteAnnotation', annotation);
+      events.emit('annotation:delete', { annotation, context });
 
       // Clean up selection if deleted annotation was selected
       if (selection.isSelected(annotation.id)) {
@@ -286,8 +420,14 @@ export async function createOpenSeadragonAnnotator(
 
   // Sync with selection changes
   const onSelectionChange = (event: SelectionChangeEvent) => {
+    const context = activeChangeContext ?? changeContext('user');
     stage.setSelected(event.current);
     emitEvent('selectionChanged', { selected: event.current });
+    events.emit('selection:change', {
+      previous: [...event.previous],
+      current: [...event.current],
+      context,
+    });
   };
 
   selection.observe(onSelectionChange);
@@ -369,10 +509,12 @@ export async function createOpenSeadragonAnnotator(
   // Hover detection - Throttled
   let pointerMoveRafId: number | null = null;
   const onPointerMove = (event: PointerEvent) => {
+    if (destroyed) return;
     if (pointerMoveRafId) return;
 
     pointerMoveRafId = requestAnimationFrame(() => {
       pointerMoveRafId = null;
+      if (destroyed) return;
 
       if (performance.now() < suppressHoverUntil) return;
 
@@ -399,6 +541,7 @@ export async function createOpenSeadragonAnnotator(
     imagePos: { x: number; y: number };
     annotationId?: string;
     originalAnnotation?: import('../../core/types').Annotation;
+    transactionId: string;
   } | undefined;
 
   const onCanvasPress = (evt: OpenSeadragon.CanvasPressEvent) => {
@@ -431,7 +574,8 @@ export async function createOpenSeadragonAnnotator(
       viewportPos: { x: evt.position.x, y: evt.position.y },
       imagePos: imagePoint,
       annotationId: hit?.id,
-      originalAnnotation: hit ? { ...hit } : undefined
+      originalAnnotation: hit ? normalizeAnnotation(hit) : undefined,
+      transactionId: createTransactionId('drag'),
     };
 
     if (hit) {
@@ -468,19 +612,28 @@ export async function createOpenSeadragonAnnotator(
     if (!pressState) return;
 
     // Drag-to-move: if we pressed on an annotation, prevent OSD panning synchronously
-    if (pressState.annotationId && pressState.originalAnnotation) {
+    if (
+      pressState.annotationId &&
+      pressState.originalAnnotation &&
+      !layerManager.getLayerForAnnotation(pressState.originalAnnotation)?.locked
+    ) {
       (evt as any).preventDefaultAction = true;
     }
 
     if (dragRafId) return;
     dragRafId = requestAnimationFrame(() => {
       dragRafId = null;
+      if (destroyed) return;
 
       const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
       if (!imagePoint) return;
 
       // Drag-to-move: if we pressed on an annotation, move it
-      if (pressState?.annotationId && pressState?.originalAnnotation) {
+      if (
+        pressState?.annotationId &&
+        pressState?.originalAnnotation &&
+        !layerManager.getLayerForAnnotation(pressState.originalAnnotation)?.locked
+      ) {
         // Calculate delta from ORIGINAL press position (not mutating pressState!)
         const dx = imagePoint.x - pressState.imagePos.x;
         const dy = imagePoint.y - pressState.imagePos.y;
@@ -489,10 +642,17 @@ export async function createOpenSeadragonAnnotator(
         const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
 
         // Update annotation in store
-        store.update(pressState.annotationId, {
-          ...pressState.originalAnnotation,
-          shape: translatedShape
-        });
+        withContext(
+          changeContext('user', {
+            transactionId: pressState.transactionId,
+            transient: true,
+          }),
+          () =>
+            store.update(pressState!.annotationId!, {
+              ...pressState!.originalAnnotation!,
+              shape: translatedShape,
+            })
+        );
 
         return;
       }
@@ -532,7 +692,15 @@ export async function createOpenSeadragonAnnotator(
   const onCanvasRelease = (evt: OpenSeadragon.CanvasReleaseEvent) => {
     // If a tool already handled this event, skip
     if ((evt as any).preventDefaultAction) {
-      // Clean up pressState if it exists
+      if (pressState?.annotationId && pressState.originalAnnotation) {
+        withContext(
+          changeContext('user', {
+            transactionId: pressState.transactionId,
+            transient: true,
+          }),
+          () => store.update(pressState!.annotationId!, pressState!.originalAnnotation!)
+        );
+      }
       pressState = undefined;
       return;
     }
@@ -564,8 +732,21 @@ export async function createOpenSeadragonAnnotator(
     } else if (pressState.annotationId && !isClick && pressState.originalAnnotation) {
       // Dragged annotation - add to history for undo/redo
       const currentAnnotation = store.get(pressState.annotationId);
-      if (currentAnnotation) {
-        history.execute(new UpdateCommand(store, pressState.originalAnnotation, currentAnnotation));
+      if (
+        currentAnnotation &&
+        !layerManager.getLayerForAnnotation(pressState.originalAnnotation)?.locked
+      ) {
+        const transactionId = pressState.transactionId;
+        const originalAnnotation = pressState.originalAnnotation;
+        activeUpdatePreviousOverride = originalAnnotation;
+        try {
+          withContext(
+            changeContext('user', { transactionId, transient: false }),
+            () => history.execute(new UpdateCommand(store, originalAnnotation, currentAnnotation))
+          );
+        } finally {
+          activeUpdatePreviousOverride = undefined;
+        }
       }
     } else if (!pressState.annotationId && isClick && !hitOnRelease && !isMultiSelectKey) {
       // Clicked empty space - clear selection
@@ -584,73 +765,234 @@ export async function createOpenSeadragonAnnotator(
   stage.redraw();
 
   // Sync with layer changes
-  const onLayerChange = () => {
-    stage.redraw();
+  const onLayerChange = (event: LayerChangeEvent) => {
+    const context = activeChangeContext ?? changeContext('api');
+    event.layers.forEach(layer => {
+      if (event.type === 'created') events.emit('layer:create', { layer, context });
+      else if (event.type === 'deleted') events.emit('layer:delete', { layer, context });
+      else events.emit('layer:update', { layer, context });
+    });
   };
   layerManager.observe(onLayerChange);
 
+  const annotationController: AnnotationController = {
+    add(input, mutationOptions) {
+      const annotation = normalizeAnnotation(input);
+      const context = contextFor(mutationOptions);
+      withContext(context, () => history.execute(new CreateCommand(store, annotation)));
+      return store.get(annotation.id) as typeof annotation;
+    },
+    addAll(inputs, mutationOptions) {
+      const annotations = inputs.map(input => normalizeAnnotation(input));
+      const duplicateIds = new Set<string>();
+      annotations.forEach(annotation => {
+        if (duplicateIds.has(annotation.id)) {
+          throw new Error(`Duplicate annotation id ${annotation.id} in the same batch`);
+        }
+        duplicateIds.add(annotation.id);
+      });
+      const context = contextFor({
+        ...mutationOptions,
+        transactionId: mutationOptions?.transactionId ?? createTransactionId('batch'),
+      });
+      withContext(context, () => {
+        history.beginBatch('Add annotations');
+        try {
+          annotations.forEach(annotation => {
+            const previous = store.get(annotation.id);
+            history.execute(
+              previous
+                ? new UpdateCommand(store, previous, annotation)
+                : new CreateCommand(store, annotation)
+            );
+          });
+        } finally {
+          history.endBatch();
+        }
+      });
+      return annotations.map(annotation => store.get(annotation.id) as typeof annotation);
+    },
+    update<P extends AnnotationProperties>(
+      id: string,
+      patch: AnnotationPatch<P>,
+      mutationOptions?: MutationOptions
+    ) {
+      const previous = store.get(id) as Annotation<P> | undefined;
+      if (!previous) throw new Error(`Annotation ${id} does not exist`);
+      const annotation = applyAnnotationPatch(previous, patch);
+      withContext(
+        contextFor(mutationOptions),
+        () => history.execute(new UpdateCommand(store, previous, annotation))
+      );
+      return store.get(id) as typeof annotation;
+    },
+    remove(id, mutationOptions) {
+      const annotation = store.get(id);
+      if (!annotation) return;
+      withContext(
+        contextFor(mutationOptions),
+        () => history.execute(new DeleteCommand(store, annotation))
+      );
+    },
+    clear(mutationOptions) {
+      const annotations = store.all();
+      if (annotations.length === 0) return;
+      const context = contextFor({
+        ...mutationOptions,
+        transactionId: mutationOptions?.transactionId ?? createTransactionId('clear'),
+      });
+      withContext(context, () => {
+        history.beginBatch('Clear annotations');
+        try {
+          annotations.forEach(annotation =>
+            history.execute(new DeleteCommand(store, annotation))
+          );
+        } finally {
+          history.endBatch();
+        }
+      });
+    },
+    replaceAll(inputs, mutationOptions) {
+      const annotations = inputs.map(input => normalizeAnnotation(input));
+      const ids = new Set<string>();
+      annotations.forEach(annotation => {
+        if (ids.has(annotation.id)) throw new Error(`Duplicate annotation id ${annotation.id}`);
+        ids.add(annotation.id);
+      });
+      const previous = store.all();
+      const command = {
+        execute: () => store.replaceAll(annotations),
+        undo: () => store.replaceAll(previous),
+        redo: () => store.replaceAll(annotations),
+      };
+      withContext(
+        contextFor({
+          ...mutationOptions,
+          transactionId: mutationOptions?.transactionId ?? createTransactionId('replace'),
+        }),
+        () => history.execute(command)
+      );
+      return store.all() as typeof annotations;
+    },
+    get(id) {
+      return store.get(id);
+    },
+    list() {
+      return store.all();
+    },
+  };
+
+  const selectionController: SelectionController = {
+    set(ids, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => selection.select([...new Set(
+        typeof ids === 'string' ? [ids] : ids
+      )]));
+    },
+    clear(mutationOptions) {
+      withContext(contextFor(mutationOptions), () => selection.clear());
+    },
+    get() {
+      return [...selection.getSelected()];
+    },
+  };
+
+  const layerController: LayerController = {
+    create(id, config, mutationOptions) {
+      return withContext(contextFor(mutationOptions), () => layerManager.createLayer(id, config));
+    },
+    update(id, updates, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => layerManager.updateLayer(id, updates));
+    },
+    remove(id, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => layerManager.deleteLayer(id));
+    },
+    get(id) {
+      return layerManager.getLayer(id);
+    },
+    list() {
+      return layerManager.getAllLayers();
+    },
+    setVisibility(id, visible, mutationOptions) {
+      withContext(
+        contextFor(mutationOptions),
+        () => layerManager.setLayerVisibility(id, visible)
+      );
+    },
+    setLocked(id, locked, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => layerManager.setLayerLocked(id, locked));
+    },
+    setOpacity(id, opacity, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => layerManager.setLayerOpacity(id, opacity));
+    },
+    setZIndex(id, zIndex, mutationOptions) {
+      withContext(contextFor(mutationOptions), () => layerManager.setLayerZIndex(id, zIndex));
+    },
+  };
+
+  const historyController: HistoryController = {
+    undo() {
+      withContext(changeContext('history'), () => history.undo());
+    },
+    redo() {
+      withContext(changeContext('history'), () => history.redo());
+    },
+    canUndo: () => history.canUndo(),
+    canRedo: () => history.canRedo(),
+    clear: () => history.clear(),
+  };
+
+  const unsafeState = {
+    store,
+    layerManager,
+    history,
+    hover,
+    selection,
+    editing,
+    toolDrawing,
+    activeTool,
+  };
+
   return {
     viewer,
-    state: { store, layerManager, history, hover, selection, editing, toolDrawing, activeTool },
+    annotations: annotationController,
+    selection: selectionController,
+    layers: layerController,
+    spatial: { search: (bounds, filter) => store.search(bounds, filter) },
+    geometry,
+    history: historyController,
+    events,
+    tools: { active: activeTool },
+    unsafeState,
+    state: unsafeState,
 
     // Annotation management (convenience methods)
     addAnnotation(annotation) {
-      const oldAnnotation = store.get(annotation.id);
-      if (oldAnnotation) {
-        // Update existing annotation with history
-        history.execute(new UpdateCommand(store, oldAnnotation, annotation));
+      const previous = annotationController.get(annotation.id);
+      if (previous) {
+        annotationController.update(annotation.id, annotation, { source: 'api' });
       } else {
-        // Create new annotation with history
-        history.execute(new CreateCommand(store, annotation));
+        annotationController.add(annotation, { source: 'api' });
       }
     },
 
     addAnnotations(annotations) {
-      // Batch add annotations
-      history.beginBatch('Add annotations');
-      annotations.forEach(annotation => {
-        const oldAnnotation = store.get(annotation.id);
-        if (oldAnnotation) {
-          history.execute(new UpdateCommand(store, oldAnnotation, annotation));
-        } else {
-          history.execute(new CreateCommand(store, annotation));
-        }
-      });
-      history.endBatch();
+      annotationController.addAll(annotations, { source: 'api' });
     },
 
     updateAnnotation(id, annotation) {
-      const oldAnnotation = store.get(id);
-      if (oldAnnotation) {
-        history.execute(new UpdateCommand(store, oldAnnotation, annotation));
-      }
+      annotationController.update(id, annotation, { source: 'api' });
     },
 
     deleteAnnotation(id) {
-      const annotation = store.get(id);
-      if (annotation) {
-        history.execute(new DeleteCommand(store, annotation));
-      }
+      annotationController.remove(id, { source: 'api' });
     },
 
     removeAnnotation(id) {
-      // Alias for deleteAnnotation
-      const annotation = store.get(id);
-      if (annotation) {
-        history.execute(new DeleteCommand(store, annotation));
-      }
+      annotationController.remove(id, { source: 'api' });
     },
 
     clearAnnotations() {
-      // Clear all annotations with batch history
-      const annotations = store.all();
-      if (annotations.length > 0) {
-        history.beginBatch('Clear annotations');
-        annotations.forEach(annotation => {
-          history.execute(new DeleteCommand(store, annotation));
-        });
-        history.endBatch();
-      }
+      annotationController.clear({ source: 'api' });
     },
 
     mergeSelected() {
@@ -693,56 +1035,53 @@ export async function createOpenSeadragonAnnotator(
     },
 
     getAnnotations() {
-      return store.all();
+      return annotationController.list();
     },
 
     // Selection management (delegate to selection manager)
     setSelected(id) {
-      selection.select(id);
+      selectionController.set(id, { source: 'api' });
     },
 
     getSelected() {
-      return selection.getSelected();
+      return selectionController.get();
     },
 
     // Layer management (delegate to layer manager)
     createLayer(id, config) {
-      return layerManager.createLayer(id, config);
+      return layerController.create(id, config);
     },
 
     getLayer(id) {
-      return layerManager.getLayer(id);
+      return layerController.get(id);
     },
 
     getAllLayers() {
-      return layerManager.getAllLayers();
+      return layerController.list();
     },
 
     updateLayer(id, updates) {
-      layerManager.updateLayer(id, updates);
+      layerController.update(id, updates);
     },
 
     deleteLayer(id) {
-      layerManager.deleteLayer(id);
+      layerController.remove(id);
     },
 
     setLayerVisibility(id, visible) {
-      layerManager.setLayerVisibility(id, visible);
-      stage.redraw(); // Trigger re-render to show/hide annotations
+      layerController.setVisibility(id, visible);
     },
 
     setLayerLocked(id, locked) {
-      layerManager.setLayerLocked(id, locked);
+      layerController.setLocked(id, locked);
     },
 
     setLayerOpacity(id, opacity) {
-      layerManager.setLayerOpacity(id, opacity);
-      stage.redraw(); // Trigger re-render to update opacity
+      layerController.setOpacity(id, opacity);
     },
 
     setLayerZIndex(id, zIndex) {
-      layerManager.setLayerZIndex(id, zIndex);
-      stage.redraw(); // Trigger re-render to update z-order
+      layerController.setZIndex(id, zIndex);
     },
 
     // Rendering control
@@ -761,23 +1100,23 @@ export async function createOpenSeadragonAnnotator(
 
     // History management
     undo() {
-      history.undo();
+      historyController.undo();
     },
 
     redo() {
-      history.redo();
+      historyController.redo();
     },
 
     canUndo() {
-      return history.canUndo();
+      return historyController.canUndo();
     },
 
     canRedo() {
-      return history.canRedo();
+      return historyController.canRedo();
     },
 
     clearHistory() {
-      history.clear();
+      historyController.clear();
     },
 
     // Event emitter methods
@@ -803,22 +1142,50 @@ export async function createOpenSeadragonAnnotator(
       if (destroyed) return;
       destroyed = true;
 
+      if (pointerMoveRafId !== null) {
+        cancelAnimationFrame(pointerMoveRafId);
+        pointerMoveRafId = null;
+      }
+      if (dragRafId !== null) {
+        cancelAnimationFrame(dragRafId);
+        dragRafId = null;
+      }
+      if (interactionEndTimer !== null) {
+        window.clearTimeout(interactionEndTimer);
+        interactionEndTimer = null;
+      }
+
       store.unobserve(onStoreChange);
+      selection.unobserve(onSelectionChange);
       layerManager.unobserve(onLayerChange);
       viewer.removeHandler('update-viewport', onViewportUpdate);
       viewer.removeHandler('animation-start', onViewportUpdateStart);
       viewer.removeHandler('animation-finish', onViewportUpdateFinish);
       viewer.removeHandler('resize', onResize);
+      viewer.removeHandler('canvas-press', onCanvasPress);
+      viewer.removeHandler('canvas-drag', onCanvasDrag);
+      viewer.removeHandler('canvas-release', onCanvasRelease);
       canvas.removeEventListener('pointermove', onPointerMove);
       resizeObserver.disconnect();
-      if (interactionEndTimer !== null) {
-        window.clearTimeout(interactionEndTimer);
-        interactionEndTimer = null;
-      }
+      activeTool.current?.destroy?.();
+      activeTool.current = undefined;
+      for (let index = disposers.length - 1; index >= 0; index--) disposers[index]();
       stage.destroy();
       canvas.remove();
       // Clear all event handlers
       eventHandlers.forEach(handlers => handlers.clear());
+      events.clear();
     },
   };
+}
+
+export interface CreateAnnotatorOptions extends OpenSeadragonAnnotatorOptions {
+  viewer: OpenSeadragon.Viewer;
+}
+
+export function createAnnotator(
+  options: CreateAnnotatorOptions
+): Promise<OpenSeadragonAnnotator> {
+  const { viewer, ...annotatorOptions } = options;
+  return createOpenSeadragonAnnotator(viewer, annotatorOptions);
 }

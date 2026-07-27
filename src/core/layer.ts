@@ -27,7 +27,7 @@ export interface Layer {
 }
 
 export interface LayerConfig {
-  name: string;
+  name?: string;
   visible?: boolean;
   locked?: boolean;
   opacity?: number;
@@ -124,10 +124,10 @@ class LayerManagerImpl implements LayerManager {
 
     const layer: Layer = {
       id,
-      name: config.name,
+      name: config.name ?? id,
       visible: config.visible ?? true,
       locked: config.locked ?? false,
-      opacity: config.opacity ?? 1,
+      opacity: Math.max(0, Math.min(1, config.opacity ?? 1)),
       zIndex: config.zIndex ?? 0,
       filter: config.filter,
     };
@@ -135,15 +135,16 @@ class LayerManagerImpl implements LayerManager {
     this.layers.set(id, layer);
     this.emit({ type: 'created', layers: [layer] });
 
-    return layer;
+    return { ...layer };
   }
 
   getLayer(id: string): Layer | undefined {
-    return this.layers.get(id);
+    const layer = this.layers.get(id);
+    return layer ? { ...layer } : undefined;
   }
 
   getAllLayers(): Layer[] {
-    return Array.from(this.layers.values());
+    return Array.from(this.layers.values(), layer => ({ ...layer }));
   }
 
   updateLayer(id: string, updates: Partial<LayerConfig>): void {
@@ -158,13 +159,15 @@ class LayerManagerImpl implements LayerManager {
       ...(updates.name !== undefined && { name: updates.name }),
       ...(updates.visible !== undefined && { visible: updates.visible }),
       ...(updates.locked !== undefined && { locked: updates.locked }),
-      ...(updates.opacity !== undefined && { opacity: updates.opacity }),
+      ...(updates.opacity !== undefined && {
+        opacity: Math.max(0, Math.min(1, updates.opacity)),
+      }),
       ...(updates.zIndex !== undefined && { zIndex: updates.zIndex }),
       ...(updates.filter !== undefined && { filter: updates.filter }),
     };
 
     this.layers.set(id, updatedLayer);
-    this.emit({ type: 'updated', layers: [updatedLayer] });
+    this.emit({ type: updates.zIndex === undefined ? 'updated' : 'reordered', layers: [{ ...updatedLayer }] });
   }
 
   deleteLayer(id: string): void {
@@ -211,7 +214,7 @@ class LayerManagerImpl implements LayerManager {
 
   getLayerForAnnotation(annotation: Annotation): Layer | undefined {
     // First check if annotation has explicit layer property
-    const layerId = annotation.properties?.layer;
+    const layerId = annotation.layerId ?? annotation.properties?.layer;
     if (layerId && typeof layerId === 'string') {
       const layer = this.layers.get(layerId);
       if (layer) return layer;
@@ -229,11 +232,14 @@ class LayerManagerImpl implements LayerManager {
   }
 
   getVisibleLayers(): Layer[] {
-    return Array.from(this.layers.values()).filter(layer => layer.visible);
+    return Array.from(this.layers.values())
+      .filter(layer => layer.visible)
+      .map(layer => ({ ...layer }));
   }
 
   getLayersByZIndex(): Layer[] {
-    return Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex);
+    return Array.from(this.layers.values(), layer => ({ ...layer }))
+      .sort((a, b) => a.zIndex - b.zIndex);
   }
 
   observe(callback: LayerObserver): void {
@@ -278,8 +284,8 @@ export function createLayerManager(): LayerManager {
  * const ageGroups = getPropertyValues(annotations, 'ageGroup');
  * // Returns: ['child', 'youth', 'adult', 'elderly']
  */
-export function getPropertyValues(annotations: Annotation[], propertyKey: string): any[] {
-  const values = new Set<any>();
+export function getPropertyValues(annotations: Annotation[], propertyKey: string): unknown[] {
+  const values = new Set<unknown>();
   for (const annotation of annotations) {
     const value = annotation.properties?.[propertyKey];
     if (value !== undefined && value !== null) {
@@ -302,8 +308,8 @@ export function getPropertyValues(annotations: Annotation[], propertyKey: string
  * //   ageGroup: ['child', 'youth', 'adult', 'elderly']
  * // }
  */
-export function getPropertySummary(annotations: Annotation[]): Record<string, any[]> {
-  const summary: Record<string, Set<any>> = {};
+export function getPropertySummary(annotations: Annotation[]): Record<string, unknown[]> {
+  const summary: Record<string, Set<unknown>> = {};
 
   for (const annotation of annotations) {
     if (annotation.properties) {
@@ -322,7 +328,7 @@ export function getPropertySummary(annotations: Annotation[]): Record<string, an
   }
 
   // Convert Sets to Arrays
-  const result: Record<string, any[]> = {};
+  const result: Record<string, unknown[]> = {};
   for (const [key, valueSet] of Object.entries(summary)) {
     result[key] = Array.from(valueSet);
   }
@@ -341,7 +347,7 @@ export function getPropertySummary(annotations: Annotation[]): Record<string, an
  * // Multiple values filter (OR logic)
  * const youngFilter = createPropertyFilter('ageGroup', ['child', 'youth']);
  */
-export function createPropertyFilter(propertyKey: string, value: any | any[]): Filter {
+export function createPropertyFilter(propertyKey: string, value: unknown | readonly unknown[]): Filter {
   if (Array.isArray(value)) {
     const valueSet = new Set(value);
     return (annotation: Annotation) => {

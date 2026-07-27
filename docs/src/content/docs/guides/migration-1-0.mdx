@@ -1,0 +1,29 @@
+---
+title: Migrating to the 1.0 API
+description: Move from legacy flat methods to stable capability controllers and package subpaths.
+---
+
+Annota keeps the 0.10 flat API during the compatibility window. Those methods are deprecated in
+0.11 and planned for removal in 2.0; they delegate to the same implementation as the new API.
+
+| Legacy | Replacement |
+| --- | --- |
+| `createOpenSeadragonAnnotator(viewer, options)` | `createAnnotator({ viewer, ...options })` |
+| `addAnnotation(annotation)` | `annotations.add(annotation)` |
+| `updateAnnotation(id, annotation)` | `annotations.update(id, patch)` |
+| `deleteAnnotation(id)` | `annotations.remove(id)` |
+| `setSelected(ids)` | `selection.set(ids)` |
+| `getIntersecting(bounds)` | `spatial.search(bounds)` |
+| `state` | capability controllers; `unsafeState` only for advanced integration |
+| `properties.layer` | `layerId` |
+| `annota/dist/index.css` | `annota/styles.css` |
+
+Use `annota/react`, `annota/svelte`, `annota/tools`, and `annota/loaders` for canonical imports.
+Root React exports and the old CSS path remain compatibility proxies.
+
+`AnnotationInput` does not require bounds. Annota recomputes bounds for every write and ignores
+legacy input bounds. Update patches shallow-merge `properties` and `style`; pass `null` to remove
+either object, and pass `layerId: null` to move an annotation to the default layer.
+
+The RGB16 mask preset only decodes `instanceId` and `classId`. Map class IDs to pathology or other
+domain fields explicitly with `mapProperties`.

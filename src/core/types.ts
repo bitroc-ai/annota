@@ -145,11 +145,52 @@ export type StyleExpression = AnnotationStyle | ((annotation: Annotation) => Ann
 // Annotation Types
 // ============================================
 
-export interface Annotation {
+export interface AnnotationProperties {
+  [key: string]: unknown;
+}
+
+type WithoutBounds<T extends Shape> = Omit<T, 'bounds'> & {
+  /** @deprecated Bounds are computed by Annota and ignored on input. */
+  bounds?: Bounds;
+};
+
+export type ShapeInput =
+  | WithoutBounds<PointShape>
+  | WithoutBounds<CircleShape>
+  | WithoutBounds<EllipseShape>
+  | WithoutBounds<RectangleShape>
+  | WithoutBounds<LineShape>
+  | WithoutBounds<PolygonShape>
+  | WithoutBounds<FreehandShape>
+  | WithoutBounds<MultiPolygonShape>
+  | WithoutBounds<ImageShape>
+  | WithoutBounds<PathShape>;
+
+export interface AnnotationInput<P extends AnnotationProperties = AnnotationProperties> {
+  id: string;
+  shape: ShapeInput | Shape;
+  layerId?: string;
+  properties?: P;
+  style?: AnnotationStyle;
+}
+
+/**
+ * A normalized annotation snapshot. Instances returned by the public API are
+ * detached and frozen; callers must use an update operation to change them.
+ */
+export interface Annotation<P extends AnnotationProperties = AnnotationProperties> {
   id: string;
   shape: Shape;
-  properties?: Record<string, any>;
+  layerId?: string;
+  properties?: P;
   style?: AnnotationStyle;
+}
+
+export interface AnnotationPatch<P extends AnnotationProperties = AnnotationProperties> {
+  shape?: ShapeInput | Shape;
+  layerId?: string | null;
+  properties?: Partial<P> | null;
+  style?: Partial<AnnotationStyle> | null;
 }
 
 // ============================================

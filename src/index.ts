@@ -10,9 +10,13 @@
 
 export type {
   Annotation,
+  AnnotationInput,
+  AnnotationPatch,
+  AnnotationProperties,
   Point,
   AnnotationStyle,
   Shape,
+  ShapeInput,
   ShapeType,
   ImageShape,
   RectangleShape,
@@ -28,6 +32,39 @@ export type {
   Bounds,
 } from "./core/types";
 export { containsPoint, calculateBounds, translateShape } from "./core/types";
+export {
+  AnnotaError,
+  AnnotationExistsError,
+  AnnotationNotFoundError,
+  AnnotationValidationError,
+} from "./core/errors";
+export { applyAnnotationPatch, normalizeAnnotation } from "./core/normalization";
+export {
+  changeContext,
+  createTransactionId,
+  createTypedEvents,
+} from "./core/events";
+export type {
+  AnnotatorEventMap,
+  AnnotatorEvents,
+  AnnotatorNotification,
+  ChangeContext,
+  ChangeSource,
+} from "./core/events";
+export { createGeometryController } from "./core/geometry";
+export type { GeometryController } from "./core/geometry";
+export { createAnnotationStore } from "./core/store";
+export type {
+  AnnotationStore,
+  StoreAddAllOptions,
+  StoreChangeEvent,
+  StoreObserver,
+  StoreWriteMode,
+} from "./core/store";
+export { createLayerManager } from "./core/layer";
+export type { LayerManager } from "./core/layer";
+export { createHistoryManager } from "./core/history";
+export type { HistoryManager, HistoryManagerOptions } from "./core/history";
 export type { Layer, LayerConfig } from "./core/layer";
 export {
   createPositiveMaskFilter,
@@ -120,12 +157,21 @@ export type {
 // ============================================
 
 export {
+  createAnnotator,
   createOpenSeadragonAnnotator,
   type OpenSeadragonAnnotator,
   type OpenSeadragonAnnotator as AnnotatorInstance,
   type OpenSeadragonAnnotatorOptions,
   type AnnotatorEvent,
   type AnnotatorEventHandler,
+  type AnnotationController,
+  type SelectionController,
+  type LayerController,
+  type SpatialQueryController,
+  type HistoryController,
+  type ToolController,
+  type MutationOptions,
+  type CreateAnnotatorOptions,
 } from "./adapters/openseadragon/annotator";
 
 export { pointerEventToImage } from "./adapters/openseadragon/coordinates";
@@ -191,6 +237,19 @@ export {
 
 export { loadMaskPolygons, exportMasksToPng } from "./loaders/masks";
 export type { MaskLoaderOptions } from "./loaders/masks";
+export {
+  decodeInstancePixels,
+  decodeRgb16Pixel,
+  loadInstanceMask,
+} from "./loaders/instance-mask";
+export type {
+  DecodedInstance,
+  DecodedInstanceRegion,
+  DecodedPixelSource,
+  ExtractedContour,
+  InstanceMaskLoaderOptions,
+  RgbaPixel,
+} from "./loaders/instance-mask";
 
 export { exportJson, downloadJson } from "./loaders/geojson";
 

@@ -135,6 +135,14 @@ pnpm typecheck
 # Run all tests
 pnpm test
 
+# Browser/framework lifecycle and packed consumer gates
+pnpm test:browser
+pnpm test:frameworks
+pnpm build && pnpm test:consumer
+
+# Reproducible fixed-seed performance regression check
+pnpm benchmark:ci
+
 # Run tests in watch mode
 pnpm test:watch
 
@@ -143,6 +151,11 @@ cd docs
 pnpm dev
 # Navigate to http://localhost:3000/playground
 ```
+
+Public annotation writes must use the capability façade so normalization, history, typed events,
+the Store, SpatialIndex, and rendering remain one transaction. Direct `state.store` writes are
+deprecated; `unsafeState` is reserved for advanced integration. New adapters must validate
+untyped third-party values at their boundary and add error-path contract tests.
 
 ## Testing
 

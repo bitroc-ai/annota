@@ -8,18 +8,23 @@
   "types": "dist/index.d.ts",
   "packageManager": "pnpm@10.15.0",
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts && pnpm build:svelte",
+    "build": "tsup --config tsup.config.ts && pnpm build:svelte",
     "build:svelte": "svelte-package -i src/svelte -o dist/svelte",
     "build:docs": "pnpm build && cd docs && pnpm install --no-frozen-lockfile && pnpm build",
     "start:docs": "cd docs && pnpm preview",
     "dev": "pnpm run dev:lib & pnpm run dev:docs",
     "dev:lib": "pnpm run dev:lib:ts & pnpm run dev:lib:svelte",
-    "dev:lib:ts": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "dev:lib:ts": "tsup --config tsup.config.ts --watch",
     "dev:lib:svelte": "svelte-package -i src/svelte -o dist/svelte --watch",
     "dev:docs": "cd docs && pnpm dev",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:browser": "vitest run test/integration/browser-lifecycle.test.ts",
+    "test:frameworks": "vitest run test/integration/framework-lifecycle.test.tsx test/integration/svelte-lifecycle.test.ts",
+    "test:consumer": "node scripts/test-package-consumers.mjs",
+    "benchmark": "node benchmarks/annota-benchmark.mjs",
+    "benchmark:ci": "node benchmarks/annota-benchmark.mjs --ci"
   },
   "keywords": [
     "pathology",
@@ -51,6 +56,27 @@
       "svelte": "./dist/svelte/index.js",
       "default": "./dist/svelte/index.js"
     },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js",
+      "require": "./dist/core.cjs"
+    },
+    "./tools": {
+      "types": "./dist/tools.d.ts",
+      "import": "./dist/tools.js",
+      "require": "./dist/tools.cjs"
+    },
+    "./loaders": {
+      "types": "./dist/loaders.d.ts",
+      "import": "./dist/loaders.js",
+      "require": "./dist/loaders.cjs"
+    },
+    "./styles.css": "./dist/index.css",
     "./dist/index.css": "./dist/index.css"
   },
   "peerDependencies": {
@@ -59,6 +85,21 @@
     "react-dom": "^18.0.0 || ^19.0.0",
     "svelte": "^5.0.0"
   },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    }
+  },
+  "sideEffects": [
+    "*.css",
+    "dist/*.css"
+  ],
   "dependencies": {
     "jsfive": "^0.4.0",
     "npyjs": "^1.1.0",

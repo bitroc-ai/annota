@@ -5,7 +5,7 @@
 
 import RBush from 'rbush';
 import type { Annotation, Bounds } from './types';
-import { calculateBounds } from './types';
+import { cloneAnnotation } from './normalization';
 
 /**
  * Spatial index entry wrapping an annotation with its bounds
@@ -38,13 +38,13 @@ export class SpatialIndex {
     // Remove existing entry if updating
     this.remove(annotation.id);
 
-    const bounds = annotation.shape.bounds || calculateBounds(annotation.shape);
+    const bounds = annotation.shape.bounds;
     const entry: IndexEntry = {
       minX: bounds.minX,
       minY: bounds.minY,
       maxX: bounds.maxX,
       maxY: bounds.maxY,
-      annotation,
+      annotation: cloneAnnotation(annotation),
     };
 
     this.tree.insert(entry);
@@ -68,14 +68,14 @@ export class SpatialIndex {
    */
   search(bounds: Bounds): Annotation[] {
     const results = this.tree.search(bounds);
-    return results.map(entry => entry.annotation);
+    return results.map(entry => cloneAnnotation(entry.annotation));
   }
 
   /**
    * Get all annotations in the index
    */
   all(): Annotation[] {
-    return Array.from(this.idMap.values()).map((entry: IndexEntry) => entry.annotation);
+    return Array.from(this.idMap.values()).map((entry: IndexEntry) => cloneAnnotation(entry.annotation));
   }
 
   /**
@@ -90,7 +90,8 @@ export class SpatialIndex {
    * Get annotation by ID (O(1) lookup)
    */
   get(id: string): Annotation | undefined {
-    return this.idMap.get(id)?.annotation;
+    const annotation = this.idMap.get(id)?.annotation;
+    return annotation ? cloneAnnotation(annotation) : undefined;
   }
 
   /**

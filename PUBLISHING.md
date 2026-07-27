@@ -89,7 +89,10 @@ git push origin v0.2.1
 
 2. **Quality Checks**
    - Runs `pnpm typecheck`
-   - Runs `pnpm test run`
+   - Runs `pnpm exec vitest run`
+   - Runs browser and React/Svelte lifecycle integration tests
+   - Builds and installs the packed tarball in ESM/CJS/React/Svelte/CSS consumers
+   - Runs the fixed-seed benchmark regression gate
    - Fails if either check fails
 
 3. **Build**
@@ -198,7 +201,10 @@ The workflow will fail if quality checks don't pass:
 ```bash
 # Run locally first to catch issues
 pnpm typecheck
-pnpm test run
+pnpm exec vitest run
+pnpm build
+pnpm test:consumer
+pnpm benchmark:ci
 ```
 
 Fix all errors before tagging a release.

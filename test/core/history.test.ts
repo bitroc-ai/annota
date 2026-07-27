@@ -15,6 +15,11 @@ import {
 } from '../../src/core/history';
 import type { Annotation } from '../../src/core/types';
 
+const normalized = (annotation: Annotation): Annotation => ({
+  ...annotation,
+  layerId: annotation.layerId ?? 'default',
+});
+
 describe('History Manager', () => {
   let store: ReturnType<typeof createAnnotationStore>;
   let history: HistoryManager;
@@ -38,7 +43,7 @@ describe('History Manager', () => {
       const command = new CreateCommand(store, annotation);
       command.execute();
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
     });
 
     it('should undo annotation creation', () => {
@@ -73,7 +78,7 @@ describe('History Manager', () => {
       command.undo();
       command.redo();
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
     });
   });
 
@@ -102,7 +107,7 @@ describe('History Manager', () => {
       const command = new UpdateCommand(store, oldAnnotation, newAnnotation);
       command.execute();
 
-      expect(store.get('test-1')).toEqual(newAnnotation);
+      expect(store.get('test-1')).toEqual(normalized(newAnnotation));
     });
 
     it('should undo annotation update', () => {
@@ -130,7 +135,7 @@ describe('History Manager', () => {
       command.execute();
       command.undo();
 
-      expect(store.get('test-1')).toEqual(oldAnnotation);
+      expect(store.get('test-1')).toEqual(normalized(oldAnnotation));
     });
 
     it('should merge consecutive updates to the same annotation', () => {
@@ -230,7 +235,7 @@ describe('History Manager', () => {
       command.execute();
       command.undo();
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
     });
   });
 
@@ -262,8 +267,8 @@ describe('History Manager', () => {
       const batch = new BatchCommand(commands, 'Create annotations');
       batch.execute();
 
-      expect(store.get('test-1')).toEqual(annotation1);
-      expect(store.get('test-2')).toEqual(annotation2);
+      expect(store.get('test-1')).toEqual(normalized(annotation1));
+      expect(store.get('test-2')).toEqual(normalized(annotation2));
     });
 
     it('should undo multiple commands in reverse order', () => {
@@ -313,7 +318,7 @@ describe('History Manager', () => {
       const command = new CreateCommand(store, annotation);
       history.execute(command);
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
       expect(history.canUndo()).toBe(true);
       expect(history.canRedo()).toBe(false);
     });
@@ -352,7 +357,7 @@ describe('History Manager', () => {
       history.undo();
       history.redo();
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
       expect(history.canUndo()).toBe(true);
       expect(history.canRedo()).toBe(false);
     });
@@ -445,8 +450,8 @@ describe('History Manager', () => {
       history.execute(new CreateCommand(store, annotation2));
       history.endBatch();
 
-      expect(store.get('test-1')).toEqual(annotation1);
-      expect(store.get('test-2')).toEqual(annotation2);
+      expect(store.get('test-1')).toEqual(normalized(annotation1));
+      expect(store.get('test-2')).toEqual(normalized(annotation2));
       expect(history.getUndoSize()).toBe(1);
 
       history.undo();
@@ -468,7 +473,7 @@ describe('History Manager', () => {
       history.execute(new CreateCommand(store, annotation));
       history.enable();
 
-      expect(store.get('test-1')).toEqual(annotation);
+      expect(store.get('test-1')).toEqual(normalized(annotation));
       expect(history.canUndo()).toBe(false);
     });
 
@@ -578,7 +583,7 @@ describe('History Manager', () => {
 
       // Undoing should go back to the original state
       historyWithMerging.undo();
-      expect(store.get('test-1')).toEqual(annotation1);
+      expect(store.get('test-1')).toEqual(normalized(annotation1));
     });
 
     it('should not merge when merging is disabled', () => {
