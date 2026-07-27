@@ -106,7 +106,7 @@ git push origin v0.2.1
    - Includes commit messages, hashes, and installation instructions
 
 5. **Validate Final Documentation**
-   - Runs `pnpm check:docs-imports` against all Markdown code examples
+   - Runs `pnpm check:docs-imports` against user-facing Markdown, MDX, and Astro code examples
    - Runs `pnpm --dir docs build` with the generated changelog
    - Stops before any changelog push or npm publish if MDX is invalid
 

@@ -17,7 +17,16 @@ describe('documentation delivery contract', () => {
     expect(imports).toBeGreaterThan(generate);
     expect(docsBuild).toBeGreaterThan(imports);
     expect(commit).toBeGreaterThan(docsBuild);
-    expect(publish).toBeGreaterThan(docsBuild);
+    expect(publish).toBeGreaterThan(commit);
+
+    const commitStep = workflow.slice(commit, publish);
+    const gitCommit = commitStep.indexOf('git commit ');
+    const gitPush = commitStep.indexOf('git push ');
+    expect(commitStep).toContain('set -euo pipefail');
+    expect(commitStep).toContain('if git diff --quiet -- "$CHANGELOG_FILE"; then');
+    expect(gitCommit).toBeGreaterThan(-1);
+    expect(gitPush).toBeGreaterThan(gitCommit);
+    expect(commitStep).not.toMatch(/git (?:commit|push)[^\n]*\|\|/);
   });
 
   it('keeps benchmark CI self-building and checks imports in pull-request CI', async () => {

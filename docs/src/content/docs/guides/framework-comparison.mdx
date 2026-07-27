@@ -221,13 +221,13 @@ This guide helps you understand the differences between React and Svelte when us
   <TabItem label="Svelte">
     ```svelte
     <script>
-      import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+      import { AnnotaProvider, Viewer, Annotator } from "annota/svelte";
 
       let viewer = $state(null);
     </script>
 
     <AnnotaProvider slideId="my-slide">
-      <AnnotaViewer onViewerReady={(v) => viewer = v} />
+      <Viewer onViewerReady={(v) => viewer = v} />
       {#if viewer}
         <Annotator {viewer} />
       {/if}

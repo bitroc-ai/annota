@@ -143,7 +143,7 @@ pnpm test:consumer
 # Reproducible fixed-seed performance regression check
 pnpm benchmark:ci
 
-# Validate canonical imports in Markdown code examples
+# Validate canonical imports in user-facing Markdown, MDX, and Astro code examples
 pnpm check:docs-imports
 
 # Install and build the documentation site

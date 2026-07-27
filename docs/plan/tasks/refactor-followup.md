@@ -50,6 +50,7 @@ framework-neutral 根入口导入 React API，或从非 canonical 入口导入 t
 - `scripts/**`
 - `test/**`
 - `docs/src/content/docs/**`
+- `docs/src/pages/**`
 - `docs/plan/tasks/refactor-followup.md`
 - `docs/plan/reviews/refactor-followup*.md`
 
@@ -61,7 +62,8 @@ framework-neutral 根入口导入 React API，或从非 canonical 入口导入 t
 - workflow 不得在验证最终 changelog 前把它推送到 `main`。
 - `pnpm benchmark:ci` 在清理/缺少 `dist/core.js` 时仍可从 fresh checkout 成功运行。
 - CI/publish 与贡献文档描述同一组实际命令，避免只修文档或只修 workflow。
-- 扫描全部 `.md` / `.mdx` fenced code examples；正文中解释旧入口的迁移对照可以保留，
+- 扫描全部 `.md` / `.mdx` fenced code examples 以及 Astro 页面中显式传给代码展示组件的
+  用户示例；正文中解释旧入口的迁移对照可以保留，显式标记的历史 fence 可豁免，
   但可复制执行的当前示例必须全部使用 canonical subpaths。
 - 静态门禁应检查语义化违规 import，而不是依赖 docs Vite alias 或仅匹配单个文件。
 

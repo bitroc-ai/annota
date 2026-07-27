@@ -9,3 +9,18 @@ import 'annota/styles.css';
 ```
 
 The old `annota/dist/index.css` path can still be described in prose.
+
+## Historical migration example
+
+```tsx annota-legacy-imports
+import { useTool, PointTool } from 'annota';
+import 'annota/dist/index.css';
+```
+
+## Current equivalent
+
+```tsx
+import { useTool } from 'annota/react';
+import { PointTool } from 'annota/tools';
+import 'annota/styles.css';
+```

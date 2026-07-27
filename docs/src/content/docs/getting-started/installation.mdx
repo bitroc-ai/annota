@@ -148,7 +148,7 @@ Create a simple test component:
 
 ```svelte
 <script>
-  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+  import { AnnotaProvider, Viewer, Annotator } from "annota/svelte";
   import "annota/styles.css";
 
   let viewer = $state(null);
@@ -156,7 +156,7 @@ Create a simple test component:
 
 <AnnotaProvider>
   <div style="width: 800px; height: 600px;">
-    <AnnotaViewer
+    <Viewer
       options={{
         tileSources: {
           type: "image",

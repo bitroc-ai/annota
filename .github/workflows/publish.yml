@@ -134,11 +134,19 @@ jobs:
 
       - name: Commit changelog to docs
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/src/content/docs/changelog.mdx
-          git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
-          git push origin HEAD:main || echo "No changes to push"
+
+          CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
+          if git diff --quiet -- "$CHANGELOG_FILE"; then
+            echo "Changelog is already up to date; nothing to commit."
+          else
+            git add "$CHANGELOG_FILE"
+            git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}"
+            git push origin HEAD:main
+          fi
 
       - name: Verify npm auth and package ownership
         run: |

@@ -19,7 +19,7 @@ Here's the simplest possible annotation viewer:
 
 ```svelte
 <script>
-  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+  import { AnnotaProvider, Viewer, Annotator } from "annota/svelte";
   import "annota/styles.css";
 
   let viewer = $state(null);
@@ -27,7 +27,7 @@ Here's the simplest possible annotation viewer:
 
 <AnnotaProvider slideId="my-slide">
   <div style="width: 100vw; height: 100vh;">
-    <AnnotaViewer
+    <Viewer
       options={{
         tileSources: "/path/to/image.dzi",
         prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",
@@ -57,10 +57,10 @@ That's it! You now have a working image viewer with annotation capabilities.
 
 Wraps your application and provides Svelte context for annotations. The `slideId` identifies this slide's annotations.
 
-### 2. AnnotaViewer
+### 2. Viewer
 
 ```svelte
-<AnnotaViewer
+<Viewer
   options={{
     tileSources: "/path/to/image.dzi",
     prefixUrl: "...",
@@ -87,7 +87,7 @@ Let's add tools for creating annotations:
 
 ```svelte
 <script>
-  import { AnnotaProvider, AnnotaViewer, Annotator, tool } from "annota/svelte";
+  import { AnnotaProvider, Viewer, Annotator, tool } from "annota/svelte";
   import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
   import "annota/styles.css";
 
@@ -110,7 +110,7 @@ Let's add tools for creating annotations:
     </div>
 
     <!-- Viewer -->
-    <AnnotaViewer
+    <Viewer
       options={{
         tileSources: "/path/to/image.dzi",
         prefixUrl: "https://cdn.jsdelivr.net/npm/openseadragon@4/build/openseadragon/images/",

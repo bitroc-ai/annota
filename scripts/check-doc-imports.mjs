@@ -14,8 +14,6 @@ const ALLOWED_ANNOTA_IMPORTS = new Set([
 const REACT_EXPORTS = new Set([
   'AnnotaProvider',
   'AnnotaProviderProps',
-  'AnnotaViewer',
-  'AnnotaViewerProps',
   'AnnotationEditor',
   'AnnotationEditorProps',
   'AnnotationPopup',
@@ -73,6 +71,34 @@ const REACT_EXPORTS = new Set([
   'useSelection',
   'useTool',
   'useViewer',
+]);
+
+const SVELTE_EXPORTS = new Set([
+  'AnnotaProvider',
+  'Annotation',
+  'AnnotationEditor',
+  'AnnotationStyle',
+  'Annotator',
+  'ContextMenu',
+  'ContextMenuDivider',
+  'ContextMenuItem',
+  'Popup',
+  'Shape',
+  'ShapeType',
+  'Viewer',
+  'annotations',
+  'contextMenu',
+  'contextMenuBinding',
+  'editing',
+  'getAnnotator',
+  'history',
+  'layerManager',
+  'layers',
+  'pushToolCursor',
+  'selection',
+  'setAnnotator',
+  'tool',
+  'viewer',
 ]);
 
 const TOOL_EXPORTS = new Set([
@@ -136,21 +162,75 @@ const DEFAULT_EXCLUDED_DIRECTORIES = new Set([
   'node_modules',
 ]);
 
+const LEGACY_FENCE_MARKER = 'annota-legacy-imports';
+const ROOT_REACT_EXPORTS = new Set([
+  ...REACT_EXPORTS,
+  'AnnotaViewer',
+  'AnnotaViewerProps',
+]);
+const SVELTE_FRAMEWORK_EXPORTS = new Set(
+  [...SVELTE_EXPORTS].filter(name => ![
+    'Annotation',
+    'AnnotationStyle',
+    'Shape',
+    'ShapeType',
+  ].includes(name))
+);
+const CANONICAL_ENTRY_EXPORTS = new Map([
+  ['annota/react', REACT_EXPORTS],
+  ['annota/svelte', SVELTE_EXPORTS],
+  ['annota/tools', TOOL_EXPORTS],
+  ['annota/loaders', LOADER_EXPORTS],
+]);
+
 function lineAt(source, offset) {
   return source.slice(0, offset).split('\n').length;
 }
 
 function extractFences(source) {
   const fences = [];
-  const pattern = /^[ \t]*(`{3,}|~{3,})[^\n]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gm;
-  for (const match of source.matchAll(pattern)) {
-    const contentOffset = match.index + match[0].indexOf('\n') + 1;
+  const lines = source.split('\n');
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const opening = lines[index].match(/^[ \t]*(`{3,}|~{3,})([^\r]*)\r?$/);
+    if (!opening) continue;
+
+    const marker = opening[1][0];
+    const minimumClosingLength = opening[1].length;
+    const closingPattern = new RegExp(
+      `^[ \\t]*${marker === '`' ? '`' : '~'}{${minimumClosingLength},}[ \\t]*\\r?$`
+    );
+    let closingIndex = index + 1;
+    while (closingIndex < lines.length && !closingPattern.test(lines[closingIndex])) {
+      closingIndex += 1;
+    }
+
+    const infoTokens = opening[2].trim().split(/\s+/).filter(Boolean);
+    const contentEnd = Math.min(closingIndex, lines.length);
     fences.push({
-      content: match[2],
+      allowLegacyImports: infoTokens.includes(LEGACY_FENCE_MARKER),
+      content: lines.slice(index + 1, contentEnd).join('\n'),
+      line: index + 2,
+    });
+
+    index = closingIndex < lines.length ? closingIndex : lines.length;
+  }
+
+  return fences;
+}
+
+function extractAstroCodeExamples(source) {
+  const examples = [];
+  const pattern = /<Code\b[\s\S]*?\bcode=\{`([\s\S]*?)`\}[\s\S]*?\/>/g;
+  for (const match of source.matchAll(pattern)) {
+    const contentOffset = match.index + match[0].indexOf('code={`') + 'code={`'.length;
+    examples.push({
+      allowLegacyImports: false,
+      content: match[1],
       line: lineAt(source, contentOffset),
     });
   }
-  return fences;
+  return examples;
 }
 
 function namedImports(clause) {
@@ -159,6 +239,8 @@ function namedImports(clause) {
   if (opening === -1 || closing === -1 || closing <= opening) return [];
   return clause
     .slice(opening + 1, closing)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\/.*$/gm, '')
     .split(',')
     .map(part => part.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0].trim())
     .filter(Boolean);
@@ -175,25 +257,40 @@ function checkSpecifier(specifier, names, location, violations) {
     return;
   }
 
-  if (specifier !== 'annota') return;
+  if (specifier === 'annota') {
+    for (const name of names) {
+      let canonical;
+      if (ROOT_REACT_EXPORTS.has(name)) canonical = 'annota/react';
+      else if (SVELTE_FRAMEWORK_EXPORTS.has(name)) canonical = 'annota/svelte';
+      else if (TOOL_EXPORTS.has(name)) canonical = 'annota/tools';
+      else if (LOADER_EXPORTS.has(name)) canonical = 'annota/loaders';
+      if (!canonical) continue;
 
-  for (const name of names) {
-    let canonical;
-    if (REACT_EXPORTS.has(name)) canonical = 'annota/react';
-    else if (TOOL_EXPORTS.has(name)) canonical = 'annota/tools';
-    else if (LOADER_EXPORTS.has(name)) canonical = 'annota/loaders';
-    if (canonical) {
       violations.push({
         ...location,
         message: `"${name}" must be imported from "${canonical}", not "annota"`,
       });
     }
+    return;
+  }
+
+  const entryExports = CANONICAL_ENTRY_EXPORTS.get(specifier);
+  if (!entryExports) return;
+  for (const name of names) {
+    if (entryExports.has(name)) continue;
+    violations.push({
+      ...location,
+      message: `"${name}" is not exported by "${specifier}"`,
+    });
   }
 }
 
 function inspectFence(file, fence, violations) {
-  const declarations = /\bimport\s+(?:type\s+)?([\s\S]*?)\s+from\s*(['"])(annota(?:\/[^'"]*)?)\2/g;
+  if (fence.allowLegacyImports) return;
+
+  const declarations = /\bimport\s+(?:type\s+)?([\s\S]*?)\s+from\s*(['"])([^'"]+)\2/g;
   for (const match of fence.content.matchAll(declarations)) {
+    if (match[3] !== 'annota' && !match[3].startsWith('annota/')) continue;
     checkSpecifier(
       match[3],
       namedImports(match[1]),
@@ -233,10 +330,10 @@ function inspectFence(file, fence, violations) {
   }
 }
 
-async function collectMarkdownFiles(target, files, isExplicitTarget) {
+async function collectDocumentationFiles(target, files, isExplicitTarget) {
   const info = await stat(target);
   if (info.isFile()) {
-    if (/\.(?:md|mdx)$/i.test(target)) files.push(target);
+    if (/\.(?:astro|md|mdx)$/i.test(target)) files.push(target);
     return;
   }
 
@@ -250,7 +347,7 @@ async function collectMarkdownFiles(target, files, isExplicitTarget) {
     ) {
       continue;
     }
-    await collectMarkdownFiles(path.join(target, entry.name), files, isExplicitTarget);
+    await collectDocumentationFiles(path.join(target, entry.name), files, isExplicitTarget);
   }
 }
 
@@ -260,23 +357,26 @@ const targets = explicitTargets ? args : [process.cwd()];
 const files = [];
 
 for (const target of targets) {
-  await collectMarkdownFiles(path.resolve(target), files, explicitTargets);
+  await collectDocumentationFiles(path.resolve(target), files, explicitTargets);
 }
 
 const violations = [];
 for (const file of files.sort()) {
   const source = await readFile(file, 'utf8');
-  for (const fence of extractFences(source)) {
+  const examples = path.extname(file).toLowerCase() === '.astro'
+    ? extractAstroCodeExamples(source)
+    : extractFences(source);
+  for (const fence of examples) {
     inspectFence(path.relative(process.cwd(), file) || file, fence, violations);
   }
 }
 
 if (violations.length > 0) {
-  console.error('Non-canonical Annota imports found in Markdown code examples:');
+  console.error('Invalid Annota imports found in user-facing documentation examples:');
   for (const violation of violations) {
     console.error(`${violation.file}:${violation.line}: ${violation.message}`);
   }
   process.exitCode = 1;
 } else {
-  console.log(`Checked ${files.length} Markdown files: all fenced imports are canonical.`);
+  console.log(`Checked ${files.length} documentation files: all user examples use canonical imports.`);
 }

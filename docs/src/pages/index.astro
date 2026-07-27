@@ -200,8 +200,8 @@ const reactIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-11.5 -10.23
             >
               <FrameworkTab>
                 <Code
-                  code={`import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from 'annota';
-import { RectangleTool } from 'annota';
+                  code={`import { AnnotaProvider, Viewer as AnnotaViewer, Annotator, useTool } from 'annota/react';
+import { RectangleTool } from 'annota/tools';
 import { useState } from 'react';
 
 function App() {
@@ -231,7 +231,7 @@ function App() {
                 <Code
                   code={`<script lang="ts">
   import { AnnotaProvider, Viewer, Annotator, tool } from 'annota/svelte';
-  import { RectangleTool } from 'annota';
+  import { RectangleTool } from 'annota/tools';
   import type OpenSeadragon from 'openseadragon';
 
   let viewer: OpenSeadragon.Viewer | undefined = $state(undefined);

@@ -57,13 +57,13 @@ Annota provides the same powerful annotation capabilities for both **React** and
     Annota for Svelte includes:
 
     - **Svelte Stores**: Reactive stores for annotator, annotations, selection, tools, and more
-    - **Svelte Components**: `<AnnotaViewer>`, `<Annotator>`, `<Popup>`, `<ContextMenu>`
+    - **Svelte Components**: `<Viewer>`, `<Annotator>`, `<Popup>`, `<ContextMenu>`
     - **TypeScript Support**: Full type definitions for all APIs
     - **Performance**: Optimized for large-scale annotation with Svelte 5 runes
 
     ```svelte title="Basic Svelte Example"
     <script>
-      import { AnnotaProvider, AnnotaViewer, Annotator } from 'annota/svelte';
+      import { AnnotaProvider, Viewer, Annotator } from 'annota/svelte';
     </script>
 
     <AnnotaProvider>
@@ -71,11 +71,11 @@ Annota provides the same powerful annotation capabilities for both **React** and
         tileSources: { type: 'image', url: '/image.tif' }
       }}
 
-      <AnnotaViewer options={viewerOptions}>
+      <Viewer options={viewerOptions}>
         {(viewer) => (
           <Annotator {viewer} />
         )}
-      </AnnotaViewer>
+      </Viewer>
     </AnnotaProvider>
     ```
 
