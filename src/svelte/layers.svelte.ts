@@ -6,7 +6,7 @@
 import { getAnnotator } from './annotator';
 import type { Layer } from '../core/layer';
 
-export function layers(): () => Layer[] {
+export function layers(): () => readonly Layer[] {
   const getAnnotatorFn = getAnnotator();
   let layersList: Layer[] = $state([]);
 
@@ -41,4 +41,3 @@ export function layers(): () => Layer[] {
   // Return a getter function to preserve reactivity
   return () => layersList;
 }
-

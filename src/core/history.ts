@@ -341,19 +341,17 @@ class HistoryManagerImpl implements HistoryManager {
       return;
     }
 
-    // Try to merge with last command if merging is enabled
+    // Execute before attempting a merge. A failed command must not be allowed
+    // to mutate the existing undo record through its merge callback.
+    command.execute();
+
     if (this.enableMerging && this.undoStack.length > 0) {
       const lastCommand = this.undoStack[this.undoStack.length - 1];
       if (lastCommand.merge && lastCommand.merge(command)) {
-        // Command was merged, just execute the new one
-        command.execute();
         this.emit();
         return;
       }
     }
-
-    // Execute the command
-    command.execute();
 
     // Add to undo stack
     this.undoStack.push(command);

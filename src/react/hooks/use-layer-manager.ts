@@ -45,7 +45,7 @@ import type { Layer, LayerConfig } from '../../core/layer';
  */
 export interface UseLayerManagerResult {
   /** All layers */
-  layers: Layer[];
+  layers: readonly Layer[];
 
   /** Create a new layer */
   createLayer: (id: string, config: LayerConfig) => Layer | undefined;
@@ -72,7 +72,7 @@ export interface UseLayerManagerResult {
   setLayerZIndex: (id: string, zIndex: number) => void;
 
   /** Get layers sorted by z-index */
-  getLayersByZIndex: () => Layer[];
+  getLayersByZIndex: () => readonly Layer[];
 }
 
 export function useLayerManager(): UseLayerManagerResult {

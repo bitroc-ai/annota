@@ -193,6 +193,14 @@ export class MemoryAnnotationStore implements AnnotationStore {
   }
 }
 
+function memoryLayerSnapshot(layer: Layer): Layer {
+  return Object.freeze({ ...layer });
+}
+
+function memoryLayerSnapshots(layers: Iterable<Layer>): readonly Layer[] {
+  return Object.freeze(Array.from(layers, memoryLayerSnapshot));
+}
+
 export class MemoryLayerManager implements LayerManager {
   private readonly layers = new Map<string, Layer>();
   private readonly observers = new Set<LayerObserver>();
@@ -207,7 +215,10 @@ export class MemoryLayerManager implements LayerManager {
   }
 
   private emit(type: LayerChangeEvent['type'], layer: Layer): void {
-    const event = { type, layers: [{ ...layer }] };
+    const event: LayerChangeEvent = Object.freeze({
+      type,
+      layers: memoryLayerSnapshots([layer]),
+    });
     this.observers.forEach(observer => {
       try {
         observer(event);
@@ -230,16 +241,16 @@ export class MemoryLayerManager implements LayerManager {
     };
     this.layers.set(id, layer);
     this.emit('created', layer);
-    return { ...layer };
+    return memoryLayerSnapshot(layer);
   }
 
   getLayer(id: string): Layer | undefined {
     const layer = this.layers.get(id);
-    return layer ? { ...layer } : undefined;
+    return layer ? memoryLayerSnapshot(layer) : undefined;
   }
 
-  getAllLayers(): Layer[] {
-    return [...this.layers.values()].map(layer => ({ ...layer }));
+  getAllLayers(): readonly Layer[] {
+    return memoryLayerSnapshots(this.layers.values());
   }
 
   updateLayer(id: string, updates: Partial<LayerConfig>): void {
@@ -305,15 +316,19 @@ export class MemoryLayerManager implements LayerManager {
     const explicit = annotation.layerId ?? annotation.properties.layer;
     if (typeof explicit === 'string' && this.layers.has(explicit)) return this.getLayer(explicit);
     const filtered = [...this.layers.values()].find(layer => layer.filter?.(annotation));
-    return filtered ? { ...filtered } : this.getLayer('default');
+    return filtered ? memoryLayerSnapshot(filtered) : this.getLayer('default');
   }
 
-  getVisibleLayers(): Layer[] {
-    return this.getAllLayers().filter(layer => layer.visible);
+  getVisibleLayers(): readonly Layer[] {
+    return memoryLayerSnapshots(
+      [...this.layers.values()].filter(layer => layer.visible)
+    );
   }
 
-  getLayersByZIndex(): Layer[] {
-    return this.getAllLayers().sort((left, right) => left.zIndex - right.zIndex);
+  getLayersByZIndex(): readonly Layer[] {
+    return memoryLayerSnapshots(
+      [...this.layers.values()].sort((left, right) => left.zIndex - right.zIndex)
+    );
   }
 
   observe(callback: LayerObserver): void {
@@ -451,15 +466,14 @@ export class MemoryHistoryManager implements HistoryManager {
       this.batch.push(command);
       return;
     }
+    command.execute();
     if (this.enableMerging && this.undoStack.length) {
       const previous = this.undoStack[this.undoStack.length - 1];
       if (previous.merge?.(command)) {
-        command.execute();
         this.emit();
         return;
       }
     }
-    command.execute();
     this.undoStack.push(command);
     if (this.undoStack.length > this.maxHistorySize) this.undoStack.shift();
     this.redoStack.length = 0;

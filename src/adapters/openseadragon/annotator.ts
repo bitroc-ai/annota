@@ -211,7 +211,7 @@ export interface LayerController {
   update(id: string, updates: Partial<LayerConfig>, options?: MutationOptions): void;
   remove(id: string, options?: MutationOptions): void;
   get(id: string): Layer | undefined;
-  list(): Layer[];
+  list(): readonly Layer[];
   setVisibility(id: string, visible: boolean, options?: MutationOptions): void;
   setLocked(id: string, locked: boolean, options?: MutationOptions): void;
   setOpacity(id: string, opacity: number, options?: MutationOptions): void;
@@ -294,7 +294,7 @@ export interface OpenSeadragonAnnotator {
   /** @deprecated Since 0.11.0. Use `layers.get`. Planned removal: 2.0.0. */
   getLayer(id: string): Layer | undefined;
   /** @deprecated Since 0.11.0. Use `layers.list`. Planned removal: 2.0.0. */
-  getAllLayers(): Layer[];
+  getAllLayers(): readonly Layer[];
   /** @deprecated Since 0.11.0. Use `layers.update`. Planned removal: 2.0.0. */
   updateLayer(id: string, updates: Partial<LayerConfig>): void;
   /** @deprecated Since 0.11.0. Use `layers.remove`. Planned removal: 2.0.0. */

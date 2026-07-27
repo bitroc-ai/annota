@@ -11,19 +11,19 @@ import type { Annotation, Filter } from './types';
 
 export interface Layer {
   /** Unique layer identifier */
-  id: string;
+  readonly id: string;
   /** Display name */
-  name: string;
+  readonly name: string;
   /** Layer visibility */
-  visible: boolean;
+  readonly visible: boolean;
   /** Prevent editing annotations on this layer */
-  locked: boolean;
+  readonly locked: boolean;
   /** Layer opacity (0-1) */
-  opacity: number;
+  readonly opacity: number;
   /** Rendering order (higher = rendered on top) */
-  zIndex: number;
+  readonly zIndex: number;
   /** Optional filter function to determine which annotations belong to this layer */
-  filter?: Filter;
+  readonly filter?: Filter;
 }
 
 export interface LayerConfig {
@@ -40,11 +40,26 @@ export interface LayerConfig {
 // ============================================
 
 export interface LayerChangeEvent {
-  type: 'created' | 'updated' | 'deleted' | 'reordered';
-  layers: Layer[];
+  readonly type: 'created' | 'updated' | 'deleted' | 'reordered';
+  readonly layers: readonly Layer[];
 }
 
 export type LayerObserver = (event: LayerChangeEvent) => void;
+
+function snapshotLayer(layer: Layer): Layer {
+  return Object.freeze({ ...layer });
+}
+
+function snapshotLayers(layers: Iterable<Layer>): readonly Layer[] {
+  return Object.freeze(Array.from(layers, snapshotLayer));
+}
+
+function snapshotLayerEvent(event: LayerChangeEvent): LayerChangeEvent {
+  return Object.freeze({
+    type: event.type,
+    layers: snapshotLayers(event.layers),
+  });
+}
 
 // ============================================
 // Layer Manager Interface
@@ -54,7 +69,7 @@ export interface LayerManager {
   // Layer CRUD
   createLayer(id: string, config: LayerConfig): Layer;
   getLayer(id: string): Layer | undefined;
-  getAllLayers(): Layer[];
+  getAllLayers(): readonly Layer[];
   updateLayer(id: string, updates: Partial<LayerConfig>): void;
   deleteLayer(id: string): void;
 
@@ -68,8 +83,8 @@ export interface LayerManager {
   isLayerVisible(id: string): boolean;
   isLayerLocked(id: string): boolean;
   getLayerForAnnotation(annotation: Annotation): Layer | undefined;
-  getVisibleLayers(): Layer[];
-  getLayersByZIndex(): Layer[]; // Sorted by zIndex (lowest to highest)
+  getVisibleLayers(): readonly Layer[];
+  getLayersByZIndex(): readonly Layer[]; // Sorted by zIndex (lowest to highest)
 
   // Observable
   observe(callback: LayerObserver): void;
@@ -108,9 +123,10 @@ class LayerManagerImpl implements LayerManager {
   }
 
   private emit(event: LayerChangeEvent): void {
+    const snapshot = snapshotLayerEvent(event);
     this.observers.forEach(callback => {
       try {
-        callback(event);
+        callback(snapshot);
       } catch (error) {
         console.error('Error in layer observer:', error);
       }
@@ -135,16 +151,16 @@ class LayerManagerImpl implements LayerManager {
     this.layers.set(id, layer);
     this.emit({ type: 'created', layers: [layer] });
 
-    return { ...layer };
+    return snapshotLayer(layer);
   }
 
   getLayer(id: string): Layer | undefined {
     const layer = this.layers.get(id);
-    return layer ? { ...layer } : undefined;
+    return layer ? snapshotLayer(layer) : undefined;
   }
 
-  getAllLayers(): Layer[] {
-    return Array.from(this.layers.values(), layer => ({ ...layer }));
+  getAllLayers(): readonly Layer[] {
+    return snapshotLayers(this.layers.values());
   }
 
   updateLayer(id: string, updates: Partial<LayerConfig>): void {
@@ -167,7 +183,7 @@ class LayerManagerImpl implements LayerManager {
     };
 
     this.layers.set(id, updatedLayer);
-    this.emit({ type: updates.zIndex === undefined ? 'updated' : 'reordered', layers: [{ ...updatedLayer }] });
+    this.emit({ type: updates.zIndex === undefined ? 'updated' : 'reordered', layers: [updatedLayer] });
   }
 
   deleteLayer(id: string): void {
@@ -217,29 +233,31 @@ class LayerManagerImpl implements LayerManager {
     const layerId = annotation.layerId ?? annotation.properties?.layer;
     if (layerId && typeof layerId === 'string') {
       const layer = this.layers.get(layerId);
-      if (layer) return layer;
+      if (layer) return snapshotLayer(layer);
     }
 
     // Then check if any layer's filter matches this annotation
     for (const layer of this.layers.values()) {
       if (layer.filter && layer.filter(annotation)) {
-        return layer;
+        return snapshotLayer(layer);
       }
     }
 
     // Default to 'default' layer
-    return this.layers.get('default');
+    const fallback = this.layers.get('default');
+    return fallback ? snapshotLayer(fallback) : undefined;
   }
 
-  getVisibleLayers(): Layer[] {
-    return Array.from(this.layers.values())
-      .filter(layer => layer.visible)
-      .map(layer => ({ ...layer }));
+  getVisibleLayers(): readonly Layer[] {
+    return snapshotLayers(
+      Array.from(this.layers.values()).filter(layer => layer.visible)
+    );
   }
 
-  getLayersByZIndex(): Layer[] {
-    return Array.from(this.layers.values(), layer => ({ ...layer }))
-      .sort((a, b) => a.zIndex - b.zIndex);
+  getLayersByZIndex(): readonly Layer[] {
+    return snapshotLayers(
+      Array.from(this.layers.values()).sort((a, b) => a.zIndex - b.zIndex)
+    );
   }
 
   observe(callback: LayerObserver): void {
