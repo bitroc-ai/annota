@@ -363,6 +363,8 @@ export function createPropertyFilter(propertyKey: string, value: unknown | reado
  * Create a filter for positive mask annotations
  * Checks for properties.classification === 'positive'
  * Falls back to polygon/multipolygon/path shapes without classification
+ * @deprecated Since 0.11.0. Use `createPropertyFilter('classification', 'positive')`.
+ * Planned removal: 2.0.0.
  */
 export function createPositiveMaskFilter(): Filter {
   return (annotation: Annotation) => {
@@ -384,6 +386,8 @@ export function createPositiveMaskFilter(): Filter {
 /**
  * Create a filter for negative mask annotations
  * Checks for properties.classification === 'negative'
+ * @deprecated Since 0.11.0. Use `createPropertyFilter('classification', 'negative')`.
+ * Planned removal: 2.0.0.
  */
 export function createNegativeMaskFilter(): Filter {
   return (annotation: Annotation) => annotation.properties?.classification === 'negative';
@@ -392,6 +396,8 @@ export function createNegativeMaskFilter(): Filter {
 /**
  * Create a filter based on mask polarity value
  * @param polarity The mask polarity to filter by
+ * @deprecated Since 0.11.0. Use `createPropertyFilter('classification', polarity)`.
+ * Planned removal: 2.0.0.
  */
 export function createMaskPolarityFilter(polarity: 'positive' | 'negative'): Filter {
   return polarity === 'positive' ? createPositiveMaskFilter() : createNegativeMaskFilter();

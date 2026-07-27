@@ -114,8 +114,8 @@ export abstract class BaseTool implements ToolHandler {
       return null;
     }
 
-    const annotations = this.annotator.state.store.all();
-    const layerManager = this.annotator.state.layerManager;
+    const annotations = this.annotator.annotations.list();
+    const layerManager = this.annotator.unsafeState.layerManager;
 
     // Calculate scale-invariant hit radius (5 pixels on screen)
     // Fallback to fixed radius if viewport zoom is not available (e.g., in tests)
@@ -170,7 +170,7 @@ export abstract class BaseTool implements ToolHandler {
    */
   protected selectAnnotation(annotationId: string): void {
     if (!this.annotator) return;
-    this.annotator.setSelected(annotationId);
+    this.annotator.selection.set(annotationId, { source: 'tool' });
   }
 
   // Optional event handlers (to be implemented by subclasses)

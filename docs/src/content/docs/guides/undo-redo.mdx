@@ -10,7 +10,7 @@ Annota provides built-in undo/redo support for all annotation operations.
 ## Basic Usage
 
 ```tsx
-import { useAnnotator, useCanUndo, useCanRedo } from "annota";
+import { useAnnotator, useCanUndo, useCanRedo } from "annota/react";
 
 function UndoRedoButtons() {
   const annotator = useAnnotator();
@@ -65,7 +65,7 @@ function UndoRedoShortcuts() {
 ## Using useHistory
 
 ```tsx
-import { useHistory } from "annota";
+import { useHistory } from "annota/react";
 
 function HistoryInfo() {
   const { canUndo, canRedo, undo, redo } = useHistory();
@@ -100,4 +100,3 @@ The following operations are automatically tracked:
 ```typescript
 annotator.clearHistory();
 ```
-

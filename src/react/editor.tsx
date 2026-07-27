@@ -425,7 +425,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
       const newShape = deletePolygonVertex(annotation.shape as any, selectedVertexIndex);
 
       if (newShape) {
-        annotator.updateAnnotation(annotation.id, { ...annotation, shape: newShape });
+        annotator.annotations.update(annotation.id, { shape: newShape }, { source: 'user' });
         setSelectedVertexIndex(null);
       } else {
         console.warn('[AnnotationEditor] Cannot delete vertex: polygon must have at least 3 vertices');
@@ -441,7 +441,7 @@ export function AnnotationEditor({ viewer }: AnnotationEditorProps) {
   if (!annotation || !annotator) return null;
 
   const handleChange = (shape: Shape) => {
-    annotator.updateAnnotation(annotation.id, { ...annotation, shape });
+    annotator.annotations.update(annotation.id, { shape }, { source: 'user' });
   };
 
   // Get the appropriate editor for this shape type

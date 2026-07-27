@@ -4,6 +4,7 @@
 
 import OpenSeadragon from 'openseadragon';
 import type { Annotation, Point, ControlPoint } from '../core/types';
+import type { ToolMutationTransaction } from '../adapters/openseadragon/annotator';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';
 import type { CurveToolOptions } from './types';
@@ -17,6 +18,7 @@ export class CurveTool extends BaseTool {
   private currentAnnotationId: string | null = null;
   private isDrawing = false;
   private smoothingTolerance: number;
+  private transaction: ToolMutationTransaction | null = null;
 
   constructor(options: CurveToolOptions = {}) {
     super('curve', {
@@ -49,23 +51,25 @@ export class CurveTool extends BaseTool {
 
     // Clear any existing selection before starting to draw
     // This prevents previously drawn curves from being moved when drawing a new one
-    if (this.annotator.state.selection.hasSelection()) {
-      this.annotator.state.selection.clear();
+    if (this.annotator.selection.get().length > 0) {
+      this.annotator.selection.clear({ source: 'tool' });
     }
 
     // Start drawing (always start, ignore existing annotations)
     this.isDrawing = true;
     this.points = [point];
     this.currentAnnotationId = `curve-${Date.now()}`;
+    this.transaction = this.annotator.tools.beginTransaction();
 
     // Create initial annotation (using polygon type for save/load symmetry)
     const annotation: Annotation = {
       id: this.currentAnnotationId,
       shape: {
-        type: 'polygon',
+        type: 'freehand',
         points: [{ x: point.x, y: point.y }],
+        closed: false,
         bounds: calculateBounds({
-          type: 'polygon',
+          type: 'freehand',
           points: [{ x: point.x, y: point.y }],
           bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
         }),
@@ -78,7 +82,7 @@ export class CurveTool extends BaseTool {
       },
     };
 
-    this.annotator.addAnnotation(annotation);
+    this.transaction.add(annotation);
   };
 
   /**
@@ -123,15 +127,16 @@ export class CurveTool extends BaseTool {
     } else {
       // Simplify and smooth the path using configured tolerance
       const simplifiedPoints = this.simplifyPath(this.points, this.smoothingTolerance);
-      const controlPoints = this.convertToControlPoints(simplifiedPoints);
+      const controlPoints = this.convertToControlPoints(
+        simplifiedPoints.length >= 3 ? simplifiedPoints : this.points
+      );
 
       // Update to final closed polygon (maintains symmetry with save/load)
       if (this.currentAnnotationId) {
-        const annotation = this.annotator.state.store.get(this.currentAnnotationId);
+        const annotation = this.annotator.annotations.get(this.currentAnnotationId);
         if (annotation) {
           const { _inProgress, ...cleanProperties } = annotation.properties || {};
-          this.annotator.updateAnnotation(this.currentAnnotationId, {
-            ...annotation,
+          this.transaction?.update(this.currentAnnotationId, {
             shape: {
               type: 'polygon',
               points: controlPoints,
@@ -143,6 +148,7 @@ export class CurveTool extends BaseTool {
             },
             properties: cleanProperties,
           });
+          this.transaction?.commit();
           this.selectAnnotation(this.currentAnnotationId);
         }
       }
@@ -161,7 +167,7 @@ export class CurveTool extends BaseTool {
    */
   private cancelDrawing(): void {
     if (this.currentAnnotationId && this.annotator) {
-      this.annotator.state.store.delete(this.currentAnnotationId);
+      this.transaction?.cancel();
     }
     this.resetState();
   }
@@ -173,6 +179,7 @@ export class CurveTool extends BaseTool {
     this.points = [];
     this.isDrawing = false;
     this.currentAnnotationId = null;
+    this.transaction = null;
   }
 
   /**
@@ -181,19 +188,19 @@ export class CurveTool extends BaseTool {
   private updateCurve(): void {
     if (!this.currentAnnotationId || !this.annotator) return;
 
-    const existing = this.annotator.state.store.get(this.currentAnnotationId);
+    const existing = this.annotator.annotations.get(this.currentAnnotationId);
     if (!existing) return;
 
     // Convert points to control points for preview
     const controlPoints = this.convertToControlPoints(this.points);
 
-    this.annotator.updateAnnotation(this.currentAnnotationId, {
-      ...existing,
+    this.transaction?.update(this.currentAnnotationId, {
       shape: {
-        type: 'polygon',
+        type: 'freehand',
         points: controlPoints,
+        closed: false,
         bounds: calculateBounds({
-          type: 'polygon',
+          type: 'freehand',
           points: controlPoints,
           bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
         }),

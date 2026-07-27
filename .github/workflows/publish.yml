@@ -77,6 +77,24 @@ jobs:
       - name: Build package
         run: pnpm build
 
+      - name: Run browser lifecycle integration tests
+        run: pnpm test:browser
+
+      - name: Run framework lifecycle integration tests
+        run: pnpm test:frameworks
+
+      - name: Verify isolated packed consumers
+        run: pnpm test:consumer
+
+      - name: Run benchmark regression gate
+        run: pnpm benchmark:ci
+
+      - name: Install documentation dependencies
+        run: pnpm --dir docs install --frozen-lockfile
+
+      - name: Build documentation
+        run: pnpm --dir docs build
+
       - name: Extract version from tag
         id: version
         run: |

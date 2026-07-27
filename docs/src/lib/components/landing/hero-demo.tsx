@@ -2,16 +2,18 @@ import React, { useEffect, useMemo, useState } from "react";
 import type OpenSeadragon from "openseadragon";
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   AnnotationEditor,
-  PointTool,
-  PolygonTool,
-  RectangleTool,
   useAnnotations,
   useAnnotator,
   useTool,
-} from "annota";
+} from "annota/react";
+import {
+  PointTool,
+  PolygonTool,
+  RectangleTool,
+} from "annota/tools";
 
 const DEMO_IMAGE = "/playground/images/test/0.png";
 const DEMO_ANNOTATION_IDS = [

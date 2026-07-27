@@ -460,7 +460,7 @@ export class SamTool extends BaseTool {
             clickPoint: { x: clickX, y: clickY },
           };
 
-          this.annotator.addAnnotation(annotation);
+          this.annotator.annotations.add(annotation, { source: 'tool' });
           this.selectAnnotation(annotation.id);
           this.samOptions.onAnnotationCreated?.(annotation);
         }

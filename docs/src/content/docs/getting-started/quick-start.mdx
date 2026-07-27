@@ -12,9 +12,9 @@ Build your first annotation viewer in minutes with Annota.
 Here's the simplest possible annotation viewer:
 
 ```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+import { AnnotaProvider, Viewer as AnnotaViewer, Annotator } from "annota/react";
 import { useState } from "react";
-import "annota/dist/index.css";
+import "annota/styles.css";
 
 function App() {
   const [viewer, setViewer] = useState(null);
@@ -82,8 +82,8 @@ The `Annotator` component creates the annotation overlay layer. It must receive 
 Let's add tools for creating annotations:
 
 ```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator, useTool } from "annota";
-import { PointTool, RectangleTool, PolygonTool } from "annota";
+import { AnnotaProvider, Viewer as AnnotaViewer, Annotator, useTool } from "annota/react";
+import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 import { useState } from "react";
 
 function App() {
@@ -146,7 +146,7 @@ Now you have a complete annotation interface with multiple tools!
 Use hooks to access and display annotations:
 
 ```tsx
-import { useAnnotations, useSelection } from "annota";
+import { useAnnotations, useSelection } from "annota/react";
 
 function AnnotationList() {
   const annotations = useAnnotations();
@@ -182,7 +182,7 @@ Add this component inside `AnnotaProvider`:
 ### Loading Existing Annotations
 
 ```tsx
-import { useAnnotator } from "annota";
+import { useAnnotator } from "annota/react";
 import { useEffect } from "react";
 
 function LoadAnnotations() {
@@ -206,7 +206,7 @@ function LoadAnnotations() {
 ### Saving Annotations
 
 ```tsx
-import { useAnnotations } from "annota";
+import { useAnnotations } from "annota/react";
 
 function SaveButton() {
   const annotations = useAnnotations();
@@ -272,4 +272,3 @@ Now that you have a working annotation viewer:
 - [Layer System](/guides/layers) — Organize annotations into layers
 - [Events](/guides/events) — Respond to annotation changes
 - [API Reference](/api) — Explore the complete API
-

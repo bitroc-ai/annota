@@ -30,9 +30,9 @@ import { loadH5Masks, loadInstanceMask } from 'annota/loaders';
 import 'annota/styles.css';
 ```
 
-The root package temporarily re-exports the previous React API, and
-`annota/dist/index.css` remains a compatibility alias. Both are deprecated since 0.11 and planned
-for removal in 2.0.
+The root package is framework-independent. Existing React consumers can temporarily migrate root
+component imports through `annota/legacy-react`; that compatibility entry and
+`annota/dist/index.css` are deprecated since 0.11 and planned for removal in 2.0.
 
 ## Framework-independent usage
 

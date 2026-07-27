@@ -9,7 +9,12 @@ import UPNG from 'upng-js';
 import { initOpenCV } from '../extensions/opencv';
 import pako from 'pako';
 import { normalizeAnnotation } from '../core/normalization';
-import { decodeRgb16Pixel, loadInstanceMask } from './instance-mask';
+import {
+  decodeRgb16Pixel,
+  instanceRegionsToAnnotations,
+  loadInstanceMask,
+  type DecodedInstanceRegion,
+} from './instance-mask';
 import { AnnotaError } from '../core/errors';
 
 /**
@@ -506,6 +511,11 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
   }
 }
 
+// Retained temporarily as implementation history for downstream source patches.
+// Public loading no longer routes through these direct OpenCV implementations.
+void loadMask8bit;
+void loadMask16bit;
+
 /**
  * Load RGB-encoded instance mask (BC Cell API format)
  * Encoding: R = cell_id >> 8 (high byte), G = cell_id & 0xFF (low byte), B = class
@@ -515,6 +525,83 @@ async function loadMaskRGB(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
   const inputs = await loadInstanceMask(arrayBuffer, {
     decodePixel: decodeRgb16Pixel,
     layerId: 'masks',
+  });
+  return inputs.map(input => normalizeAnnotation(input));
+}
+
+async function loadMask8bitSafe(
+  arrayBuffer: ArrayBuffer,
+  maskType: 'binary' | 'instance8'
+): Promise<Annotation[]> {
+  const inputs = await loadInstanceMask(arrayBuffer, {
+    decodePixel: pixel => {
+      const value = pixel.r;
+      const instanceId = maskType === 'binary' ? (value > 128 ? 1 : 0) : value;
+      return instanceId === 0 ? null : { instanceId };
+    },
+    layerId: 'masks',
+    mapProperties: instance => ({
+      source: 'png-mask',
+      type: 'region',
+      instanceId: instance.instanceId,
+    }),
+  });
+  return inputs.map(input => normalizeAnnotation(input));
+}
+
+async function loadMask16bitSafe(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
+  let image: ReturnType<typeof UPNG.decode>;
+  try {
+    image = UPNG.decode(arrayBuffer);
+  } catch (cause) {
+    throw new AnnotaError('MASK_DECODE_FAILED', 'Failed to decode 16-bit mask', { cause });
+  }
+  const bytes = new Uint8Array(image.data);
+  const pixelCount = image.width * image.height;
+  if (bytes.length < pixelCount * 2) {
+    throw new AnnotaError('MASK_DECODE_FAILED', '16-bit PNG pixel buffer is truncated');
+  }
+  const regionsById = new Map<number, {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    pixels: Array<{ x: number; y: number }>;
+  }>();
+  for (let index = 0; index < pixelCount; index++) {
+    const instanceId = (bytes[index * 2] << 8) | bytes[index * 2 + 1];
+    if (instanceId === 0) continue;
+    const x = index % image.width;
+    const y = Math.floor(index / image.width);
+    const region = regionsById.get(instanceId);
+    if (region) {
+      region.minX = Math.min(region.minX, x);
+      region.minY = Math.min(region.minY, y);
+      region.maxX = Math.max(region.maxX, x);
+      region.maxY = Math.max(region.maxY, y);
+      region.pixels.push({ x, y });
+    } else {
+      regionsById.set(instanceId, {
+        minX: x,
+        minY: y,
+        maxX: x,
+        maxY: y,
+        pixels: [{ x, y }],
+      });
+    }
+  }
+  const regions: DecodedInstanceRegion[] = [...regionsById].map(([instanceId, region]) => ({
+    instance: { instanceId },
+    ...region,
+    pixelCount: region.pixels.length,
+  }));
+  const inputs = await instanceRegionsToAnnotations(regions, {
+    layerId: 'masks',
+    mapProperties: instance => ({
+      source: 'png-mask',
+      type: 'region',
+      instanceId: instance.instanceId,
+    }),
   });
   return inputs.map(input => normalizeAnnotation(input));
 }
@@ -578,9 +665,9 @@ async function loadMask(
 
   // Load based on detected/specified type
   if (actualType === 'instance16') {
-    return loadMask16bit(arrayBuffer);
+    return loadMask16bitSafe(arrayBuffer);
   } else {
-    return loadMask8bit(arrayBuffer, actualType);
+    return loadMask8bitSafe(arrayBuffer, actualType);
   }
 }
 

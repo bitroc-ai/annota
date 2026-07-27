@@ -1,10 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import UPNG from 'upng-js';
 import { AnnotaError } from '../../src/core/errors';
 import {
   decodeInstancePixels,
   decodeRgb16Pixel,
   loadInstanceMask,
 } from '../../src/loaders/instance-mask';
+import { loadMaskPolygons } from '../../src/loaders/masks';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  delete (globalThis as typeof globalThis & { cv?: unknown }).cv;
+});
 
 describe('instance mask decoder', () => {
   it('decodes RGB and RGBA IDs below and above 256 without pathology semantics', () => {
@@ -71,4 +78,76 @@ describe('instance mask decoder', () => {
       )
     ).toThrow(AnnotaError);
   });
+
+  it.each([false, true])(
+    'releases every OpenCV disposable through the public compatibility loader (throws=%s)',
+    async shouldThrow => {
+      const disposables: Array<{ delete: ReturnType<typeof vi.fn> }> = [];
+      class Mat {
+        data = new Uint8Array(256);
+        data32S = new Int32Array([1, 1, 5, 1, 1, 5]);
+        delete = vi.fn();
+        constructor() {
+          disposables.push(this);
+        }
+      }
+      class MatVector {
+        items: Array<{ data32S: Int32Array }> = [];
+        delete = vi.fn();
+        constructor() {
+          disposables.push(this);
+        }
+        size() {
+          return this.items.length;
+        }
+        get(index: number) {
+          const contour = this.items[index];
+          const owned = new Mat();
+          owned.data32S = contour.data32S;
+          return owned;
+        }
+      }
+      const cv = {
+        Mat,
+        MatVector,
+        CV_8UC1: 0,
+        RETR_EXTERNAL: 0,
+        CHAIN_APPROX_SIMPLE: 0,
+        findContours: (_source: Mat, contours: MatVector) => {
+          contours.items = [{ data32S: new Int32Array([1, 1, 5, 1, 1, 5]) }];
+        },
+        contourArea: () => 25,
+        arcLength: () => 12,
+        approxPolyDP: (_contour: Mat, approx: Mat) => {
+          if (shouldThrow) throw new Error('forced OpenCV failure');
+          approx.data32S = new Int32Array([1, 1, 5, 1, 1, 5]);
+        },
+      };
+      (globalThis as typeof globalThis & { cv: unknown }).cv = cv;
+      const rgba = new Uint8Array(6 * 6 * 4);
+      for (let index = 0; index < rgba.length; index += 4) {
+        rgba[index] = 255;
+        rgba[index + 1] = 255;
+        rgba[index + 2] = 255;
+        rgba[index + 3] = 255;
+      }
+      const png = UPNG.encode([rgba.buffer], 6, 6, 0);
+      vi.stubGlobal('fetch', vi.fn(async () => ({
+        ok: true,
+        arrayBuffer: async () => png,
+      })));
+
+      if (shouldThrow) {
+        await expect(
+          loadMaskPolygons('/mask.png', { maskType: 'binary' })
+        ).rejects.toMatchObject({ code: 'OPENCV_EXTRACTION_FAILED' });
+      } else {
+        await expect(
+          loadMaskPolygons('/mask.png', { maskType: 'binary' })
+        ).resolves.toHaveLength(1);
+      }
+      expect(disposables.length).toBeGreaterThanOrEqual(5);
+      disposables.forEach(disposable => expect(disposable.delete).toHaveBeenCalledTimes(1));
+    }
+  );
 });

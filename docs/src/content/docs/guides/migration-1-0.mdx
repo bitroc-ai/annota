@@ -10,16 +10,26 @@ Annota keeps the 0.10 flat API during the compatibility window. Those methods ar
 | --- | --- |
 | `createOpenSeadragonAnnotator(viewer, options)` | `createAnnotator({ viewer, ...options })` |
 | `addAnnotation(annotation)` | `annotations.add(annotation)` |
+| `addAnnotations(annotations)` | `annotations.addAll(annotations)` |
 | `updateAnnotation(id, annotation)` | `annotations.update(id, patch)` |
-| `deleteAnnotation(id)` | `annotations.remove(id)` |
+| `deleteAnnotation(id)` / `removeAnnotation(id)` | `annotations.remove(id)` |
+| `clearAnnotations()` / `getAnnotations()` | `annotations.clear()` / `annotations.list()` |
 | `setSelected(ids)` | `selection.set(ids)` |
+| `getSelected()` | `selection.get()` |
 | `getIntersecting(bounds)` | `spatial.search(bounds)` |
+| flat layer methods | matching `layers.*` methods |
+| `undo()` / `redo()` / `canUndo()` / `canRedo()` / `clearHistory()` | matching `history.*` methods |
+| `on()` / `off()` / `emit()` | typed `events.*` methods |
+| `mergeSelected()` | `geometry.merge(...)` plus `annotations` |
+| root React component/hook imports | `annota/react` (temporary proxy: `annota/legacy-react`) |
+| mask polarity helpers | `createPropertyFilter('classification', value)` |
 | `state` | capability controllers; `unsafeState` only for advanced integration |
 | `properties.layer` | `layerId` |
 | `annota/dist/index.css` | `annota/styles.css` |
 
 Use `annota/react`, `annota/svelte`, `annota/tools`, and `annota/loaders` for canonical imports.
-Root React exports and the old CSS path remain compatibility proxies.
+The root entry is framework-independent and does not load React or Svelte. React compatibility is
+available from `annota/legacy-react` through 1.x. The old CSS path remains a compatibility proxy.
 
 `AnnotationInput` does not require bounds. Annota recomputes bounds for every write and ignores
 legacy input bounds. Update patches shallow-merge `properties` and `style`; pass `null` to remove

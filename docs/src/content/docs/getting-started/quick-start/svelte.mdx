@@ -20,7 +20,7 @@ Here's the simplest possible annotation viewer:
 ```svelte
 <script>
   import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
-  import "annota/dist/index.css";
+  import "annota/styles.css";
 
   let viewer = $state(null);
 </script>
@@ -89,7 +89,7 @@ Let's add tools for creating annotations:
 <script>
   import { AnnotaProvider, AnnotaViewer, Annotator, tool } from "annota/svelte";
   import { PointTool, RectangleTool, PolygonTool } from "annota";
-  import "annota/dist/index.css";
+  import "annota/styles.css";
 
   let viewer = $state(null);
   let activeTool = $state("point");

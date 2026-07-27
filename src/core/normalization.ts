@@ -163,8 +163,51 @@ function emptyBounds() {
   return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 }
 
+function cloneReadonlyValue<T>(
+  value: T,
+  path: string,
+  seen = new WeakMap<object, unknown>()
+): T {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'function') {
+      throw new AnnotationValidationError(`${path} must contain serializable values`);
+    }
+    return value;
+  }
+
+  const previous = seen.get(value);
+  if (previous) return previous as T;
+
+  if (Array.isArray(value)) {
+    const clone: unknown[] = [];
+    seen.set(value, clone);
+    value.forEach((item, index) => {
+      clone.push(cloneReadonlyValue(item, `${path}[${index}]`, seen));
+    });
+    return Object.freeze(clone) as T;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    throw new AnnotationValidationError(`${path} must contain only plain objects and arrays`);
+  }
+
+  const clone: Record<PropertyKey, unknown> = {};
+  seen.set(value, clone);
+  Reflect.ownKeys(value).forEach(key => {
+    clone[key] = cloneReadonlyValue(
+      (value as Record<PropertyKey, unknown>)[key],
+      `${path}.${String(key)}`,
+      seen
+    );
+  });
+  return Object.freeze(clone) as T;
+}
+
 function cloneProperties<P extends AnnotationProperties>(properties?: P): P | undefined {
-  return properties === undefined ? undefined : ({ ...properties } as P);
+  return properties === undefined
+    ? undefined
+    : cloneReadonlyValue(properties, 'properties');
 }
 
 function cloneStyle(style?: AnnotationStyle): AnnotationStyle | undefined {
@@ -191,7 +234,7 @@ function freezeAnnotation<P extends AnnotationProperties>(annotation: Annotation
     Object.freeze(annotation.shape.end);
   }
   Object.freeze(annotation.shape);
-  if (annotation.properties) Object.freeze(annotation.properties);
+  // properties were already recursively cloned and frozen by cloneProperties.
   if (annotation.style) Object.freeze(annotation.style);
   return Object.freeze(annotation);
 }
@@ -206,13 +249,18 @@ export function normalizeAnnotation<P extends AnnotationProperties = AnnotationP
     throw new AnnotationValidationError('Annotation id must be a non-empty string');
   }
 
-  const properties = cloneProperties(input.properties);
-  const legacyLayer = properties?.layer;
+  const clonedProperties = cloneProperties(input.properties);
+  const legacyLayer = clonedProperties?.layer;
+  const properties = clonedProperties && 'layer' in clonedProperties
+    ? Object.freeze(
+        Object.fromEntries(
+          Object.entries(clonedProperties).filter(([key]) => key !== 'layer')
+        )
+      ) as P
+    : clonedProperties;
   const layerId =
     input.layerId ??
     (typeof legacyLayer === 'string' && legacyLayer.length > 0 ? legacyLayer : 'default');
-  if (properties && 'layer' in properties) delete properties.layer;
-
   return freezeAnnotation({
     id: input.id,
     shape: normalizeShape(input.shape),

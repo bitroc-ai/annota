@@ -61,6 +61,11 @@
       "import": "./dist/react.js",
       "require": "./dist/react.cjs"
     },
+    "./legacy-react": {
+      "types": "./dist/legacy-react.d.ts",
+      "import": "./dist/legacy-react.js",
+      "require": "./dist/legacy-react.cjs"
+    },
     "./core": {
       "types": "./dist/core.d.ts",
       "import": "./dist/core.js",
@@ -76,8 +81,8 @@
       "import": "./dist/loaders.js",
       "require": "./dist/loaders.cjs"
     },
-    "./styles.css": "./dist/index.css",
-    "./dist/index.css": "./dist/index.css"
+    "./styles.css": "./dist/styles.css",
+    "./dist/index.css": "./dist/styles.css"
   },
   "peerDependencies": {
     "openseadragon": "^4.0.0 || ^5.0.0 || ^6.0.0",

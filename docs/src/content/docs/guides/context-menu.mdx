@@ -10,7 +10,7 @@ Add contextual menus that appear when right-clicking on annotations.
 ## Basic Usage
 
 ```tsx
-import { useContextMenu, useContextMenuBinding } from "annota";
+import { useContextMenu, useContextMenuBinding } from "annota/react";
 
 function ContextMenuHandler() {
   const { position, visible, annotation, hide } = useContextMenu();
@@ -98,4 +98,3 @@ function AnnotationContextMenu() {
 <Aside type="tip">
   Remember to call `hide()` after handling menu actions to close the menu.
 </Aside>
-

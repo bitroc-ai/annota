@@ -3,7 +3,7 @@ import type {
   SamRemotePredictInput,
   SamRemotePredictOutput,
   MaskStats,
-} from "annota";
+} from "annota/tools";
 
 interface ApiPredictResponse {
   maskBase64: string;

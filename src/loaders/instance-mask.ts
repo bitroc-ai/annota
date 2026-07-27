@@ -264,6 +264,17 @@ export async function loadInstanceMask<
   }
 
   const regions = decodeInstancePixels(source, options.decodePixel);
+  return instanceRegionsToAnnotations(regions, options);
+}
+
+export async function instanceRegionsToAnnotations<
+  P extends AnnotationProperties = AnnotationProperties,
+  A = Record<string, unknown>,
+>(
+  regions: readonly DecodedInstanceRegion<A>[],
+  options: Omit<InstanceMaskLoaderOptions<P, A>, 'decodePixel'> &
+    Partial<Pick<InstanceMaskLoaderOptions<P, A>, 'decodePixel'>>
+): Promise<AnnotationInput<P>[]> {
   const annotations: AnnotationInput<P>[] = [];
   const extract = options.extractContours ?? extractContoursWithOpenCv;
   for (const region of regions) {

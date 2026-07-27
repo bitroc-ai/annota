@@ -74,7 +74,7 @@ export class PointTool extends BaseTool {
       properties: this.options.annotationProperties || {},
     };
 
-    this.annotator.addAnnotation(annotation);
+    this.annotator.annotations.add(annotation, { source: 'tool' });
 
     // Select the newly created annotation
     this.selectAnnotation(annotation.id);

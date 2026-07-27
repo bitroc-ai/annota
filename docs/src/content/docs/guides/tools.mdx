@@ -27,7 +27,8 @@ Tools enable users to interact with the image and create annotations. Each tool 
 Activate a tool using the `useTool` hook:
 
 ```tsx
-import { useTool, PointTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool } from "annota/tools";
 
 function MyComponent({ viewer }) {
   const pointTool = new PointTool();
@@ -47,7 +48,8 @@ function MyComponent({ viewer }) {
 Allow users to switch between tools:
 
 ```tsx
-import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 import { useState } from "react";
 
 function ToolController({ viewer }) {
@@ -203,7 +205,7 @@ const splitTool = new SplitTool();
 Combine multiple selected annotations into a single annotation:
 
 ```tsx
-import { useAnnotator } from "annota";
+import { useAnnotator } from "annota/react";
 
 function MergeButton() {
   const annotator = useAnnotator();
@@ -305,4 +307,3 @@ const tool = new PointTool({
 - [Events](/guides/events) — Respond to annotation changes
 - [Styling](/guides/styling) — Customize annotation appearance
 - [Layer System](/guides/layers) — Organize annotations
-

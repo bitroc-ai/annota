@@ -165,6 +165,16 @@ export interface HistoryController {
 
 export interface ToolController {
   readonly active: { current: { enabled?: boolean; destroy?(): void } | undefined };
+  beginTransaction(): ToolMutationTransaction;
+}
+
+export interface ToolMutationTransaction {
+  readonly id: string;
+  add<P extends AnnotationProperties>(annotation: AnnotationInput<P>): Annotation<P>;
+  update<P extends AnnotationProperties>(id: string, patch: AnnotationPatch<P>): Annotation<P>;
+  remove(id: string): void;
+  commit(): void;
+  cancel(): void;
 }
 
 /**
@@ -182,51 +192,81 @@ export interface OpenSeadragonAnnotator {
   readonly events: AnnotatorEvents<AnnotatorEventMap>;
   readonly tools: ToolController;
   readonly unsafeState: OpenSeadragonAnnotatorState;
-  /** @deprecated Since 0.11.0. Use the capability controllers or unsafeState. */
+  /** @deprecated Since 0.11.0. Use capability controllers or `unsafeState`. Planned removal: 2.0.0. */
   state: OpenSeadragonAnnotatorState;
 
   // Annotation management (convenience methods)
+  /** @deprecated Since 0.11.0. Use `annotations.add`. Planned removal: 2.0.0. */
   addAnnotation(annotation: import('../../core/types').Annotation): void;
+  /** @deprecated Since 0.11.0. Use `annotations.addAll`. Planned removal: 2.0.0. */
   addAnnotations(annotations: import('../../core/types').Annotation[]): void;
+  /** @deprecated Since 0.11.0. Use `annotations.update`. Planned removal: 2.0.0. */
   updateAnnotation(id: string, annotation: import('../../core/types').Annotation): void;
+  /** @deprecated Since 0.11.0. Use `annotations.remove`. Planned removal: 2.0.0. */
   deleteAnnotation(id: string): void;
+  /** @deprecated Since 0.11.0. Use `annotations.remove`. Planned removal: 2.0.0. */
   removeAnnotation(id: string): void; // Alias for deleteAnnotation
+  /** @deprecated Since 0.11.0. Use `annotations.clear`. Planned removal: 2.0.0. */
   clearAnnotations(): void;
+  /** @deprecated Since 0.11.0. Use `annotations.list`. Planned removal: 2.0.0. */
   getAnnotations(): import('../../core/types').Annotation[];
 
   // Geometry operations
+  /** @deprecated Since 0.11.0. Use `geometry.merge` with `annotations`. Planned removal: 2.0.0. */
   mergeSelected(): import('../../core/types').Annotation | null;
 
   // Selection management
+  /** @deprecated Since 0.11.0. Use `selection.set`. Planned removal: 2.0.0. */
   setSelected(id: string | string[]): void;
+  /** @deprecated Since 0.11.0. Use `selection.get`. Planned removal: 2.0.0. */
   getSelected(): string[];
 
   // Layer management
+  /** @deprecated Since 0.11.0. Use `layers.create`. Planned removal: 2.0.0. */
   createLayer(id: string, config: LayerConfig): Layer;
+  /** @deprecated Since 0.11.0. Use `layers.get`. Planned removal: 2.0.0. */
   getLayer(id: string): Layer | undefined;
+  /** @deprecated Since 0.11.0. Use `layers.list`. Planned removal: 2.0.0. */
   getAllLayers(): Layer[];
+  /** @deprecated Since 0.11.0. Use `layers.update`. Planned removal: 2.0.0. */
   updateLayer(id: string, updates: Partial<LayerConfig>): void;
+  /** @deprecated Since 0.11.0. Use `layers.remove`. Planned removal: 2.0.0. */
   deleteLayer(id: string): void;
+  /** @deprecated Since 0.11.0. Use `layers.setVisibility`. Planned removal: 2.0.0. */
   setLayerVisibility(id: string, visible: boolean): void;
+  /** @deprecated Since 0.11.0. Use `layers.setLocked`. Planned removal: 2.0.0. */
   setLayerLocked(id: string, locked: boolean): void;
+  /** @deprecated Since 0.11.0. Use `layers.setOpacity`. Planned removal: 2.0.0. */
   setLayerOpacity(id: string, opacity: number): void;
+  /** @deprecated Since 0.11.0. Use `layers.setZIndex`. Planned removal: 2.0.0. */
   setLayerZIndex(id: string, zIndex: number): void;
 
   // Rendering control
+  /** @deprecated Since 0.11.0. Pass `style` at creation time. Planned removal: 2.0.0. */
   setStyle(style?: StyleExpression): void;
+  /** @deprecated Since 0.11.0. Pass `filter` at creation time. Planned removal: 2.0.0. */
   setFilter(filter?: Filter): void;
+  /** @deprecated Since 0.11.0. Pass `visible` at creation time. Planned removal: 2.0.0. */
   setVisible(visible: boolean): void;
 
   // History management
+  /** @deprecated Since 0.11.0. Use `history.undo`. Planned removal: 2.0.0. */
   undo(): void;
+  /** @deprecated Since 0.11.0. Use `history.redo`. Planned removal: 2.0.0. */
   redo(): void;
+  /** @deprecated Since 0.11.0. Use `history.canUndo`. Planned removal: 2.0.0. */
   canUndo(): boolean;
+  /** @deprecated Since 0.11.0. Use `history.canRedo`. Planned removal: 2.0.0. */
   canRedo(): boolean;
+  /** @deprecated Since 0.11.0. Use `history.clear`. Planned removal: 2.0.0. */
   clearHistory(): void;
 
   // Event emitter methods
+  /** @deprecated Since 0.11.0. Use typed `events.on`. Planned removal: 2.0.0. */
   on(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  /** @deprecated Since 0.11.0. Use typed `events.off`. Planned removal: 2.0.0. */
   off(event: AnnotatorEvent, handler: AnnotatorEventHandler): void;
+  /** @deprecated Since 0.11.0. Use typed `events.emit`. Planned removal: 2.0.0. */
   emit(event: AnnotatorEvent, data: any): void;
 
   // Lifecycle
@@ -603,6 +643,46 @@ export async function createOpenSeadragonAnnotator(
 
   // Throttled drag handler
   let dragRafId: number | null = null;
+  const cancelPendingDrag = () => {
+    if (dragRafId !== null) {
+      cancelAnimationFrame(dragRafId);
+      dragRafId = null;
+    }
+  };
+  const restorePressedAnnotation = () => {
+    if (!pressState?.annotationId || !pressState.originalAnnotation) return;
+    withContext(
+      changeContext('user', {
+        transactionId: pressState.transactionId,
+        transient: true,
+      }),
+      () => store.update(pressState!.annotationId!, pressState!.originalAnnotation!)
+    );
+  };
+  const applyAnnotationDragPreview = (imagePoint: { x: number; y: number }) => {
+    if (
+      !pressState?.annotationId ||
+      !pressState.originalAnnotation ||
+      layerManager.getLayerForAnnotation(pressState.originalAnnotation)?.locked
+    ) {
+      return;
+    }
+    const dx = imagePoint.x - pressState.imagePos.x;
+    const dy = imagePoint.y - pressState.imagePos.y;
+    const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
+    withContext(
+      changeContext('user', {
+        transactionId: pressState.transactionId,
+        transient: true,
+      }),
+      () =>
+        store.update(pressState!.annotationId!, {
+          ...pressState!.originalAnnotation!,
+          shape: translatedShape,
+        })
+    );
+  };
+
   const onCanvasDrag = (evt: OpenSeadragon.CanvasDragEvent) => {
     // If a tool already handled this event, skip
     if ((evt as any).preventDefaultAction) {
@@ -634,26 +714,7 @@ export async function createOpenSeadragonAnnotator(
         pressState?.originalAnnotation &&
         !layerManager.getLayerForAnnotation(pressState.originalAnnotation)?.locked
       ) {
-        // Calculate delta from ORIGINAL press position (not mutating pressState!)
-        const dx = imagePoint.x - pressState.imagePos.x;
-        const dy = imagePoint.y - pressState.imagePos.y;
-
-        // Translate from original annotation shape
-        const translatedShape = translateShape(pressState.originalAnnotation.shape, dx, dy);
-
-        // Update annotation in store
-        withContext(
-          changeContext('user', {
-            transactionId: pressState.transactionId,
-            transient: true,
-          }),
-          () =>
-            store.update(pressState!.annotationId!, {
-              ...pressState!.originalAnnotation!,
-              shape: translatedShape,
-            })
-        );
-
+        applyAnnotationDragPreview(imagePoint);
         return;
       }
 
@@ -690,17 +751,13 @@ export async function createOpenSeadragonAnnotator(
   };
 
   const onCanvasRelease = (evt: OpenSeadragon.CanvasReleaseEvent) => {
+    // A release is the transaction boundary. Never allow a queued preview frame
+    // to run after commit/cancel.
+    cancelPendingDrag();
+
     // If a tool already handled this event, skip
     if ((evt as any).preventDefaultAction) {
-      if (pressState?.annotationId && pressState.originalAnnotation) {
-        withContext(
-          changeContext('user', {
-            transactionId: pressState.transactionId,
-            transient: true,
-          }),
-          () => store.update(pressState!.annotationId!, pressState!.originalAnnotation!)
-        );
-      }
+      restorePressedAnnotation();
       pressState = undefined;
       return;
     }
@@ -715,8 +772,15 @@ export async function createOpenSeadragonAnnotator(
 
     const imagePoint = pointerEventToImage(viewer, evt.originalEvent as PointerEvent);
     if (!imagePoint) {
+      restorePressedAnnotation();
       pressState = undefined;
       return;
+    }
+
+    // Flush the release coordinates synchronously. This preserves the final
+    // movement even when release happens before the throttled RAF preview.
+    if (pressState.annotationId && !isClick) {
+      applyAnnotationDragPreview(imagePoint);
     }
 
     const hitTolerance = 5 / viewer.viewport.getZoom();
@@ -779,7 +843,10 @@ export async function createOpenSeadragonAnnotator(
     add(input, mutationOptions) {
       const annotation = normalizeAnnotation(input);
       const context = contextFor(mutationOptions);
-      withContext(context, () => history.execute(new CreateCommand(store, annotation)));
+      withContext(context, () => {
+        if (context.transient) store.add(annotation);
+        else history.execute(new CreateCommand(store, annotation));
+      });
       return store.get(annotation.id) as typeof annotation;
     },
     addAll(inputs, mutationOptions) {
@@ -796,18 +863,22 @@ export async function createOpenSeadragonAnnotator(
         transactionId: mutationOptions?.transactionId ?? createTransactionId('batch'),
       });
       withContext(context, () => {
-        history.beginBatch('Add annotations');
-        try {
-          annotations.forEach(annotation => {
-            const previous = store.get(annotation.id);
-            history.execute(
-              previous
-                ? new UpdateCommand(store, previous, annotation)
-                : new CreateCommand(store, annotation)
-            );
-          });
-        } finally {
-          history.endBatch();
+        if (context.transient) {
+          store.addAll(annotations, { mode: 'upsert' });
+        } else {
+          history.beginBatch('Add annotations');
+          try {
+            annotations.forEach(annotation => {
+              const previous = store.get(annotation.id);
+              history.execute(
+                previous
+                  ? new UpdateCommand(store, previous, annotation)
+                  : new CreateCommand(store, annotation)
+              );
+            });
+          } finally {
+            history.endBatch();
+          }
         }
       });
       return annotations.map(annotation => store.get(annotation.id) as typeof annotation);
@@ -820,19 +891,21 @@ export async function createOpenSeadragonAnnotator(
       const previous = store.get(id) as Annotation<P> | undefined;
       if (!previous) throw new Error(`Annotation ${id} does not exist`);
       const annotation = applyAnnotationPatch(previous, patch);
-      withContext(
-        contextFor(mutationOptions),
-        () => history.execute(new UpdateCommand(store, previous, annotation))
-      );
+      const context = contextFor(mutationOptions);
+      withContext(context, () => {
+        if (context.transient) store.update(id, annotation);
+        else history.execute(new UpdateCommand(store, previous, annotation));
+      });
       return store.get(id) as typeof annotation;
     },
     remove(id, mutationOptions) {
       const annotation = store.get(id);
       if (!annotation) return;
-      withContext(
-        contextFor(mutationOptions),
-        () => history.execute(new DeleteCommand(store, annotation))
-      );
+      const context = contextFor(mutationOptions);
+      withContext(context, () => {
+        if (context.transient) store.delete(id);
+        else history.execute(new DeleteCommand(store, annotation));
+      });
     },
     clear(mutationOptions) {
       const annotations = store.all();
@@ -842,13 +915,17 @@ export async function createOpenSeadragonAnnotator(
         transactionId: mutationOptions?.transactionId ?? createTransactionId('clear'),
       });
       withContext(context, () => {
-        history.beginBatch('Clear annotations');
-        try {
-          annotations.forEach(annotation =>
-            history.execute(new DeleteCommand(store, annotation))
-          );
-        } finally {
-          history.endBatch();
+        if (context.transient) {
+          store.clear();
+        } else {
+          history.beginBatch('Clear annotations');
+          try {
+            annotations.forEach(annotation =>
+              history.execute(new DeleteCommand(store, annotation))
+            );
+          } finally {
+            history.endBatch();
+          }
         }
       });
     },
@@ -865,13 +942,14 @@ export async function createOpenSeadragonAnnotator(
         undo: () => store.replaceAll(previous),
         redo: () => store.replaceAll(annotations),
       };
-      withContext(
-        contextFor({
-          ...mutationOptions,
-          transactionId: mutationOptions?.transactionId ?? createTransactionId('replace'),
-        }),
-        () => history.execute(command)
-      );
+      const context = contextFor({
+        ...mutationOptions,
+        transactionId: mutationOptions?.transactionId ?? createTransactionId('replace'),
+      });
+      withContext(context, () => {
+        if (context.transient) store.replaceAll(annotations);
+        else history.execute(command);
+      });
       return store.all() as typeof annotations;
     },
     get(id) {
@@ -941,6 +1019,92 @@ export async function createOpenSeadragonAnnotator(
     clear: () => history.clear(),
   };
 
+  const beginToolTransaction = (): ToolMutationTransaction => {
+    const id = createTransactionId('tool');
+    const originals = new Map<string, Annotation | undefined>();
+    let closed = false;
+
+    const assertOpen = () => {
+      if (closed) throw new Error(`Tool transaction ${id} is already closed`);
+    };
+    const remember = (annotationId: string) => {
+      if (!originals.has(annotationId)) originals.set(annotationId, store.get(annotationId));
+    };
+    const previewContext = changeContext('tool', { transactionId: id, transient: true });
+    const rollback = () => {
+      withContext(previewContext, () => {
+        originals.forEach((original, annotationId) => {
+          const current = store.get(annotationId);
+          if (original) {
+            if (current) store.update(annotationId, original);
+            else store.add(original);
+          } else if (current) {
+            store.delete(annotationId);
+          }
+        });
+      });
+    };
+
+    return {
+      id,
+      add(input) {
+        assertOpen();
+        const annotation = normalizeAnnotation(input);
+        remember(annotation.id);
+        withContext(previewContext, () => {
+          if (store.get(annotation.id)) store.update(annotation.id, annotation);
+          else store.add(annotation);
+        });
+        return store.get(annotation.id) as typeof annotation;
+      },
+      update<P extends AnnotationProperties>(annotationId: string, patch: AnnotationPatch<P>) {
+        assertOpen();
+        remember(annotationId);
+        const current = store.get(annotationId) as Annotation<P> | undefined;
+        if (!current) throw new Error(`Annotation ${annotationId} does not exist`);
+        const annotation = applyAnnotationPatch(current, patch);
+        withContext(previewContext, () => store.update(annotationId, annotation));
+        return store.get(annotationId) as typeof annotation;
+      },
+      remove(annotationId) {
+        assertOpen();
+        remember(annotationId);
+        withContext(previewContext, () => store.delete(annotationId));
+      },
+      commit() {
+        assertOpen();
+        const finals = new Map<string, Annotation | undefined>();
+        originals.forEach((_original, annotationId) => {
+          finals.set(annotationId, store.get(annotationId));
+        });
+        rollback();
+
+        const context = changeContext('tool', { transactionId: id, transient: false });
+        withContext(context, () => {
+          history.beginBatch('Tool interaction');
+          try {
+            originals.forEach((original, annotationId) => {
+              const final = finals.get(annotationId);
+              if (!original && final) history.execute(new CreateCommand(store, final));
+              else if (original && !final) history.execute(new DeleteCommand(store, original));
+              else if (original && final) {
+                history.execute(new UpdateCommand(store, original, final));
+              }
+            });
+          } finally {
+            history.endBatch();
+          }
+        });
+        closed = true;
+      },
+      cancel() {
+        assertOpen();
+        rollback();
+        closed = true;
+      },
+    };
+  };
+
   const unsafeState = {
     store,
     layerManager,
@@ -961,7 +1125,7 @@ export async function createOpenSeadragonAnnotator(
     geometry,
     history: historyController,
     events,
-    tools: { active: activeTool },
+    tools: { active: activeTool, beginTransaction: beginToolTransaction },
     unsafeState,
     state: unsafeState,
 
@@ -1147,9 +1311,10 @@ export async function createOpenSeadragonAnnotator(
         pointerMoveRafId = null;
       }
       if (dragRafId !== null) {
-        cancelAnimationFrame(dragRafId);
-        dragRafId = null;
+        cancelPendingDrag();
       }
+      restorePressedAnnotation();
+      pressState = undefined;
       if (interactionEndTimer !== null) {
         window.clearTimeout(interactionEndTimer);
         interactionEndTimer = null;

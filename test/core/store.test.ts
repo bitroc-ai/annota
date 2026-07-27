@@ -16,13 +16,27 @@ const point = (id: string, x: number, properties?: Record<string, unknown>) => (
 describe('AnnotationStore atomic contracts', () => {
   it('normalizes inputs and isolates external mutations', () => {
     const store = createAnnotationStore();
-    const input = point('a', 4, { nested: 'value' });
+    const input = point('a', 4, {
+      meta: { label: 'before' },
+      tags: ['a'],
+    });
     store.add(input);
     input.shape.point.x = 100;
     input.shape.bounds.minX = -1000;
+    (input.properties!.meta as { label: string }).label = 'external';
+    (input.properties!.tags as string[]).push('external');
 
     const stored = store.get('a');
+    expect(() => {
+      (stored!.properties!.meta as { label: string }).label = 'snapshot';
+    }).toThrow(TypeError);
+    expect(() => {
+      (stored!.properties!.tags as string[]).push('snapshot');
+    }).toThrow(TypeError);
     expect(stored?.shape.bounds).toEqual({ minX: 4, minY: 4, maxX: 4, maxY: 4 });
+    expect(stored?.properties).toEqual({ meta: { label: 'before' }, tags: ['a'] });
+    expect(Object.isFrozen(stored?.properties?.meta)).toBe(true);
+    expect(Object.isFrozen(stored?.properties?.tags)).toBe(true);
     expect(Object.isFrozen(stored)).toBe(true);
     expect(store.search({ minX: 3, minY: 3, maxX: 5, maxY: 5 }).map(item => item.id))
       .toEqual(['a']);
@@ -40,6 +54,20 @@ describe('AnnotationStore atomic contracts', () => {
     expect(store.all().map(item => item.id)).toEqual(['a']);
     expect(store.search({ minX: 0, minY: 0, maxX: 10, maxY: 10 })).toHaveLength(1);
     expect(observer).not.toHaveBeenCalled();
+  });
+
+  it('migrates the frozen legacy properties.layer value without mutating input', () => {
+    const store = createAnnotationStore();
+    const input = point('legacy-layer', 2, {
+      layer: 'regions',
+      meta: { source: 'legacy' },
+    });
+    store.add(input);
+    expect(store.get('legacy-layer')).toMatchObject({
+      layerId: 'regions',
+      properties: { meta: { source: 'legacy' } },
+    });
+    expect(input.properties).toMatchObject({ layer: 'regions' });
   });
 
   it('classifies upserts into created and updated', () => {

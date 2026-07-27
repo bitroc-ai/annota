@@ -152,10 +152,14 @@ export default defineConfig({
       tailwindcss(),
     ],
     resolve: {
-      alias: {
-        'annota': path.resolve(__dirname, '../src/index.ts'),
-        '$lib': path.resolve(__dirname, './src/lib'),
-      },
+      alias: [
+        { find: /^annota\/react$/, replacement: path.resolve(__dirname, '../src/react-entry.ts') },
+        { find: /^annota\/tools$/, replacement: path.resolve(__dirname, '../src/tools-entry.ts') },
+        { find: /^annota\/loaders$/, replacement: path.resolve(__dirname, '../src/loaders-entry.ts') },
+        { find: /^annota\/core$/, replacement: path.resolve(__dirname, '../src/core-entry.ts') },
+        { find: /^annota$/, replacement: path.resolve(__dirname, '../src/index.ts') },
+        { find: '$lib', replacement: path.resolve(__dirname, './src/lib') },
+      ],
     },
   },
 });

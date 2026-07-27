@@ -105,7 +105,8 @@ Every annotation belongs to a layer. If no layer is specified, annotations go to
 ### Tool Lifecycle
 
 ```tsx
-import { useTool, PolygonTool } from "annota";
+import { useTool } from "annota/react";
+import { PolygonTool } from "annota/tools";
 
 function MyComponent({ viewer }) {
   const polygonTool = new PolygonTool();
@@ -139,7 +140,7 @@ function MyComponent({ viewer }) {
 - **Toggle**: Shift + Click to toggle selection state
 
 ```tsx
-import { useSelection } from "annota";
+import { useSelection } from "annota/react";
 
 function SelectionInfo() {
   const selection = useSelection();
@@ -231,4 +232,3 @@ Now that you understand the core concepts:
 - [Layer System](/guides/layers) — Organize with layers
 - [Events](/guides/events) — React to changes
 - [API Reference](/api) — Complete API documentation
-

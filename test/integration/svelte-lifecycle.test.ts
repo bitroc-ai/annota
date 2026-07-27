@@ -1,44 +1,58 @@
 import { mount, tick, unmount } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
+import OpenSeadragon from 'openseadragon';
 
-const { destroy, create } = vi.hoisted(() => {
-  const destroy = vi.fn();
-  return { destroy, create: vi.fn(async () => ({ destroy })) };
-});
+const { stage } = vi.hoisted(() => ({
+  stage: {
+    addAnnotation: vi.fn(),
+    updateAnnotation: vi.fn(),
+    removeAnnotation: vi.fn(),
+    redraw: vi.fn(),
+    beginInteraction: vi.fn(),
+    endInteraction: vi.fn(),
+    resize: vi.fn(),
+    setSelected: vi.fn(),
+    setHovered: vi.fn(),
+    setStyle: vi.fn(),
+    setFilter: vi.fn(),
+    setVisible: vi.fn(),
+    destroy: vi.fn(),
+  },
+}));
 
-vi.mock('annota', async importOriginal => {
-  const original = await importOriginal<Record<string, unknown>>();
-  return { ...original, createOpenSeadragonAnnotator: create };
-});
+vi.mock('../../src/rendering/pixi/stage', () => ({
+  createPixiStage: vi.fn(async () => stage),
+}));
 
 import Annotator from '../../src/svelte/components/annotator.svelte';
 
+class ResizeObserverFake {
+  observe = vi.fn();
+  disconnect = vi.fn();
+}
+
 describe('Svelte annotator lifecycle', () => {
-  it('destroys a resolved instance and tolerates repeated route teardown', async () => {
+  it('uses the real annotator/OSD lifecycle and destroys on route teardown', async () => {
+    vi.stubGlobal('ResizeObserver', ResizeObserverFake);
+    const viewerElement = document.createElement('div');
     const target = document.createElement('div');
-    const viewer = {
-      canvas: document.createElement('div'),
-      viewport: {
-        getContainerSize: () => ({ x: 800, y: 600 }),
-        getZoom: () => 1,
-        getFlip: () => false,
-        getBounds: () => ({ x: 0, y: 0, width: 1, height: 1 }),
-        viewportToImageRectangle: (bounds: unknown) => bounds,
-        getRotation: () => 0,
-      },
-      world: { getContentFactor: () => 1 },
-      addHandler: vi.fn(),
-      removeHandler: vi.fn(),
-    };
+    document.body.append(viewerElement, target);
+    const viewer = OpenSeadragon({
+      element: viewerElement,
+      showNavigationControl: false,
+    });
     const component = mount(Annotator, {
       target,
-      props: { viewer: viewer as never },
+      props: { viewer },
     });
     await tick();
     await Promise.resolve();
     await tick();
+    expect(viewerElement.querySelector('.annota-pixi-canvas')).not.toBeNull();
     await unmount(component);
-    expect(create).toHaveBeenCalled();
-    expect(destroy).toHaveBeenCalledTimes(1);
+    await tick();
+    expect(viewerElement.querySelector('.annota-pixi-canvas')).toBeNull();
+    expect(stage.destroy).toHaveBeenCalled();
+    viewer.destroy();
   });
 });
