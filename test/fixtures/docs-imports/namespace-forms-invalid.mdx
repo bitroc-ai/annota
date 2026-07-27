@@ -1,0 +1,24 @@
+# Invalid namespace forms
+
+```tsx
+import * as DestructuredRoot from 'annota';
+import type * as TypeRoot from 'annota';
+
+const { PointTool: NamespacePoint } = DestructuredRoot;
+type InvalidToolType = TypeRoot.PointTool;
+
+require('annota').PointTool;
+(await import('annota')).loadH5Masks;
+
+const { ['PointTool']: ComputedPoint } = require('annota');
+
+const RootNamespace = require('annota');
+const RootAlias = RootNamespace;
+let AssignedAlias;
+AssignedAlias = RootAlias;
+const { loadH5Masks: AliasedLoader } = AssignedAlias;
+
+let LaterAlias;
+LaterAlias = await import('annota');
+({ PointTool: LaterPoint } = LaterAlias);
+```

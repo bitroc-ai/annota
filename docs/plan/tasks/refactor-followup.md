@@ -68,8 +68,15 @@ framework-neutral 根入口导入 React API，或从非 canonical 入口导入 t
   用户示例；正文中解释旧入口的迁移对照可以保留，显式标记的历史 fence 可豁免，
   但可复制执行的当前示例必须全部使用 canonical subpaths。
 - Markdown fence 遵循 CommonMark 的 0–3 空格边界；四空格和 tab 缩进代码不作为 fence。
+- backtick fence 的 info string 含 backtick 时不得视为 opening fence；tilde fence 的
+  info string 仍可包含 backtick，非法 opener 不能改变后续 fence parser 状态。
+- Astro 扫描必须忽略 HTML 与 Astro/JSX 注释中的 `<Code>`，同时保留真实代码字符串里的
+  comment-like 文本，并继续扫描注释相邻的真实 `<Code>`。
 - 静态门禁应从 TypeScript 公共入口推导完整 export contract，检查 named、default、
   type、alias 和 namespace 用法，且不得依赖 docs Vite alias、构建后的 `dist` 或单个文件。
+- namespace source 必须沿静态 alias 链追踪，并覆盖 namespace/type namespace import、
+  require/dynamic import、property/element access、静态 computed destructuring 以及后续
+  destructuring assignment；动态 computed key 不得产生臆测性违规。
 
 ## Verification
 
@@ -88,5 +95,7 @@ pnpm --dir docs build
 
 - 缺少 `dist/core.js` 时直接执行 `pnpm benchmark:ci` 成功。
 - 文档 import 静态门禁在当前文档上通过，并对受控违规 fixture 返回失败。
+- Astro comment boundary、CommonMark backtick info string 和 namespace alias/usage
+  回归 fixture 均通过。
 - 使用临时 changelog 内容按 publish 顺序运行 docs build 成功，且不污染工作区。
 - `git diff --check` 与最终工作区状态干净。

@@ -149,6 +149,8 @@ function extractFences(source) {
     if (!opening) continue;
 
     const marker = opening[2][0];
+    if (marker === '`' && opening[3].includes('`')) continue;
+
     const minimumClosingLength = opening[2].length;
     const closingPattern = new RegExp(
       `^ {0,3}${marker === '`' ? '`' : '~'}{${minimumClosingLength},}[ \\t]*\\r?$`
@@ -176,6 +178,65 @@ function astroBodyOffset(source) {
   closing.lastIndex = source.indexOf('\n') + 1;
   const match = closing.exec(source);
   return match ? match.index + match[0].length : 0;
+}
+
+function astroCommentRanges(source, bodyOffset) {
+  const ranges = [];
+  let braceDepth = 0;
+  let escaped = false;
+  let inTag = false;
+  let quote;
+
+  for (let index = bodyOffset; index < source.length; index += 1) {
+    const character = source[index];
+    if (quote) {
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+
+    const htmlComment = !inTag && braceDepth === 0 && source.startsWith('<!--', index);
+    const astroComment = source.startsWith('{/*', index);
+    if (htmlComment || astroComment) {
+      const closingToken = htmlComment ? '-->' : '*/}';
+      const closingIndex = source.indexOf(
+        closingToken,
+        index + (htmlComment ? '<!--'.length : '{/*'.length)
+      );
+      const end = closingIndex === -1
+        ? source.length
+        : closingIndex + closingToken.length;
+      ranges.push({
+        end,
+        start: index,
+      });
+      index = end - 1;
+      continue;
+    }
+
+    if ((inTag || braceDepth > 0) && (character === '\'' || character === '"' || character === '`')) {
+      quote = character;
+    } else if (character === '{') {
+      braceDepth += 1;
+    } else if (character === '}') {
+      braceDepth = Math.max(0, braceDepth - 1);
+    } else if (character === '<' && braceDepth === 0) {
+      inTag = true;
+    } else if (character === '>' && braceDepth === 0) {
+      inTag = false;
+    }
+  }
+
+  return ranges;
+}
+
+function containingRange(offset, ranges) {
+  return ranges.find(range => offset >= range.start && offset < range.end);
 }
 
 function findAstroOpeningTagEnd(source, start) {
@@ -226,11 +287,19 @@ function parseStaticStringLiteral(literal) {
 function extractAstroCodeExamples(source) {
   const examples = [];
   const componentPattern = /<Code(?=[\s/>])/g;
-  componentPattern.lastIndex = astroBodyOffset(source);
+  const bodyOffset = astroBodyOffset(source);
+  const commentRanges = astroCommentRanges(source, bodyOffset);
+  componentPattern.lastIndex = bodyOffset;
 
   let component;
   while ((component = componentPattern.exec(source)) !== null) {
     const tagStart = component.index;
+    const commentRange = containingRange(tagStart, commentRanges);
+    if (commentRange) {
+      componentPattern.lastIndex = commentRange.end;
+      continue;
+    }
+
     const tagEnd = findAstroOpeningTagEnd(source, tagStart + component[0].length);
     if (tagEnd === -1) continue;
 
@@ -366,7 +435,9 @@ function unwrapExpression(expression) {
       ts.isAwaitExpression(current) ||
       ts.isParenthesizedExpression(current) ||
       ts.isAsExpression(current) ||
-      ts.isTypeAssertionExpression(current)
+      ts.isTypeAssertionExpression(current) ||
+      ts.isNonNullExpression(current) ||
+      ts.isSatisfiesExpression(current)
     )
   ) {
     current = current.expression;
@@ -393,73 +464,143 @@ function moduleCallSpecifier(expression, callName) {
   return undefined;
 }
 
-function modulePropertyRequest(expression) {
-  const unwrapped = unwrapExpression(expression);
-  let moduleExpression;
-  let exportedName;
-  if (unwrapped && ts.isPropertyAccessExpression(unwrapped)) {
-    moduleExpression = unwrapped.expression;
-    exportedName = unwrapped.name.text;
-  } else if (
-    unwrapped &&
-    ts.isElementAccessExpression(unwrapped) &&
-    unwrapped.argumentExpression &&
-    ts.isStringLiteralLike(unwrapped.argumentExpression)
-  ) {
-    moduleExpression = unwrapped.expression;
-    exportedName = unwrapped.argumentExpression.text;
+function staticPropertyName(name) {
+  if (!name) return undefined;
+  if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) {
+    return name.text;
   }
-  if (!moduleExpression || !exportedName) return undefined;
-
-  const specifier = moduleCallSpecifier(moduleExpression, 'import') ??
-    moduleCallSpecifier(moduleExpression, 'require');
-  if (!specifier) return undefined;
-  return {
-    request: {
-      hasDefault: exportedName === 'default',
-      hasNamespace: false,
-      names: exportedName === 'default' ? [] : [exportedName],
-    },
-    specifier,
-  };
+  if (
+    ts.isComputedPropertyName(name) &&
+    ts.isStringLiteralLike(unwrapExpression(name.expression))
+  ) {
+    return unwrapExpression(name.expression).text;
+  }
+  return undefined;
 }
 
-function bindingRequest(name) {
-  const request = { hasDefault: false, hasNamespace: false, names: [] };
-  if (ts.isIdentifier(name)) {
-    request.hasNamespace = true;
-    return request;
-  }
-  if (!ts.isObjectBindingPattern(name)) return request;
-  for (const element of name.elements) {
+function objectBindingNames(pattern) {
+  const names = [];
+  for (const element of pattern.elements) {
     if (element.dotDotDotToken) continue;
-    const imported = element.propertyName && ts.isIdentifier(element.propertyName)
-      ? element.propertyName.text
+    const name = element.propertyName
+      ? staticPropertyName(element.propertyName)
       : ts.isIdentifier(element.name)
         ? element.name.text
         : undefined;
-    if (imported === 'default') request.hasDefault = true;
-    else if (imported) request.names.push(imported);
+    if (name !== undefined) names.push(name);
   }
-  return request;
+  return names;
 }
 
-function inspectRegion(file, region, violations) {
+function objectAssignmentNames(pattern) {
+  const names = [];
+  for (const property of pattern.properties) {
+    if (ts.isSpreadAssignment(property)) continue;
+    if (ts.isShorthandPropertyAssignment(property)) {
+      names.push(property.name.text);
+      continue;
+    }
+    if (ts.isPropertyAssignment(property)) {
+      const name = staticPropertyName(property.name);
+      if (name !== undefined) names.push(name);
+    }
+  }
+  return names;
+}
+
+let snippetSequence = 0;
+
+function createSnippetProgram(file, content) {
+  const virtualFile = path.resolve(
+    process.cwd(),
+    `.annota-documentation-example-${snippetSequence += 1}-${path.basename(file)}.tsx`
+  );
+  const options = {
+    jsx: ts.JsxEmit.Preserve,
+    module: ts.ModuleKind.ESNext,
+    noLib: true,
+    noResolve: true,
+    target: ts.ScriptTarget.Latest,
+  };
   const sourceFile = ts.createSourceFile(
-    `${file}.tsx`,
-    region.content,
+    virtualFile,
+    content,
     ts.ScriptTarget.Latest,
     true,
     ts.ScriptKind.TSX
   );
-  const namespaces = new Map();
+  const host = {
+    fileExists: candidate => candidate === virtualFile,
+    getCanonicalFileName: candidate => candidate,
+    getCurrentDirectory: () => process.cwd(),
+    getDefaultLibFileName: () => 'lib.d.ts',
+    getDirectories: () => [],
+    getNewLine: () => '\n',
+    getSourceFile: candidate => candidate === virtualFile ? sourceFile : undefined,
+    readFile: candidate => candidate === virtualFile ? content : undefined,
+    useCaseSensitiveFileNames: () => true,
+    writeFile: () => {},
+  };
+  const program = ts.createProgram({
+    rootNames: [virtualFile],
+    options,
+    host,
+  });
+  return {
+    checker: program.getTypeChecker(),
+    sourceFile: program.getSourceFile(virtualFile),
+  };
+}
+
+function directModuleSpecifier(expression) {
+  return moduleCallSpecifier(expression, 'import') ?? moduleCallSpecifier(expression, 'require');
+}
+
+function symbolForIdentifier(checker, identifier) {
+  return ts.isIdentifier(identifier) ? checker.getSymbolAtLocation(identifier) : undefined;
+}
+
+function namespaceFromExpression(expression, checker, namespaceSymbols) {
+  const unwrapped = unwrapExpression(expression);
+  if (!unwrapped) return undefined;
+
+  const direct = directModuleSpecifier(unwrapped);
+  if (direct) return direct;
+
+  if (ts.isIdentifier(unwrapped)) {
+    const symbol = symbolForIdentifier(checker, unwrapped);
+    return symbol && namespaceSymbols.get(symbol);
+  }
+
+  if (
+    ts.isBinaryExpression(unwrapped) &&
+    unwrapped.operatorToken.kind === ts.SyntaxKind.EqualsToken
+  ) {
+    return namespaceFromExpression(unwrapped.right, checker, namespaceSymbols);
+  }
+
+  return undefined;
+}
+
+function namespaceRequest(names) {
+  return {
+    hasDefault: names.includes('default'),
+    hasNamespace: false,
+    names: names.filter(name => name !== 'default'),
+  };
+}
+
+function inspectRegion(file, region, violations) {
+  const analysis = createSnippetProgram(file, region.content);
+  const { checker, sourceFile } = analysis;
+  const namespaceSymbols = new Map();
 
   const locationFor = node => ({
     file,
     line: region.line + sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line,
   });
 
-  const firstPass = node => {
+  const seedImports = node => {
     if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
       const specifier = node.moduleSpecifier.text;
       const request = { hasDefault: false, hasNamespace: false, names: [] };
@@ -472,33 +613,119 @@ function inspectRegion(file, region, violations) {
           }
         } else if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
           request.hasNamespace = true;
-          namespaces.set(clause.namedBindings.name.text, specifier);
+          const symbol = symbolForIdentifier(checker, clause.namedBindings.name);
+          if (symbol) namespaceSymbols.set(symbol, specifier);
         }
       }
       checkSpecifier(specifier, request, locationFor(node), violations);
-    } else if (ts.isVariableDeclaration(node) && node.initializer) {
-      const dynamicSpecifier = moduleCallSpecifier(node.initializer, 'import');
-      const requireSpecifier = moduleCallSpecifier(node.initializer, 'require');
-      const specifier = dynamicSpecifier ?? requireSpecifier;
-      if (specifier) {
-        const request = bindingRequest(node.name);
-        if (request.hasNamespace && ts.isIdentifier(node.name)) {
-          namespaces.set(node.name.text, specifier);
-        }
-        checkSpecifier(specifier, request, locationFor(node), violations);
-      } else {
-        const propertyRequest = modulePropertyRequest(node.initializer);
-        if (propertyRequest) {
-          checkSpecifier(
-            propertyRequest.specifier,
-            propertyRequest.request,
-            locationFor(node),
-            violations
-          );
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      node.moduleReference.expression &&
+      ts.isStringLiteralLike(node.moduleReference.expression)
+    ) {
+      const specifier = node.moduleReference.expression.text;
+      const symbol = symbolForIdentifier(checker, node.name);
+      if (symbol) namespaceSymbols.set(symbol, specifier);
+      checkSpecifier(
+        specifier,
+        { hasDefault: false, hasNamespace: true, names: [] },
+        locationFor(node),
+        violations
+      );
+    }
+    ts.forEachChild(node, seedImports);
+  };
+  seedImports(sourceFile);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const propagateAliases = node => {
+      let identifier;
+      let expression;
+      if (
+        ts.isVariableDeclaration(node) &&
+        ts.isIdentifier(node.name) &&
+        node.initializer
+      ) {
+        identifier = node.name;
+        expression = node.initializer;
+      } else if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        ts.isIdentifier(node.left)
+      ) {
+        identifier = node.left;
+        expression = node.right;
+      }
+
+      if (identifier && expression) {
+        const specifier = namespaceFromExpression(expression, checker, namespaceSymbols);
+        const symbol = symbolForIdentifier(checker, identifier);
+        if (specifier && symbol && !namespaceSymbols.has(symbol)) {
+          namespaceSymbols.set(symbol, specifier);
+          changed = true;
         }
       }
-    } else if (ts.isCallExpression(node) && node.arguments.length === 1 && ts.isStringLiteralLike(node.arguments[0])) {
-      const specifier = moduleCallSpecifier(node, 'import') ?? moduleCallSpecifier(node, 'require');
+      ts.forEachChild(node, propagateAliases);
+    };
+    propagateAliases(sourceFile);
+  }
+
+  const checkNamespaceNames = (specifier, names, node) => {
+    if (!specifier || names.length === 0) return;
+    checkSpecifier(specifier, namespaceRequest(names), locationFor(node), violations);
+  };
+
+  const inspectUsage = node => {
+    if (ts.isVariableDeclaration(node) && node.initializer) {
+      const specifier = namespaceFromExpression(node.initializer, checker, namespaceSymbols);
+      if (specifier && ts.isObjectBindingPattern(node.name)) {
+        checkNamespaceNames(specifier, objectBindingNames(node.name), node);
+      } else if (
+        specifier &&
+        ts.isIdentifier(node.name) &&
+        directModuleSpecifier(node.initializer)
+      ) {
+        checkSpecifier(
+          specifier,
+          { hasDefault: false, hasNamespace: true, names: [] },
+          locationFor(node),
+          violations
+        );
+      }
+    } else if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+    ) {
+      const specifier = namespaceFromExpression(node.right, checker, namespaceSymbols);
+      const left = unwrapExpression(node.left);
+      if (specifier && left && ts.isObjectLiteralExpression(left)) {
+        checkNamespaceNames(specifier, objectAssignmentNames(left), node);
+      }
+    }
+
+    if (ts.isPropertyAccessExpression(node)) {
+      const specifier = namespaceFromExpression(node.expression, checker, namespaceSymbols);
+      checkNamespaceNames(specifier, [node.name.text], node);
+    } else if (ts.isElementAccessExpression(node)) {
+      const specifier = namespaceFromExpression(node.expression, checker, namespaceSymbols);
+      const argument = node.argumentExpression && unwrapExpression(node.argumentExpression);
+      if (specifier && argument && ts.isStringLiteralLike(argument)) {
+        checkNamespaceNames(specifier, [argument.text], node);
+      }
+    } else if (ts.isQualifiedName(node)) {
+      const specifier = ts.isIdentifier(node.left)
+        ? namespaceFromExpression(node.left, checker, namespaceSymbols)
+        : undefined;
+      checkNamespaceNames(specifier, [node.right.text], node);
+    } else if (
+      ts.isCallExpression(node) &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      const specifier = directModuleSpecifier(node);
       if (specifier) {
         checkSpecifier(
           specifier,
@@ -508,41 +735,9 @@ function inspectRegion(file, region, violations) {
         );
       }
     }
-    ts.forEachChild(node, firstPass);
+    ts.forEachChild(node, inspectUsage);
   };
-  firstPass(sourceFile);
-
-  const secondPass = node => {
-    let namespace;
-    let exportedName;
-    if (
-      ts.isPropertyAccessExpression(node) &&
-      ts.isIdentifier(node.expression)
-    ) {
-      namespace = node.expression.text;
-      exportedName = node.name.text;
-    } else if (
-      ts.isElementAccessExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.argumentExpression &&
-      ts.isStringLiteralLike(node.argumentExpression)
-    ) {
-      namespace = node.expression.text;
-      exportedName = node.argumentExpression.text;
-    }
-
-    const specifier = namespace && namespaces.get(namespace);
-    if (specifier && exportedName) {
-      checkSpecifier(
-        specifier,
-        { hasDefault: false, hasNamespace: false, names: [exportedName] },
-        locationFor(node),
-        violations
-      );
-    }
-    ts.forEachChild(node, secondPass);
-  };
-  secondPass(sourceFile);
+  inspectUsage(sourceFile);
 }
 
 function inspectExample(file, example, violations) {

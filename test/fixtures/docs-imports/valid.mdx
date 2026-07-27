@@ -34,4 +34,13 @@ import 'annota/styles.css';
 ```tsx
 const { loadH5Masks: loadMasks } = await import('annota/loaders');
 const { PointTool: RequiredPointTool } = require('annota/tools');
+
+import type * as ToolTypes from 'annota/tools';
+type HandlerOptions = ToolTypes.ToolHandlerOptions;
+
+const ToolNamespace = require('annota/tools');
+const ToolAlias = ToolNamespace;
+const { ['PointTool']: AliasedPointTool } = ToolAlias;
+
+(await import('annota/loaders')).loadH5Masks;
 ```
