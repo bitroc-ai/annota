@@ -72,7 +72,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Run tests
-        run: pnpm test -- --run
+        run: pnpm exec vitest run
 
       - name: Build package
         run: pnpm build
@@ -91,9 +91,6 @@ jobs:
 
       - name: Install documentation dependencies
         run: pnpm --dir docs install --frozen-lockfile
-
-      - name: Build documentation
-        run: pnpm --dir docs build
 
       - name: Extract version from tag
         id: version
@@ -119,50 +116,21 @@ jobs:
             CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           fi
 
-          # Prepend new version to consolidated changelog
           CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
-          TEMP_FILE=$(mktemp)
-
-          # Read existing changelog after frontmatter
-          sed -n '1,/^---$/p' "$CHANGELOG_FILE" > "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "# Changelog" >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "All notable changes to Annota are documented here." >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-
-          # Add new version entry
-          cat >> "$TEMP_FILE" << EOF
-          ## v${{ steps.version.outputs.VERSION }}
-
-          Released on $(date -u +"%B %d, %Y")
-
-          ### Changes
-
-          ${CHANGELOG}
-
-          ### Installation
-
-          \`\`\`bash
-          npm install annota@${{ steps.version.outputs.VERSION }}
-          # or
-          pnpm add annota@${{ steps.version.outputs.VERSION }}
-          \`\`\`
-
-          ---
-
-          EOF
-
-          # Append rest of existing changelog (skip frontmatter and header)
-          sed -n '/^## v/,$p' "$CHANGELOG_FILE" >> "$TEMP_FILE"
-
-          # Replace original file
-          mv "$TEMP_FILE" "$CHANGELOG_FILE"
+          printf '%s\n' "$CHANGELOG" | node scripts/generate-changelog.mjs \
+            --version "${{ steps.version.outputs.VERSION }}" \
+            --file "$CHANGELOG_FILE"
 
           # Save changelog content for GitHub release
           echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
           echo "${CHANGELOG}" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate final documentation imports
+        run: pnpm check:docs-imports
+
+      - name: Build documentation with final changelog
+        run: pnpm --dir docs build
 
       - name: Commit changelog to docs
         run: |

@@ -38,8 +38,8 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 ### Prerequisites
 
-- Node.js 18+ or 20+
-- pnpm 8+ (recommended) or npm
+- Node.js 20+
+- pnpm 10.15.0
 
 ### Installation
 
@@ -50,12 +50,11 @@ pnpm install
 # Build the library
 pnpm build
 
-# Run tests
-pnpm test
+# Run the full test suite once
+pnpm exec vitest run
 
-# Start documentation site (in docs directory)
-cd docs
-pnpm dev
+# Start documentation site
+pnpm --dir docs dev
 ```
 
 ### Development Commands
@@ -65,13 +64,13 @@ pnpm dev
 pnpm typecheck
 
 # Run tests in watch mode
-pnpm test:watch
+pnpm test
 
 # Build library
 pnpm build
 
 # Run documentation site
-cd docs && pnpm dev
+pnpm --dir docs dev
 ```
 
 ## Project Structure
@@ -85,8 +84,8 @@ annota/
 │   ├── tools/             # Interactive drawing tools
 │   ├── loaders/           # File format loaders
 │   └── react/             # React components and hooks
-├── tests/                 # Test files
-├── docs/                  # Documentation site (Nextra)
+├── test/                  # Test files
+├── docs/                  # Documentation site (Astro Starlight)
 ├── examples/              # Example applications
 └── dist/                  # Built output (generated)
 ```
@@ -123,7 +122,7 @@ git checkout -b fix/bug-description
 4. **Run tests** to ensure nothing is broken:
    ```bash
    pnpm typecheck
-   pnpm test
+   pnpm exec vitest run
    ```
 
 ### Testing Your Changes
@@ -132,23 +131,30 @@ git checkout -b fix/bug-description
 # Run type checking
 pnpm typecheck
 
-# Run all tests
-pnpm test
+# Run all tests once
+pnpm exec vitest run
 
 # Browser/framework lifecycle and packed consumer gates
 pnpm test:browser
 pnpm test:frameworks
-pnpm build && pnpm test:consumer
+pnpm build
+pnpm test:consumer
 
 # Reproducible fixed-seed performance regression check
 pnpm benchmark:ci
 
+# Validate canonical imports in Markdown code examples
+pnpm check:docs-imports
+
+# Install and build the documentation site
+pnpm --dir docs install --frozen-lockfile
+pnpm --dir docs build
+
 # Run tests in watch mode
-pnpm test:watch
+pnpm test
 
 # Test in the documentation playground
-cd docs
-pnpm dev
+pnpm --dir docs dev
 # Navigate to http://localhost:3000/playground
 ```
 
@@ -189,7 +195,7 @@ describe('YourComponent', () => {
 
 - Aim for at least 80% code coverage for new features
 - Core functionality should have higher coverage (90%+)
-- Run coverage reports with `pnpm test:coverage`
+- Run focused or coverage-enabled Vitest commands with `pnpm exec vitest ...`
 
 ## Code Style
 
@@ -324,8 +330,15 @@ git commit -m "perf(rendering): optimize viewport culling for large datasets"
 2. **Run all checks**:
    ```bash
    pnpm typecheck
-   pnpm test
+   pnpm exec vitest run
    pnpm build
+   pnpm test:browser
+   pnpm test:frameworks
+   pnpm test:consumer
+   pnpm benchmark:ci
+   pnpm check:docs-imports
+   pnpm --dir docs install --frozen-lockfile
+   pnpm --dir docs build
    ```
 
 3. **Update documentation** if needed
@@ -387,11 +400,12 @@ Add screenshots or videos here
 
 ### Updating Documentation
 
-Documentation is located in the `docs/` directory and built with [Nextra](https://nextra.site).
+Documentation is located in `docs/src/content/docs/` and built with
+[Astro Starlight](https://starlight.astro.build/).
 
 ```bash
-cd docs
-pnpm dev  # Start dev server at http://localhost:3000
+pnpm check:docs-imports
+pnpm --dir docs dev
 ```
 
 ### Documentation Guidelines
@@ -399,22 +413,18 @@ pnpm dev  # Start dev server at http://localhost:3000
 - Use **MDX format** for all documentation pages
 - Include **code examples** for all features
 - Add **type definitions** for API documentation
-- Use **Nextra components** (Cards, Callout, Steps) for better UX
+- Use the existing **Starlight components** for cards, asides, and tabs
 - Keep examples **practical** and **copy-paste ready**
 
 ### Documentation Structure
 
-```
-docs/content/
+```text
+docs/src/content/docs/
 ├── index.mdx                    # Landing page
-├── docs/
-│   ├── getting-started/         # Installation, quick start, concepts
-│   ├── guides/                  # Tools, events, loaders, styling
-│   └── examples/                # Practical examples
+├── getting-started/             # Installation, quick start, concepts
+├── guides/                      # Tools, events, loaders, styling
+├── use-cases/                   # Practical examples
 └── api/                         # API reference
-    ├── components.mdx
-    ├── annotator.mdx
-    └── types.mdx
 ```
 
 ## Reporting Bugs

@@ -161,7 +161,7 @@ Annota includes several annotation tools (shared between frameworks):
 <Tabs>
   <TabItem label="React">
     ```typescript
-    import { PointTool, RectangleTool, PolygonTool } from "annota";
+    import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 
     const pointTool = new PointTool();
     const rectangleTool = new RectangleTool();
@@ -170,7 +170,7 @@ Annota includes several annotation tools (shared between frameworks):
   </TabItem>
   <TabItem label="Svelte">
     ```typescript
-    import { PointTool, RectangleTool, PolygonTool } from "annota";
+    import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 
     const pointTool = new PointTool();
     const rectangleTool = new RectangleTool();
@@ -188,12 +188,12 @@ See the [Tools Guide](/guides/tools) for detailed usage.
 <Tabs>
   <TabItem label="React">
     ```typescript
-    import { loadH5Masks, loadH5Coordinates } from "annota";
+    import { loadH5Masks, loadH5Coordinates } from "annota/loaders";
     ```
   </TabItem>
   <TabItem label="Svelte">
     ```typescript
-    import { loadH5Masks, loadH5Coordinates } from "annota";
+    import { loadH5Masks, loadH5Coordinates } from "annota/loaders";
     ```
   </TabItem>
 </Tabs>
@@ -203,12 +203,12 @@ See the [Tools Guide](/guides/tools) for detailed usage.
 <Tabs>
   <TabItem label="React">
     ```typescript
-    import { loadJSONFile, exportJSON } from "annota";
+    import { loadJSONFile, annotationsToJSON } from "annota/loaders";
     ```
   </TabItem>
   <TabItem label="Svelte">
     ```typescript
-    import { loadJSONFile, exportJSON } from "annota";
+    import { loadJSONFile, annotationsToJSON } from "annota/loaders";
     ```
   </TabItem>
 </Tabs>
@@ -251,6 +251,6 @@ See the [Loaders Guide](/guides/loaders) for more details.
 
 <Aside type="tip">
   **Framework Note**: The component names are the same, but imports differ:
-  - React: `import { ... } from "annota"`
+  - React: `import { ... } from "annota/react"`
   - Svelte: `import { ... } from "annota/svelte"`
 </Aside>

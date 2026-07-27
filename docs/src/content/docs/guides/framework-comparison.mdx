@@ -177,7 +177,7 @@ This guide helps you understand the differences between React and Svelte when us
     ```svelte
     <script>
       import { tool } from "annota/svelte";
-      import { RectangleTool } from "annota";
+      import { RectangleTool } from "annota/tools";
 
       let viewer = $state(null);
 
@@ -359,7 +359,7 @@ This guide helps you understand the differences between React and Svelte when us
    - `onClick={...}` → `onclick={...}`
 
 4. **Update imports:**
-   - `from "annota"` → `from "annota/svelte"`
+   - `from "annota/react"` → `from "annota/svelte"`
 
 ### From Svelte to React
 
@@ -379,7 +379,7 @@ This guide helps you understand the differences between React and Svelte when us
    - `{#if}` → `{&&}` or ternary
 
 4. **Update imports:**
-   - `from "annota/svelte"` → `from "annota"`
+   - `from "annota/svelte"` → `from "annota/react"`
 
 ## See Also
 

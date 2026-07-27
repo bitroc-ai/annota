@@ -10,15 +10,17 @@ A complete example of a basic annotation viewer with tools.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotations,
   useSelection,
   useTool,
+} from "annota/react";
+import {
   PointTool,
   RectangleTool,
   PolygonTool,
-} from "annota";
+} from "annota/tools";
 import { useState, useMemo } from "react";
 import "annota/styles.css";
 

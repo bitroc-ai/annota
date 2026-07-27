@@ -23,8 +23,9 @@
     "test:browser": "vitest run test/integration/browser-lifecycle.test.ts",
     "test:frameworks": "vitest run test/integration/framework-lifecycle.test.tsx test/integration/svelte-lifecycle.test.ts",
     "test:consumer": "node scripts/test-package-consumers.mjs",
+    "check:docs-imports": "node scripts/check-doc-imports.mjs",
     "benchmark": "node benchmarks/annota-benchmark.mjs",
-    "benchmark:ci": "node benchmarks/annota-benchmark.mjs --ci"
+    "benchmark:ci": "pnpm build && node benchmarks/annota-benchmark.mjs --ci"
   },
   "keywords": [
     "pathology",

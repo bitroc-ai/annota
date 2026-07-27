@@ -30,8 +30,8 @@ The library no longer includes ONNX runtime. All inference is delegated to your 
 ## Quick Start
 
 ```tsx
-import { SamTool } from 'annota';
-import type { SamPredictFn, SamPredictInput, SamPredictOutput } from 'annota';
+import { SamTool } from 'annota/tools';
+import type { SamPredictFn, SamPredictInput, SamPredictOutput } from 'annota/tools';
 
 // Create a predict function that calls your backend
 const predictFn: SamPredictFn = async (input: SamPredictInput): Promise<SamPredictOutput> => {

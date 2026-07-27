@@ -25,5 +25,6 @@ jobs:
       - run: pnpm test:frameworks
       - run: pnpm test:consumer
       - run: pnpm benchmark:ci
+      - run: pnpm check:docs-imports
       - run: pnpm --dir docs install --frozen-lockfile
       - run: pnpm --dir docs build

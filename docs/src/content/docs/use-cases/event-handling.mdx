@@ -10,10 +10,10 @@ Example of comprehensive event handling.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotator,
-} from "annota";
+} from "annota/react";
 import { useState, useEffect } from "react";
 
 function EventExample() {
@@ -90,4 +90,3 @@ function ViewerWithEvents() {
 - `updateAnnotation` — Annotation modified
 - `deleteAnnotation` — Annotation removed
 - `selectionChanged` — Selection state changed
-

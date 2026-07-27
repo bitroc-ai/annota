@@ -10,10 +10,10 @@ Example of dynamic annotation styling based on properties.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotator,
-} from "annota";
+} from "annota/react";
 import { useState, useCallback } from "react";
 
 function StylingExample() {
@@ -81,4 +81,3 @@ Style based on:
 - **Layer**: `annotation.layerId`
 - **Selection**: Check if ID is in selection
 - **Custom**: Any property you add
-
