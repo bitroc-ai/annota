@@ -10,11 +10,11 @@ Example of adding image layers as overlays on the viewer.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useViewer,
   useImageLayerVisibility,
-} from "annota";
+} from "annota/react";
 import { useState, useEffect } from "react";
 
 function OverlayExample() {
@@ -135,4 +135,3 @@ function MultipleOverlays({ viewer }) {
   );
 }
 ```
-

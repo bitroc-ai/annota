@@ -16,12 +16,14 @@ Example of loading annotations from HDF5 files.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotator,
+} from "annota/react";
+import {
   loadH5Masks,
   loadH5Coordinates,
-} from "annota";
+} from "annota/loaders";
 import { useState, useEffect } from "react";
 
 function H5Example() {
@@ -138,4 +140,3 @@ Expected structure:
   layer?: string;      // Layer to assign
 }
 ```
-

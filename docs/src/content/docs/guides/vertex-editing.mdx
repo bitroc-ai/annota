@@ -18,7 +18,8 @@ When a polygon is selected, vertex handles appear at each point:
 For natural boundary editing, use the Push Tool:
 
 ```tsx
-import { PushTool, useTool, usePushToolCursor } from "annota";
+import { useTool, usePushToolCursor } from "annota/react";
+import { PushTool } from "annota/tools";
 
 function PushToolController({ viewer }) {
   const radius = 50;
@@ -93,4 +94,3 @@ annotator.updateAnnotation("polygon-1", {
 
 - [Tools Guide](/guides/tools) — All annotation tools
 - [Push Tool API](/api/hooks/use-push-tool-cursor) — Push tool cursor hook
-

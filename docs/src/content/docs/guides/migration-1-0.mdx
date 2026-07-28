@@ -1,0 +1,47 @@
+---
+title: Migrating to the 1.0 API
+description: Move from legacy flat methods to stable capability controllers and package subpaths.
+---
+
+Annota keeps the 0.10 flat API during the compatibility window. Those methods are deprecated in
+0.11 and planned for removal in 2.0; they delegate to the same implementation as the new API.
+
+| Legacy | Replacement |
+| --- | --- |
+| `createOpenSeadragonAnnotator(viewer, options)` | `createAnnotator({ viewer, ...options })` |
+| `addAnnotation(annotation)` | `annotations.add(annotation)` |
+| `addAnnotations(annotations)` | `annotations.addAll(annotations)` |
+| `updateAnnotation(id, annotation)` | `annotations.update(id, patch)` |
+| `deleteAnnotation(id)` / `removeAnnotation(id)` | `annotations.remove(id)` |
+| `clearAnnotations()` / `getAnnotations()` | `annotations.clear()` / `annotations.list()` |
+| `setSelected(ids)` | `selection.set(ids)` |
+| `getSelected()` | `selection.get()` |
+| `getIntersecting(bounds)` | `spatial.search(bounds)` |
+| flat layer methods | matching `layers.*` methods |
+| `undo()` / `redo()` / `canUndo()` / `canRedo()` / `clearHistory()` | matching `history.*` methods |
+| `on()` / `off()` / `emit()` | typed `events.*` methods |
+| `mergeSelected()` | `geometry.merge(...)` plus `annotations` |
+| root React component/hook imports | `annota/react` (temporary proxy: `annota/legacy-react`) |
+| mask polarity helpers | `createPropertyFilter('classification', value)` |
+| `state` | capability controllers; `unsafeState` only for advanced integration |
+| `properties.layer` | `layerId` |
+| `annota/dist/index.css` | `annota/styles.css` |
+
+Use `annota/react`, `annota/svelte`, `annota/tools`, and `annota/loaders` for canonical imports.
+The root entry is framework-independent and does not load React or Svelte. React compatibility is
+available from `annota/legacy-react` through 1.x. The old CSS path remains a compatibility proxy.
+
+Known applications pinned to `annota@^0.10.11` do not automatically receive 1.0 because that
+caret range excludes a new major version. Before explicitly upgrading such an application, move
+all root React imports—including `import('annota')` dynamic imports—to `annota/react`. A
+short-lived migration may point the former root imports at `annota/legacy-react` instead. Split
+tools and loaders into `annota/tools` and `annota/loaders`; framework-neutral types and core APIs
+can remain on `annota`. Run the consuming application's typecheck, tests, and production build
+before changing its dependency range to 1.x.
+
+`AnnotationInput` does not require bounds. Annota recomputes bounds for every write and ignores
+legacy input bounds. Update patches shallow-merge `properties` and `style`; pass `null` to remove
+either object, and pass `layerId: null` to move an annotation to the default layer.
+
+The RGB16 mask preset only decodes `instanceId` and `classId`. Map class IDs to pathology or other
+domain fields explicitly with `mapProperties`.

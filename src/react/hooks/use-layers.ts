@@ -6,14 +6,14 @@ import { useEffect, useState } from 'react';
 import { useAnnotator } from '../provider';
 import type { Layer } from '../../core/layer';
 
-export function useLayers(): Layer[] {
+export function useLayers(): readonly Layer[] {
   const annotator = useAnnotator();
-  const [layers, setLayers] = useState<Layer[]>([]);
+  const [layers, setLayers] = useState<readonly Layer[]>([]);
 
   useEffect(() => {
     if (!annotator) return;
 
-    const layerManager = annotator.state.layerManager;
+    const layerManager = annotator.unsafeState.layerManager;
     if (!layerManager) return;
 
     const handleChange = () => {

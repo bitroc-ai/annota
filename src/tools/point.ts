@@ -3,7 +3,7 @@
  */
 
 import OpenSeadragon from "openseadragon";
-import type { Annotation } from "../core/types";
+import type { AnnotationInput } from "../core/types";
 import { calculateBounds } from "../core/types";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
@@ -59,7 +59,7 @@ export class PointTool extends BaseTool {
     }
 
     // Add new point annotation
-    const annotation: Annotation = {
+    const annotation: AnnotationInput = {
       id: `point-${Date.now()}`,
       shape: {
         type: "point",
@@ -74,7 +74,7 @@ export class PointTool extends BaseTool {
       properties: this.options.annotationProperties || {},
     };
 
-    this.annotator.addAnnotation(annotation);
+    this.annotator.annotations.add(annotation, { source: 'tool' });
 
     // Select the newly created annotation
     this.selectAnnotation(annotation.id);

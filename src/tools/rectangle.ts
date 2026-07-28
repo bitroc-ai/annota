@@ -3,7 +3,8 @@
  */
 
 import OpenSeadragon from "openseadragon";
-import type { Annotation, Point } from "../core/types";
+import type { AnnotationInput, Point } from "../core/types";
+import type { ToolMutationTransaction } from "../adapters/openseadragon/annotator";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
 
@@ -14,6 +15,7 @@ export class RectangleTool extends BaseTool {
   private startPoint: Point | null = null;
   private isDragging = false;
   private currentAnnotationId: string | null = null;
+  private transaction: ToolMutationTransaction | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
     super("rectangle", {
@@ -52,14 +54,15 @@ export class RectangleTool extends BaseTool {
     this.startPoint = clickPoint;
     this.isDragging = true;
     this.currentAnnotationId = `rectangle-${Date.now()}`;
+    this.transaction = this.annotator.tools.beginTransaction();
 
     // Signal that a tool is actively drawing to prevent interference
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = true;
+      this.annotator.unsafeState.toolDrawing.active = true;
     }
 
     // Create initial rectangle (0 size)
-    const annotation: Annotation = {
+    const annotation: AnnotationInput = {
       id: this.currentAnnotationId,
       shape: {
         type: "rectangle",
@@ -78,7 +81,7 @@ export class RectangleTool extends BaseTool {
       properties: this.options.annotationProperties || {},
     };
 
-    this.annotator.addAnnotation(annotation);
+    this.transaction.add(annotation);
 
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;
@@ -109,10 +112,9 @@ export class RectangleTool extends BaseTool {
     const height = maxY - minY;
 
     // Update rectangle
-    const existing = this.annotator.state.store.get(this.currentAnnotationId);
+    const existing = this.annotator.annotations.get(this.currentAnnotationId);
     if (existing) {
-      this.annotator.updateAnnotation(this.currentAnnotationId, {
-        ...existing,
+      this.transaction?.update(this.currentAnnotationId, {
         shape: {
           type: "rectangle",
           x: minX,
@@ -139,15 +141,16 @@ export class RectangleTool extends BaseTool {
 
     // If rectangle is too small, delete it
     if (this.currentAnnotationId && this.annotator) {
-      const annotation = this.annotator.state.store.get(
+      const annotation = this.annotator.annotations.get(
         this.currentAnnotationId
       );
       if (annotation && annotation.shape.type === "rectangle") {
         const { width, height } = annotation.shape;
         // Delete if smaller than 5 pixels in either dimension
         if (width < 5 || height < 5) {
-          this.annotator.state.store.delete(this.currentAnnotationId);
+          this.transaction?.cancel();
         } else {
+          this.transaction?.commit();
           shouldSelect = true;
         }
       }
@@ -162,10 +165,11 @@ export class RectangleTool extends BaseTool {
     this.startPoint = null;
     this.isDragging = false;
     this.currentAnnotationId = null;
+    this.transaction = null;
 
     // Reset tool drawing state
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = false;
+      this.annotator.unsafeState.toolDrawing.active = false;
     }
 
     if (this.options.preventDefaultAction) {

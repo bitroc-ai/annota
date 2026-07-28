@@ -10,13 +10,15 @@ Example of managing multiple annotation layers.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useLayerManager,
   useLayers,
   useTool,
+} from "annota/react";
+import {
   PolygonTool,
-} from "annota";
+} from "annota/tools";
 import { useState, useMemo } from "react";
 
 function LayerExample() {
@@ -109,4 +111,3 @@ function ViewerWithLayers() {
 - Toggling layer visibility
 - Switching active layer for annotation
 - Layer-based tool configuration
-

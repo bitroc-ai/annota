@@ -6,6 +6,9 @@
 // Types
 export type {
   Annotation,
+  AnnotationInput,
+  AnnotationPatch,
+  AnnotationProperties,
   AnnotationStyle,
   Bounds,
   CircleShape,
@@ -16,6 +19,7 @@ export type {
   PolygonShape,
   RectangleShape,
   Shape,
+  ShapeInput,
   ShapeType,
   StyleExpression,
 } from './types';
@@ -26,6 +30,30 @@ export { boundsIntersect, calculateBounds, containsPoint } from './types';
 export type { AnnotationStore, StoreChangeEvent, StoreObserver } from './store';
 
 export { createAnnotationStore } from './store';
+export type { StoreAddAllOptions, StoreWriteMode } from './store';
+
+export {
+  AnnotaError,
+  AnnotationExistsError,
+  AnnotationNotFoundError,
+  AnnotationValidationError,
+} from './errors';
+
+export { applyAnnotationPatch, cloneAnnotation, normalizeAnnotation } from './normalization';
+
+export type {
+  AnnotatorEventMap,
+  AnnotatorEvents,
+  AnnotatorNotification,
+  ChangeContext,
+  ChangeSource,
+} from './events';
+export { changeContext, createTransactionId, createTypedEvents } from './events';
+
+export type { GeometryController } from './geometry';
+export { createGeometryController, normalizeShapeInput } from './geometry';
+
+export type { PopupAnchor, PopupOptions, PopupPosition } from './popup';
 
 // Spatial
 export { createSpatialIndex, SpatialIndex } from './spatial';
@@ -55,3 +83,23 @@ export type {
 } from './selection';
 
 export { createSelectionManager } from './selection';
+
+export type {
+  Layer,
+  LayerChangeEvent,
+  LayerConfig,
+  LayerManager,
+  LayerObserver,
+} from './layer';
+export {
+  createLayerManager,
+  createMaskPolarityFilter,
+  createNegativeMaskFilter,
+  createPositiveMaskFilter,
+  createPropertyFilter,
+  getEffectiveOpacity,
+  getPropertySummary,
+  getPropertyValues,
+  isAnnotationEditable,
+  isAnnotationVisible,
+} from './layer';

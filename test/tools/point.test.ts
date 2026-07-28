@@ -40,6 +40,14 @@ describe('PointTool', () => {
       addAnnotation: vi.fn((annotation) => mockStore.add(annotation)),
       setSelected: vi.fn(),
     };
+    mockAnnotator.unsafeState = mockAnnotator.state;
+    mockAnnotator.annotations = {
+      list: mockStore.all,
+      add: vi.fn((annotation: unknown) => mockStore.add(annotation)),
+    };
+    mockAnnotator.selection = {
+      set: vi.fn((id: string) => mockAnnotator.setSelected(id)),
+    };
 
     tool = new PointTool();
     tool.init(mockViewer, mockAnnotator);

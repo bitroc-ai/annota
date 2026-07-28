@@ -9,6 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://annota.dev',
   integrations: [
     starlight({
       title: 'Annota',
@@ -55,6 +56,7 @@ export default defineConfig({
             { label: 'Vertex Editing', slug: 'guides/vertex-editing' },
             { label: 'SAM Tool', slug: 'guides/sam-tool' },
             { label: 'Integration', slug: 'guides/integration' },
+            { label: 'Migrating to 1.0', slug: 'guides/migration-1-0' },
           ],
         },
         {
@@ -112,6 +114,20 @@ export default defineConfig({
     strictPort: false, // Allow Railway to assign port dynamically
   },
   vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('/src/core/')) return 'annota-core';
+            if (id.includes('/src/loaders/') || id.includes('/src/ml/')) return 'annota-loaders';
+            if (id.includes('/src/tools/')) return 'annota-tools';
+            if (id.includes('/src/rendering/') || id.includes('/pixi.js/')) return 'annota-rendering';
+            if (id.includes('/polygon-clipping/')) return 'geometry-vendor';
+            if (id.includes('/openseadragon/')) return 'viewer-vendor';
+          },
+        },
+      },
+    },
     ssr: {
       noExternal: ['annota', 'openseadragon'],
     },
@@ -136,10 +152,14 @@ export default defineConfig({
       tailwindcss(),
     ],
     resolve: {
-      alias: {
-        'annota': path.resolve(__dirname, '../src/index.ts'),
-        '$lib': path.resolve(__dirname, './src/lib'),
-      },
+      alias: [
+        { find: /^annota\/react$/, replacement: path.resolve(__dirname, '../src/react-entry.ts') },
+        { find: /^annota\/tools$/, replacement: path.resolve(__dirname, '../src/tools-entry.ts') },
+        { find: /^annota\/loaders$/, replacement: path.resolve(__dirname, '../src/loaders-entry.ts') },
+        { find: /^annota\/core$/, replacement: path.resolve(__dirname, '../src/core-entry.ts') },
+        { find: /^annota$/, replacement: path.resolve(__dirname, '../src/index.ts') },
+        { find: '$lib', replacement: path.resolve(__dirname, './src/lib') },
+      ],
     },
   },
 });

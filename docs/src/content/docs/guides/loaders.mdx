@@ -14,7 +14,7 @@ Annota provides data loaders for importing annotations from various file formats
 Load polygon annotations from HDF5 mask files:
 
 ```typescript
-import { loadH5Masks } from "annota";
+import { loadH5Masks } from "annota/loaders";
 
 const annotations = await loadH5Masks("/path/to/masks.h5", {
   color: "#FF0000",
@@ -27,7 +27,7 @@ const annotations = await loadH5Masks("/path/to/masks.h5", {
 Load point annotations from HDF5 coordinate files:
 
 ```typescript
-import { loadH5Coordinates } from "annota";
+import { loadH5Coordinates } from "annota/loaders";
 
 const points = await loadH5Coordinates("/path/to/coords.h5", {
   color: "#00FF00",
@@ -44,7 +44,7 @@ const points = await loadH5Coordinates("/path/to/coords.h5", {
 ### Loading
 
 ```typescript
-import { loadJSONFile } from "annota";
+import { loadJSONFile } from "annota/loaders";
 
 const annotations = loadJSONFile(jsonData);
 ```
@@ -52,7 +52,7 @@ const annotations = loadJSONFile(jsonData);
 ### Exporting
 
 ```typescript
-import { annotationsToJSON } from "annota";
+import { annotationsToJSON } from "annota/loaders";
 
 const json = annotationsToJSON(annotations);
 ```
@@ -62,7 +62,7 @@ const json = annotationsToJSON(annotations);
 ### Loading Masks
 
 ```typescript
-import { loadPgmFile } from "annota";
+import { loadPgmFile } from "annota/loaders";
 
 const annotations = loadPgmFile(pgmData, {
   threshold: 128,
@@ -72,7 +72,7 @@ const annotations = loadPgmFile(pgmData, {
 ### Extracting Polygons
 
 ```typescript
-import { loadPgmPolygons } from "annota";
+import { loadPgmPolygons } from "annota/loaders";
 
 const polygons = loadPgmPolygons(pgmData, {
   threshold: 128,
@@ -82,7 +82,7 @@ const polygons = loadPgmPolygons(pgmData, {
 ### Exporting
 
 ```typescript
-import { annotationsToPgm } from "annota";
+import { annotationsToPgm } from "annota/loaders";
 
 const pgmData = annotationsToPgm(annotations, width, height);
 ```
@@ -91,4 +91,3 @@ const pgmData = annotationsToPgm(annotations, width, height);
 
 - [API Reference](/api) — Complete loader API
 - [H5 Loading Use Case](/use-cases/h5-loading) — Complete example
-

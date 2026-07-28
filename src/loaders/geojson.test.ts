@@ -19,6 +19,7 @@ describe('exportJson', () => {
   it('should export point annotation to GeoJSON Point', () => {
     const annotation: Annotation = {
       id: 'point-1',
+      layerId: 'default',
       shape: {
         type: 'point',
         point: { x: 100, y: 200 },
@@ -53,6 +54,7 @@ describe('exportJson', () => {
   it('should export rectangle annotation to GeoJSON Polygon', () => {
     const annotation: Annotation = {
       id: 'rect-1',
+      layerId: 'default',
       shape: {
         type: 'rectangle',
         x: 10,
@@ -82,6 +84,7 @@ describe('exportJson', () => {
   it('should export circle annotation to GeoJSON Point with radius property', () => {
     const annotation: Annotation = {
       id: 'circle-1',
+      layerId: 'default',
       shape: {
         type: 'circle',
         center: { x: 50, y: 60 },
@@ -104,6 +107,7 @@ describe('exportJson', () => {
   it('should export polygon annotation to GeoJSON Polygon', () => {
     const annotation: Annotation = {
       id: 'poly-1',
+      layerId: 'default',
       shape: {
         type: 'polygon',
         points: [
@@ -134,6 +138,7 @@ describe('exportJson', () => {
   it('should export closed freehand annotation to GeoJSON Polygon', () => {
     const annotation: Annotation = {
       id: 'freehand-1',
+      layerId: 'default',
       shape: {
         type: 'freehand',
         points: [
@@ -161,6 +166,7 @@ describe('exportJson', () => {
   it('should export open freehand annotation to GeoJSON LineString', () => {
     const annotation: Annotation = {
       id: 'freehand-2',
+      layerId: 'default',
       shape: {
         type: 'freehand',
         points: [
@@ -188,6 +194,7 @@ describe('exportJson', () => {
   it('should export multipolygon annotation to GeoJSON MultiPolygon', () => {
     const annotation: Annotation = {
       id: 'multipoly-1',
+      layerId: 'default',
       shape: {
         type: 'multipolygon',
         polygons: [
@@ -228,6 +235,7 @@ describe('exportJson', () => {
   it('should include classification in properties if present', () => {
     const annotation: Annotation = {
       id: 'mask-1',
+      layerId: 'default',
       shape: {
         type: 'polygon',
         points: [
@@ -250,6 +258,7 @@ describe('exportJson', () => {
   it('should include classification if category property exists', () => {
     const annotation: Annotation = {
       id: 'classified-1',
+      layerId: 'default',
       shape: {
         type: 'point',
         point: { x: 10, y: 20 },
@@ -270,6 +279,7 @@ describe('exportJson', () => {
   it('should preserve custom properties', () => {
     const annotation: Annotation = {
       id: 'custom-1',
+      layerId: 'default',
       shape: {
         type: 'point',
         point: { x: 10, y: 20 },
@@ -292,16 +302,19 @@ describe('exportJson', () => {
     const annotations: Annotation[] = [
       {
         id: 'point-1',
+        layerId: 'default',
         shape: { type: "point", point: { x: 10, y: 20 }, bounds: { minX: 10, minY: 20, maxX: 10, maxY: 20 } },
         properties: {},
       },
       {
         id: 'rect-1',
+        layerId: 'default',
         shape: { type: "rectangle", x: 0, y: 0, width: 10, height: 10, bounds: { minX: 0, minY: 0, maxX: 10, maxY: 10 } },
         properties: {},
       },
       {
         id: 'poly-1',
+        layerId: 'default',
         shape: {
           type: 'polygon',
           points: [
@@ -327,11 +340,13 @@ describe('exportJson', () => {
     const annotations: Annotation[] = [
       {
         id: 'point-1',
+        layerId: 'default',
         shape: { type: "point", point: { x: 10, y: 20 }, bounds: { minX: 10, minY: 20, maxX: 10, maxY: 20 } },
         properties: {},
       },
       {
         id: 'unknown-1',
+        layerId: 'default',
         shape: { type: "unknown", bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 } } as any,
         properties: {},
       },

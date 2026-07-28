@@ -13,7 +13,7 @@ export function useLayer(id: string): Layer | undefined {
   useEffect(() => {
     if (!annotator) return;
 
-    const layerManager = annotator.state.layerManager;
+    const layerManager = annotator.unsafeState.layerManager;
     if (!layerManager) return;
 
     const handleChange = () => {

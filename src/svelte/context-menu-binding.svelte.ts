@@ -1,5 +1,5 @@
 import OpenSeadragon from 'openseadragon';
-import type { Annotation } from '../core/types';
+import type { Annotation } from 'annota';
 import { getContext } from 'svelte';
 import { ANNOTA_CONTEXT_KEY, type AnnotaContextValue } from './context';
 
@@ -24,7 +24,7 @@ export function contextMenuBinding(
     // Use the reactive annotator from $derived
     if (!annotator?.viewer) return;
 
-    const store = annotator.state.store;
+    const store = annotator.unsafeState.store;
     const canvas = annotator.viewer.canvas;
 
     if (!canvas || !store) return;
@@ -59,4 +59,3 @@ export function contextMenuBinding(
     };
   });
 }
-

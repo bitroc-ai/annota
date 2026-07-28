@@ -41,7 +41,7 @@ export const initKeyboardCommands = (
     // Select All: Ctrl/Cmd+A
     if (enableSelectAll && cmdKey && event.key === 'a') {
       event.preventDefault();
-      const allAnnotations = annotator.state.store.all();
+      const allAnnotations = annotator.unsafeState.store.all();
       const allIds = allAnnotations.map(ann => ann.id);
       annotator.setSelected(allIds);
       return;
@@ -49,7 +49,7 @@ export const initKeyboardCommands = (
 
     // Escape: Clear selection
     if (enableEscapeToClear && event.key === 'Escape') {
-      if (annotator.state.selection.hasSelection()) {
+      if (annotator.unsafeState.selection.hasSelection()) {
         event.preventDefault();
         annotator.setSelected([]);
       }
@@ -76,7 +76,7 @@ export const initKeyboardCommands = (
 
     // Delete/Backspace: delete selected annotations
     if (enableDelete && (event.key === 'Delete' || event.key === 'Backspace')) {
-      const selectedIds = annotator.state.selection.getSelected();
+      const selectedIds = annotator.unsafeState.selection.getSelected();
 
       if (selectedIds.length > 0) {
         // Prevent backspace from navigating back in browser
@@ -88,7 +88,7 @@ export const initKeyboardCommands = (
         });
 
         // Clear selection
-        annotator.state.selection.clear();
+        annotator.unsafeState.selection.clear();
       }
     }
   };

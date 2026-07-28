@@ -12,7 +12,7 @@ Annota's layer system allows you to organize annotations into logical groups wit
 Use the `useLayerManager` hook to create and manage layers:
 
 ```tsx
-import { useLayerManager } from 'annota';
+import { useLayerManager } from 'annota/react';
 
 function LayerPanel() {
   const layerManager = useLayerManager();
@@ -172,7 +172,7 @@ layerManager.deleteLayer('tumor', true);
 ## Complete Example
 
 ```tsx
-import { useLayerManager, useLayers } from 'annota';
+import { useLayerManager, useLayers } from 'annota/react';
 import { useState } from 'react';
 
 function LayerPanel() {
@@ -236,4 +236,3 @@ function LayerPanel() {
 - [Styling](/guides/styling) — Customize annotation appearance
 - [Events](/guides/events) — Respond to layer changes
 - [API Reference](/api/hooks/use-layer-manager) — Complete layer API
-

@@ -430,7 +430,7 @@ export function renderPath(
 /**
  * Helper: Check if any points have control handles
  */
-function hasHandles(points: ControlPoint[]): boolean {
+function hasHandles(points: readonly ControlPoint[]): boolean {
   return points.some(p => p.handleIn || p.handleOut);
 }
 
@@ -446,7 +446,8 @@ export function renderImage(
   container: PIXI.Container,
   shape: ImageShape,
   _style: ComputedStyle,
-  _scale: number
+  _scale: number,
+  opacityMultiplier = 1
 ): PIXI.Sprite | null {
   // Check if texture is already cached and loaded
   const cachedTexture = textureCache.get(shape.url);
@@ -461,7 +462,7 @@ export function renderImage(
     const scaleY = shape.height / cachedTexture.height;
     sprite.scale.set(scaleX, scaleY);
 
-    sprite.alpha = shape.opacity !== undefined ? shape.opacity : 0.6;
+    sprite.alpha = (shape.opacity ?? 1) * opacityMultiplier;
     container.addChild(sprite);
     return sprite;
   }
@@ -470,7 +471,7 @@ export function renderImage(
   const sprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
   sprite.x = shape.x;
   sprite.y = shape.y;
-  sprite.alpha = shape.opacity !== undefined ? shape.opacity : 0.6;
+  sprite.alpha = (shape.opacity ?? 1) * opacityMultiplier;
   container.addChild(sprite);
 
   // Load the texture asynchronously

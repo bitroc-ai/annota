@@ -1,0 +1,15 @@
+---
+const dynamicExample = 'import { PointTool } from "annota";';
+const dynamicProps = { code: 'import { loadH5Masks } from "annota";' };
+---
+
+<div data-example='<Code code="import { useTool } from &quot;annota&quot;;" />' />
+
+<Code code="import { PointTool } from 'annota/tools';" />
+<Code code='import { loadH5Masks } from "annota/loaders";'></Code>
+<Code code="const label = &quot;quoted&quot;;&#10;import { useTool } from &quot;annota/react&quot;;" />
+<Code code='const label = "multiline";
+import { PointTool } from "annota/tools";'></Code>
+
+<Code code={dynamicExample} />
+<Code {...dynamicProps}></Code>

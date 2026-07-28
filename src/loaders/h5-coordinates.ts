@@ -4,6 +4,7 @@
  */
 
 import type { Annotation, PointShape } from '../core/types';
+import { normalizeAnnotation } from '../core/normalization';
 
 export interface H5CoordinateLoaderOptions {
   color?: string;
@@ -77,7 +78,7 @@ export async function loadH5Coordinates(
         bounds: { minX: x, minY: y, maxX: x, maxY: y },
       };
 
-      annotations.push({
+      annotations.push(normalizeAnnotation({
         id: `h5-coord-${i}`,
         shape,
         properties: {
@@ -91,7 +92,7 @@ export async function loadH5Coordinates(
           stroke: color,
           strokeWidth,
         },
-      });
+      }));
     }
 
     return annotations;

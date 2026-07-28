@@ -20,7 +20,7 @@ Returns an array of selected `Annotation` objects. Updates when selection change
 ## Usage
 
 ```tsx
-import { useSelection } from "annota";
+import { useSelection } from "annota/react";
 
 function SelectionInfo() {
   const selection = useSelection();
@@ -47,7 +47,7 @@ function SelectionInfo() {
 ## Example: Selection Actions
 
 ```tsx
-import { useSelection, useAnnotator } from "annota";
+import { useSelection, useAnnotator } from "annota/react";
 
 function SelectionActions() {
   const selection = useSelection();
@@ -137,4 +137,3 @@ function PropertyEditor() {
 - [useAnnotations](/api/hooks/use-annotations) — Get all annotations
 - [useAnnotator](/api/hooks/use-annotator) — Programmatic selection control
 - [Events Guide](/guides/events) — Selection change events
-

@@ -10,17 +10,19 @@ A complete example of a basic annotation viewer with tools.
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotations,
   useSelection,
   useTool,
+} from "annota/react";
+import {
   PointTool,
   RectangleTool,
   PolygonTool,
-} from "annota";
+} from "annota/tools";
 import { useState, useMemo } from "react";
-import "annota/dist/index.css";
+import "annota/styles.css";
 
 export default function BasicViewer() {
   return (
@@ -127,4 +129,3 @@ const infoPanelStyle = {
 4. **useTool** activates the selected tool
 5. **useAnnotations** provides reactive annotation list
 6. **useSelection** tracks selected annotations
-

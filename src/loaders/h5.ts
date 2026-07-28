@@ -4,6 +4,7 @@
  */
 
 import type { Annotation, PointShape } from '../core/types';
+import { normalizeAnnotation } from '../core/normalization';
 
 export interface H5MaskLoaderOptions {
   color?: string;
@@ -112,7 +113,7 @@ export async function loadH5Masks(
           },
         };
 
-        annotations.push({
+        annotations.push(normalizeAnnotation({
           id: `h5-mask-${cellId}`,
           shape,
           properties: {
@@ -127,7 +128,7 @@ export async function loadH5Masks(
             stroke: color,
             strokeWidth,
           },
-        });
+        }));
       }
     });
 

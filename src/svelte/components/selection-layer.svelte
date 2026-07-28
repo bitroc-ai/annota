@@ -98,9 +98,9 @@
   // Sync with selection state
   $effect(() => {
     const onSelectionChanged = () => {
-      const selectedIds = annotator.state.selection.getSelected();
+      const selectedIds = annotator.unsafeState.selection.getSelected();
       if (selectedIds.length === 1) {
-        const ann = annotator.state.store.get(selectedIds[0]);
+        const ann = annotator.unsafeState.store.get(selectedIds[0]);
         if (ann && ann !== selectedAnnotation) {
           selectedAnnotation = ann;
         }

@@ -72,24 +72,63 @@ jobs:
         run: pnpm typecheck
 
       - name: Run tests
-        run: pnpm test -- --run
+        run: pnpm exec vitest run
 
       - name: Build package
         run: pnpm build
 
+      - name: Run browser lifecycle integration tests
+        run: pnpm test:browser
+
+      - name: Run framework lifecycle integration tests
+        run: pnpm test:frameworks
+
+      - name: Verify isolated packed consumers
+        run: pnpm test:consumer
+
+      - name: Run benchmark regression gate
+        run: pnpm benchmark:ci
+
+      - name: Install documentation dependencies
+        run: pnpm --dir docs install --frozen-lockfile
+
       - name: Extract version from tag
         id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RAW_DISPATCH_VERSION: ${{ github.event.inputs.version }}
+          RAW_GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          set -euo pipefail
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RAW_VERSION="$RAW_DISPATCH_VERSION"
           else
-            VERSION="${GITHUB_REF#refs/tags/v}"
+            RAW_VERSION="${RAW_GITHUB_REF#refs/tags/v}"
           fi
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+          export RELEASE_VERSION_CANDIDATE="$RAW_VERSION"
+          VERSION=$(node scripts/validate-release-version.mjs)
+
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            printf 'PRERELEASE=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'PRERELEASE=false\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify package release version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
+        run: node scripts/validate-release-package-version.mjs
 
       - name: Generate changelog
         id: changelog
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          set -euo pipefail
+
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
@@ -98,61 +137,42 @@ jobs:
             CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           else
             # Get commits between tags that touched src/ or package.json
-            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           fi
 
-          # Prepend new version to consolidated changelog
           CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
-          TEMP_FILE=$(mktemp)
-
-          # Read existing changelog after frontmatter
-          sed -n '1,/^---$/p' "$CHANGELOG_FILE" > "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "# Changelog" >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-          echo "All notable changes to Annota are documented here." >> "$TEMP_FILE"
-          echo "" >> "$TEMP_FILE"
-
-          # Add new version entry
-          cat >> "$TEMP_FILE" << EOF
-          ## v${{ steps.version.outputs.VERSION }}
-
-          Released on $(date -u +"%B %d, %Y")
-
-          ### Changes
-
-          ${CHANGELOG}
-
-          ### Installation
-
-          \`\`\`bash
-          npm install annota@${{ steps.version.outputs.VERSION }}
-          # or
-          pnpm add annota@${{ steps.version.outputs.VERSION }}
-          \`\`\`
-
-          ---
-
-          EOF
-
-          # Append rest of existing changelog (skip frontmatter and header)
-          sed -n '/^## v/,$p' "$CHANGELOG_FILE" >> "$TEMP_FILE"
-
-          # Replace original file
-          mv "$TEMP_FILE" "$CHANGELOG_FILE"
+          printf '%s\n' "$CHANGELOG" | node scripts/generate-changelog.mjs \
+            --version "$RELEASE_VERSION" \
+            --file "$CHANGELOG_FILE"
 
           # Save changelog content for GitHub release
-          echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-          echo "${CHANGELOG}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "CHANGELOG_CONTENT<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${CHANGELOG}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Validate final documentation imports
+        run: pnpm check:docs-imports
+
+      - name: Build documentation with final changelog
+        run: pnpm --dir docs build
 
       - name: Commit changelog to docs
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/src/content/docs/changelog.mdx
-          git commit -m "docs: add changelog for v${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
-          git push origin HEAD:main || echo "No changes to push"
+
+          CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
+          if git diff --quiet -- "$CHANGELOG_FILE"; then
+            echo "Changelog is already up to date; nothing to commit."
+          else
+            git add "$CHANGELOG_FILE"
+            git commit -m "docs: add changelog for v${RELEASE_VERSION}"
+            git push origin HEAD:main
+          fi
 
       - name: Verify npm auth and package ownership
         run: |
@@ -180,9 +200,10 @@ jobs:
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.version.outputs.VERSION }}
+          tag_name: v${{ env.RELEASE_VERSION }}
+          release_name: Release ${{ env.RELEASE_VERSION }}
           body: |
             ## Changes
 
@@ -191,11 +212,11 @@ jobs:
             ## Installation
 
             ```bash
-            npm install annota@${{ steps.version.outputs.VERSION }}
+            npm install annota@${{ env.RELEASE_VERSION }}
             # or
-            pnpm add annota@${{ steps.version.outputs.VERSION }}
+            pnpm add annota@${{ env.RELEASE_VERSION }}
             ```
 
             See the [full changelog](https://annota.bitroc.ai/docs/changelog) for more details.
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.version.outputs.PRERELEASE }}

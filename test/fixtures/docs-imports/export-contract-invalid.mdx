@@ -1,0 +1,19 @@
+# Invalid export forms
+
+```tsx
+import DefaultViewer from 'annota/svelte';
+import type { DefinitelyMissingType as MissingType } from 'annota/react';
+import * as RootApi from 'annota';
+import * as LoaderApi from 'annota/loaders';
+import styles from 'annota/styles.css';
+
+RootApi.PointTool;
+LoaderApi.DefinitelyMissingLoader;
+```
+
+```tsx
+const { PointTool: DynamicPointTool } = await import('annota');
+const { DefinitelyMissingLoader } = require('annota/loaders');
+const RequiredPointTool = require('annota').PointTool;
+const DynamicDefault = (await import('annota/react')).default;
+```

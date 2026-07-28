@@ -4,14 +4,14 @@
 
 import { getAnnotator } from './annotator';
 import { layers } from './layers.svelte';
-import type { Layer, LayerConfig } from '../core/layer';
+import type { Layer, LayerConfig } from 'annota';
 
 /**
  * Result of layerManager function
  */
 export interface LayerManagerResult {
   /** All layers */
-  layers: Layer[];
+  layers: readonly Layer[];
 
   /** Create a new layer */
   createLayer: (id: string, config: LayerConfig) => Layer | undefined;
@@ -38,7 +38,7 @@ export interface LayerManagerResult {
   setLayerZIndex: (id: string, zIndex: number) => void;
 
   /** Get layers sorted by z-index */
-  getLayersByZIndex: () => Layer[];
+  getLayersByZIndex: () => readonly Layer[];
 }
 
 export function layerManager(): LayerManagerResult {
@@ -93,10 +93,10 @@ export function layerManager(): LayerManagerResult {
     annotator.setLayerZIndex(id, zIndex);
   }
 
-  function getLayersByZIndex(): Layer[] {
+  function getLayersByZIndex(): readonly Layer[] {
     const annotator = getAnnotatorFn();
     if (!annotator) return [];
-    return annotator.state.layerManager.getLayersByZIndex();
+    return annotator.unsafeState.layerManager.getLayersByZIndex();
   }
 
   return {
@@ -112,4 +112,3 @@ export function layerManager(): LayerManagerResult {
     getLayersByZIndex,
   };
 }
-

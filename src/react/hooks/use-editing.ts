@@ -63,8 +63,8 @@ export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
     if (!annotator) return;
 
     const interval = setInterval(() => {
-      const currentId = annotator.state.editing.current;
-      const currentMode = annotator.state.editing.mode;
+      const currentId = annotator.unsafeState.editing.current;
+      const currentMode = annotator.unsafeState.editing.mode;
 
       if (currentId !== editingId || currentMode !== editMode) {
         setEditingId(currentId);
@@ -97,8 +97,8 @@ export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
         setEditingId(undefined);
         // Clear editing state in annotator
         if (annotator) {
-          annotator.state.editing.current = undefined;
-          annotator.state.editing.mode = undefined;
+          annotator.unsafeState.editing.current = undefined;
+          annotator.unsafeState.editing.mode = undefined;
         }
       }
     };
@@ -116,8 +116,8 @@ export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
     (annotationId: string, mode: 'vertices' | undefined = 'vertices') => {
       if (!annotator) return;
 
-      annotator.state.editing.current = annotationId;
-      annotator.state.editing.mode = mode;
+      annotator.unsafeState.editing.current = annotationId;
+      annotator.unsafeState.editing.mode = mode;
       setEditingId(annotationId);
       setEditMode(mode);
     },
@@ -127,8 +127,8 @@ export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
   const stopEditing = useCallback(() => {
     if (!annotator) return;
 
-    annotator.state.editing.current = undefined;
-    annotator.state.editing.mode = undefined;
+    annotator.unsafeState.editing.current = undefined;
+    annotator.unsafeState.editing.mode = undefined;
     setEditingId(undefined);
     setEditMode(undefined);
   }, [annotator]);
@@ -157,7 +157,7 @@ export function useEditing(options: UseEditingOptions = {}): UseEditingResult {
         new OpenSeadragon.Point(offsetX, offsetY)
       );
 
-      const annotation = annotator.state.store.getAt(imageCoords.x, imageCoords.y);
+      const annotation = annotator.unsafeState.store.getAt(imageCoords.x, imageCoords.y);
 
       if (!annotation) {
         // Clicked on empty space - exit editing mode

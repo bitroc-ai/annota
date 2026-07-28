@@ -18,17 +18,17 @@ This guide helps you understand the differences between React and Svelte when us
     ```tsx
     import {
       AnnotaProvider,
-      AnnotaViewer,
+      Viewer as AnnotaViewer,
       Annotator,
       AnnotationPopup,
-    } from "annota";
+    } from "annota/react";
 
     import {
       useAnnotator,
       useAnnotations,
       useSelection,
       useTool,
-    } from "annota";
+    } from "annota/react";
     ```
   </TabItem>
   <TabItem label="Svelte">
@@ -59,7 +59,7 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { useAnnotator } from "annota";
+    import { useAnnotator } from "annota/react";
 
     function MyComponent() {
       const annotator = useAnnotator();
@@ -91,7 +91,7 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { useAnnotations } from "annota";
+    import { useAnnotations } from "annota/react";
 
     function AnnotationList() {
       const annotations = useAnnotations();
@@ -128,7 +128,7 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { useSelection } from "annota";
+    import { useSelection } from "annota/react";
 
     function SelectionInfo() {
       const selection = useSelection();
@@ -157,8 +157,8 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { useTool } from "annota";
-    import { RectangleTool } from "annota";
+    import { useTool } from "annota/react";
+    import { RectangleTool } from "annota/tools";
 
     function ToolController({ viewer }) {
       const tool = new RectangleTool();
@@ -177,7 +177,7 @@ This guide helps you understand the differences between React and Svelte when us
     ```svelte
     <script>
       import { tool } from "annota/svelte";
-      import { RectangleTool } from "annota";
+      import { RectangleTool } from "annota/tools";
 
       let viewer = $state(null);
 
@@ -204,7 +204,7 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+    import { AnnotaProvider, Viewer as AnnotaViewer, Annotator } from "annota/react";
 
     function App() {
       const [viewer, setViewer] = useState(null);
@@ -221,13 +221,13 @@ This guide helps you understand the differences between React and Svelte when us
   <TabItem label="Svelte">
     ```svelte
     <script>
-      import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
+      import { AnnotaProvider, Viewer, Annotator } from "annota/svelte";
 
       let viewer = $state(null);
     </script>
 
     <AnnotaProvider slideId="my-slide">
-      <AnnotaViewer onViewerReady={(v) => viewer = v} />
+      <Viewer onViewerReady={(v) => viewer = v} />
       {#if viewer}
         <Annotator {viewer} />
       {/if}
@@ -269,7 +269,7 @@ This guide helps you understand the differences between React and Svelte when us
 <Tabs>
   <TabItem label="React">
     ```tsx
-    import { useAnnotator } from "annota";
+    import { useAnnotator } from "annota/react";
     import { useEffect } from "react";
 
     function LoadAnnotations({ slideId }) {
@@ -359,7 +359,7 @@ This guide helps you understand the differences between React and Svelte when us
    - `onClick={...}` → `onclick={...}`
 
 4. **Update imports:**
-   - `from "annota"` → `from "annota/svelte"`
+   - `from "annota/react"` → `from "annota/svelte"`
 
 ### From Svelte to React
 
@@ -379,7 +379,7 @@ This guide helps you understand the differences between React and Svelte when us
    - `{#if}` → `{&&}` or ternary
 
 4. **Update imports:**
-   - `from "annota/svelte"` → `from "annota"`
+   - `from "annota/svelte"` → `from "annota/react"`
 
 ## See Also
 

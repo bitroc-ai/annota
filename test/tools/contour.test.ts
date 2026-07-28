@@ -70,10 +70,21 @@ describe('ContourTool', () => {
     mockAnnotator = {
       state: {
         store: mockStore,
+        layerManager: {
+          getLayerForAnnotation: vi.fn(() => ({ visible: true, locked: false })),
+        },
       },
       addAnnotation: vi.fn((annotation) => mockStore.add(annotation)),
       setSelected: vi.fn(),
       updateAnnotation: vi.fn(),
+    };
+    mockAnnotator.unsafeState = mockAnnotator.state;
+    mockAnnotator.annotations = {
+      list: mockStore.all,
+      add: vi.fn((annotation: unknown) => mockStore.add(annotation)),
+    };
+    mockAnnotator.selection = {
+      set: vi.fn((id: string) => mockAnnotator.setSelected(id)),
     };
 
     // Reset OpenCV mocks

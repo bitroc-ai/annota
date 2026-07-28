@@ -4,6 +4,7 @@
 
 import OpenSeadragon from 'openseadragon';
 import type { Annotation } from '../core/types';
+import type { ToolMutationTransaction } from '../adapters/openseadragon/annotator';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';
 import type { PushToolOptions } from './types';
@@ -14,6 +15,7 @@ import type { PushToolOptions } from './types';
 export class PushTool extends BaseTool {
   private isPushing = false;
   private affectedAnnotations = new Map<string, { x: number; y: number }[]>();
+  private transaction: ToolMutationTransaction | null = null;
   private cursorPos: { x: number; y: number } | null = null;
   private onMouseMove?: (e: MouseEvent) => void;
   private onMouseLeave?: () => void;
@@ -101,6 +103,7 @@ export class PushTool extends BaseTool {
     this.cursorPos = null;
     this.isPushing = false;
     this.affectedAnnotations.clear();
+    this.transaction = null;
     super.destroy();
   }
 
@@ -116,7 +119,7 @@ export class PushTool extends BaseTool {
     const clickPoint = this.viewerToImageCoords(originalEvent.offsetX, originalEvent.offsetY);
 
     // Check if clicking directly on annotation center (not on vertices)
-    const annotations = this.annotator.state.store.all();
+    const annotations = this.annotator.unsafeState.store.all();
     const clickedOnAnnotation = annotations.some((ann: Annotation) => {
       const { bounds } = ann.shape;
       const isInBounds =
@@ -149,6 +152,7 @@ export class PushTool extends BaseTool {
 
     this.isPushing = true;
     this.affectedAnnotations.clear();
+    this.transaction = this.annotator.tools.beginTransaction();
 
     if (this.options.preventDefaultAction) {
       (evt as any).preventDefaultAction = true;
@@ -168,7 +172,7 @@ export class PushTool extends BaseTool {
 
     // Find all polygon annotations and push their vertices
     const annotator = this.annotator; // Capture in local variable for type narrowing
-    const annotations = annotator.state.store.all();
+    const annotations = annotator.annotations.list();
     const polygonAnnotations = annotations.filter((a: Annotation) => a.shape.type === 'polygon');
 
     polygonAnnotations.forEach((annotation: Annotation) => {
@@ -208,8 +212,7 @@ export class PushTool extends BaseTool {
       });
 
       // Update annotation with new points
-      annotator.state.store.update(annotation.id, {
-        ...annotation,
+      this.transaction?.update(annotation.id, {
         shape: {
           ...annotation.shape,
           points: newPoints,
@@ -235,9 +238,11 @@ export class PushTool extends BaseTool {
       if (this.options.preventDefaultAction) {
         (evt as any).preventDefaultAction = true;
       }
+      this.transaction?.commit();
     }
 
     this.isPushing = false;
     this.affectedAnnotations.clear();
+    this.transaction = null;
   };
 }

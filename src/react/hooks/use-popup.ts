@@ -124,7 +124,7 @@ export function usePopup(options: { autoShow?: boolean } = {}): UsePopupResult {
     setVisibleAnnotationId(null);
     // Also clear selection when hiding popup
     if (annotator) {
-      annotator.state.selection.clear();
+      annotator.unsafeState.selection.clear();
     }
   }, [annotator]);
 
@@ -136,11 +136,10 @@ export function usePopup(options: { autoShow?: boolean } = {}): UsePopupResult {
     (annotationId: string, properties: Record<string, unknown>) => {
       if (!annotator) return;
 
-      const ann = annotator.state.store.get(annotationId);
+      const ann = annotator.annotations.get(annotationId);
       if (!ann) return;
 
-      annotator.state.store.update(annotationId, {
-        ...ann,
+      annotator.annotations.update(annotationId, {
         properties: { ...ann.properties, ...properties },
       });
     },
@@ -151,11 +150,10 @@ export function usePopup(options: { autoShow?: boolean } = {}): UsePopupResult {
     (annotationId: string, style: Partial<Annotation['style']>) => {
       if (!annotator) return;
 
-      const ann = annotator.state.store.get(annotationId);
+      const ann = annotator.annotations.get(annotationId);
       if (!ann) return;
 
-      annotator.state.store.update(annotationId, {
-        ...ann,
+      annotator.annotations.update(annotationId, {
         style: { ...ann.style, ...style },
       });
     },
@@ -165,7 +163,7 @@ export function usePopup(options: { autoShow?: boolean } = {}): UsePopupResult {
   const deleteAnnotation = useCallback(
     (annotationId: string) => {
       if (!annotator) return;
-      annotator.state.store.delete(annotationId);
+      annotator.annotations.remove(annotationId);
       hide();
     },
     [annotator, hide]

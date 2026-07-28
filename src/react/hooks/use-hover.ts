@@ -16,7 +16,7 @@ export function useHover(): Annotation | undefined {
 
     // Poll hover state (simple approach - could be improved with events)
     const interval = setInterval(() => {
-      const currentId = annotator.state.hover.current;
+      const currentId = annotator.unsafeState.hover.current;
       if (currentId !== hoveredId) {
         setHoveredId(currentId);
       }

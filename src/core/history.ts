@@ -336,24 +336,25 @@ class HistoryManagerImpl implements HistoryManager {
 
     // If we're in a batch, collect commands
     if (this.batchCommands) {
-      this.batchCommands.push(command);
       command.execute();
+      this.batchCommands.push(command);
       return;
     }
 
-    // Try to merge with last command if merging is enabled
+    // Execute before attempting a merge. A failed command must not be allowed
+    // to mutate the existing undo record through its merge callback.
+    command.execute();
+
     if (this.enableMerging && this.undoStack.length > 0) {
       const lastCommand = this.undoStack[this.undoStack.length - 1];
       if (lastCommand.merge && lastCommand.merge(command)) {
-        // Command was merged, just execute the new one
-        command.execute();
+        // A successfully executed command always starts a new history branch,
+        // even when it is folded into the current undo record.
+        this.redoStack = [];
         this.emit();
         return;
       }
     }
-
-    // Execute the command
-    command.execute();
 
     // Add to undo stack
     this.undoStack.push(command);
@@ -372,7 +373,7 @@ class HistoryManagerImpl implements HistoryManager {
   undo(): void {
     if (!this.canUndo()) return;
 
-    const command = this.undoStack.pop()!;
+    const command = this.undoStack[this.undoStack.length - 1];
 
     // Temporarily disable history while undoing
     const wasEnabled = this.enabled;
@@ -380,6 +381,7 @@ class HistoryManagerImpl implements HistoryManager {
 
     try {
       command.undo();
+      this.undoStack.pop();
       this.redoStack.push(command);
       this.emit();
     } finally {
@@ -390,7 +392,7 @@ class HistoryManagerImpl implements HistoryManager {
   redo(): void {
     if (!this.canRedo()) return;
 
-    const command = this.redoStack.pop()!;
+    const command = this.redoStack[this.redoStack.length - 1];
 
     // Temporarily disable history while redoing
     const wasEnabled = this.enabled;
@@ -398,6 +400,7 @@ class HistoryManagerImpl implements HistoryManager {
 
     try {
       command.redo();
+      this.redoStack.pop();
       this.undoStack.push(command);
       this.emit();
     } finally {

@@ -54,7 +54,7 @@ export function useHistory(): UseHistoryResult {
   useEffect(() => {
     if (!annotator) return;
 
-    const historyManager = annotator.state.history;
+    const historyManager = annotator.unsafeState.history;
     if (!historyManager) return;
 
     const handleHistoryChange = (event: HistoryStateEvent) => {

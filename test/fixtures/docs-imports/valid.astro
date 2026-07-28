@@ -1,0 +1,23 @@
+---
+// Deliberately resembles a violation: this is build-time source, not user-facing sample code.
+import { useTool } from 'annota';
+---
+
+<Code
+  code={`import { useTool } from 'annota/react';
+useTool({ enabled: true });`}
+  lang="tsx"
+/>
+
+<Code
+  code={'import { PointTool as CanonicalPoint } from \'annota/tools\';\nnew CanonicalPoint();'}
+  lang="tsx"
+></Code>
+
+<Code
+  code={"import type { H5MaskLoaderOptions as Options } from \"annota/loaders\";"}
+  lang="tsx"
+/>
+
+<Code code={`import * as ReactApi from 'annota/react';
+ReactApi.useAnnotations();`}></Code>

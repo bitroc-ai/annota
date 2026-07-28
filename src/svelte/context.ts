@@ -1,4 +1,4 @@
-import type { OpenSeadragonAnnotator } from '../adapters/openseadragon/annotator';
+import type { OpenSeadragonAnnotator } from 'annota';
 
 export const ANNOTA_CONTEXT_KEY = Symbol('annota-context');
 

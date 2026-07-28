@@ -12,7 +12,7 @@ The Annotator instance provides programmatic control over annotations.
 Use the `useAnnotator` hook to access the annotator instance:
 
 ```tsx
-import { useAnnotator } from "annota";
+import { useAnnotator } from "annota/react";
 
 function MyComponent() {
   const annotator = useAnnotator();
@@ -199,7 +199,7 @@ annotator.fitToAnnotation("ann-1", { padding: 0.1 });
 ## Complete Example
 
 ```tsx
-import { useAnnotator } from "annota";
+import { useAnnotator } from "annota/react";
 import { useEffect } from "react";
 
 function AnnotationManager() {
@@ -243,4 +243,3 @@ function AnnotationManager() {
 - [useAnnotator](/api/hooks/use-annotator) — Hook documentation
 - [Events Guide](/guides/events) — Event system guide
 - [Types](/api/types) — Type definitions
-

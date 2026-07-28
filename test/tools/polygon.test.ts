@@ -37,6 +37,19 @@ describe('PolygonTool', () => {
       addAnnotation: vi.fn((annotation) => mockStore.add(annotation)),
       setSelected: vi.fn(),
       updateAnnotation: vi.fn(),
+      annotations: {
+        get: mockStore.get,
+      },
+    };
+    mockAnnotator.unsafeState = mockAnnotator.state;
+    mockAnnotator.tools = {
+      beginTransaction: vi.fn(() => ({
+        add: (annotation: unknown) => mockStore.add(annotation),
+        update: (id: string, patch: unknown) => mockAnnotator.updateAnnotation(id, patch),
+        remove: vi.fn(),
+        commit: vi.fn(),
+        cancel: vi.fn(),
+      })),
     };
 
     tool = new PolygonTool();
@@ -66,7 +79,7 @@ describe('PolygonTool', () => {
     expect(mockAnnotator.state.store.add).toHaveBeenCalledWith(
       expect.objectContaining({
         shape: expect.objectContaining({
-          type: 'polygon',
+          type: 'freehand',
           points: expect.arrayContaining([
             expect.objectContaining({ x: 100, y: 100 }),
           ]),

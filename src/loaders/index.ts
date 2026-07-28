@@ -14,3 +14,16 @@ export { loadPgmFile, loadPgmPolygons, annotationsToPgm, annotationToPgm } from 
 
 export { loadMaskPolygons, exportMasksToPng } from './masks';
 export type { MaskLoaderOptions } from './masks';
+export {
+  decodeInstancePixels,
+  decodeRgb16Pixel,
+  loadInstanceMask,
+} from './instance-mask';
+export type {
+  DecodedInstance,
+  DecodedInstanceRegion,
+  DecodedPixelSource,
+  ExtractedContour,
+  InstanceMaskLoaderOptions,
+  RgbaPixel,
+} from './instance-mask';

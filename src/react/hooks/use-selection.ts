@@ -17,7 +17,7 @@ export function useSelection(): Annotation[] {
 
     // Subscribe to selection changes via observer
     const handleSelectionChange = () => {
-      const currentIds = annotator.state.selection.getSelected();
+      const currentIds = annotator.unsafeState.selection.getSelected();
       setSelectedIds(currentIds);
     };
 
@@ -25,10 +25,10 @@ export function useSelection(): Annotation[] {
     handleSelectionChange();
 
     // Observe selection changes
-    annotator.state.selection.observe(handleSelectionChange);
+    annotator.unsafeState.selection.observe(handleSelectionChange);
 
     return () => {
-      annotator.state.selection.unobserve(handleSelectionChange);
+      annotator.unsafeState.selection.unobserve(handleSelectionChange);
     };
   }, [annotator]);
 

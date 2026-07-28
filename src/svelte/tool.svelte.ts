@@ -32,15 +32,15 @@ export function tool({ viewer, handler, enabled }: ToolOptions): void {
       h.init(v, annotator);
       initialized = true;
       // Register this tool as the active tool so annotator can check it
-      if (annotator.state.activeTool) {
-        annotator.state.activeTool.current = h;
+      if (annotator.unsafeState.activeTool) {
+        annotator.unsafeState.activeTool.current = h;
       }
     } else if (!e && initialized) {
       h.destroy();
       initialized = false;
       // Clear active tool reference
-      if (annotator.state.activeTool) {
-        annotator.state.activeTool.current = undefined;
+      if (annotator.unsafeState.activeTool) {
+        annotator.unsafeState.activeTool.current = undefined;
       }
     }
 
@@ -51,8 +51,8 @@ export function tool({ viewer, handler, enabled }: ToolOptions): void {
         h.destroy();
         initialized = false;
         // Clear active tool reference on cleanup
-        if (annotator && annotator.state.activeTool) {
-          annotator.state.activeTool.current = undefined;
+        if (annotator && annotator.unsafeState.activeTool) {
+          annotator.unsafeState.activeTool.current = undefined;
         }
       }
     };

@@ -56,7 +56,7 @@ class SelectionManagerImpl implements SelectionManager {
    * Replace current selection with new IDs
    */
   select(ids: string | string[]): void {
-    const newIds = Array.isArray(ids) ? ids : [ids];
+    const newIds = [...new Set(Array.isArray(ids) ? ids : [ids])];
     const previous = this.getSelected();
 
     // Check if selection changed
@@ -155,7 +155,9 @@ class SelectionManagerImpl implements SelectionManager {
    * Subscribe to selection changes
    */
   observe(callback: SelectionObserver): void {
-    this.observers.push(callback);
+    if (!this.observers.includes(callback)) {
+      this.observers.push(callback);
+    }
   }
 
   /**

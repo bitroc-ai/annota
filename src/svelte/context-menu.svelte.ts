@@ -1,6 +1,6 @@
 // Svelte 5 runes ($state, $effect) are global in .svelte.ts files and don't need to be imported.
 
-import type { Annotation } from '../core/types';
+import type { Annotation } from 'annota';
 
 
 export interface ContextMenuState {
@@ -54,4 +54,3 @@ export function contextMenu() {
     hideMenu
   };
 }
-

@@ -30,7 +30,8 @@ interface UseToolOptions {
 ## Usage
 
 ```tsx
-import { useTool, PointTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool } from "annota/tools";
 import { useState } from "react";
 
 function AnnotationTools({ viewer }) {
@@ -49,7 +50,8 @@ function AnnotationTools({ viewer }) {
 ## Example: Tool Switching
 
 ```tsx
-import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 import { useState, useMemo } from "react";
 
 function ToolController({ viewer }) {
@@ -178,4 +180,3 @@ function ToolsWithShortcuts({ viewer }) {
 - [Tools Guide](/guides/tools) — Complete tools documentation
 - [usePushToolCursor](/api/hooks/use-push-tool-cursor) — Push tool cursor
 - [useAnnotator](/api/hooks/use-annotator) — Programmatic control
-

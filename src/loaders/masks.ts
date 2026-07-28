@@ -8,6 +8,14 @@ import { loadPgmFile } from './pgm';
 import UPNG from 'upng-js';
 import { initOpenCV } from '../extensions/opencv';
 import pako from 'pako';
+import { normalizeAnnotation } from '../core/normalization';
+import {
+  decodeRgb16Pixel,
+  instanceRegionsToAnnotations,
+  loadInstanceMask,
+  type DecodedInstanceRegion,
+} from './instance-mask';
+import { AnnotaError } from '../core/errors';
 
 /**
  * Options for loading mask polygon annotations
@@ -57,9 +65,9 @@ export async function loadMaskPolygons(
   // Apply layer and styling options
   const styledAnnotations = annotations.map((ann: Annotation) => ({
     ...ann,
+    layerId: layer,
     properties: {
       ...ann.properties,
-      layer,
     },
     style: {
       ...ann.style,
@@ -95,13 +103,13 @@ async function loadMask8bit(
     try {
       await initOpenCV();
     } catch (error) {
-      // OpenCV initialization failed - return empty array
-      return [];
+      throw new AnnotaError('OPENCV_UNAVAILABLE', 'OpenCV failed to initialize', {
+        cause: error,
+      });
     }
 
     if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
-      // OpenCV not available - return empty array
-      return [];
+      throw new AnnotaError('OPENCV_UNAVAILABLE', 'OpenCV is not available');
     }
 
     const cv = (window as any).cv;
@@ -185,6 +193,7 @@ async function loadMask8bit(
           });
           annotations.push({
             id: `mask-binary-${Date.now()}-${i}`,
+            layerId: 'masks',
             shape: {
               type: 'polygon',
               points,
@@ -287,6 +296,7 @@ async function loadMask8bit(
           if (points.length >= 3) {
             annotations.push({
               id: `mask-${instanceId}-${i}`,
+              layerId: 'masks',
               shape: {
                 type: 'polygon',
                 points,
@@ -322,8 +332,10 @@ async function loadMask8bit(
 
     return annotations;
   } catch (error) {
-    // Don't log errors - calling code can decide how to handle missing files
-    return [];
+    if (error instanceof AnnotaError) throw error;
+    throw new AnnotaError('MASK_DECODE_FAILED', 'Failed to decode 8-bit mask', {
+      cause: error,
+    });
   }
 }
 
@@ -354,14 +366,14 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
     try {
       await initOpenCV();
     } catch (error) {
-      // OpenCV initialization failed - return empty array
-      return [];
+      throw new AnnotaError('OPENCV_UNAVAILABLE', 'OpenCV failed to initialize', {
+        cause: error,
+      });
     }
 
     // Use OpenCV to extract contours
     if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
-      // OpenCV not available - return empty array
-      return [];
+      throw new AnnotaError('OPENCV_UNAVAILABLE', 'OpenCV is not available');
     }
 
     const cv = (window as any).cv;
@@ -459,6 +471,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
         if (points.length >= 3) {
           annotations.push({
             id: `mask-${instanceId}-${i}`,
+            layerId: 'masks',
             shape: {
               type: 'polygon',
               points,
@@ -494,10 +507,17 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
 
     return annotations;
   } catch (error) {
-    // Don't log errors - calling code can decide how to handle missing files
-    return [];
+    if (error instanceof AnnotaError) throw error;
+    throw new AnnotaError('MASK_DECODE_FAILED', 'Failed to decode 16-bit mask', {
+      cause: error,
+    });
   }
 }
+
+// Retained temporarily as implementation history for downstream source patches.
+// Public loading no longer routes through these direct OpenCV implementations.
+void loadMask8bit;
+void loadMask16bit;
 
 /**
  * Load RGB-encoded instance mask (BC Cell API format)
@@ -505,143 +525,88 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
  * Reconstructs 16-bit cell IDs from R and G channels
  */
 async function loadMaskRGB(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
+  const inputs = await loadInstanceMask(arrayBuffer, {
+    decodePixel: decodeRgb16Pixel,
+    layerId: 'masks',
+  });
+  return inputs.map(input => normalizeAnnotation(input));
+}
+
+async function loadMask8bitSafe(
+  arrayBuffer: ArrayBuffer,
+  maskType: 'binary' | 'instance8'
+): Promise<Annotation[]> {
+  const inputs = await loadInstanceMask(arrayBuffer, {
+    decodePixel: pixel => {
+      const value = pixel.r;
+      const instanceId = maskType === 'binary' ? (value > 128 ? 1 : 0) : value;
+      return instanceId === 0 ? null : { instanceId };
+    },
+    layerId: 'masks',
+    mapProperties: instance => ({
+      source: 'png-mask',
+      type: 'region',
+      instanceId: instance.instanceId,
+    }),
+  });
+  return inputs.map(input => normalizeAnnotation(input));
+}
+
+async function loadMask16bitSafe(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
+  let image: ReturnType<typeof UPNG.decode>;
   try {
-    const img = UPNG.decode(arrayBuffer);
-    const rawData = new Uint8Array(img.data);
-
-    const hasAlpha = img.ctype === 6;
-    const bytesPerPixel = hasAlpha ? 4 : 3;
-
-    try {
-      await initOpenCV();
-    } catch (error) {
-      return [];
-    }
-
-    if (typeof window === 'undefined' || !(window as any).cv || !(window as any).cv.Mat) {
-      return [];
-    }
-
-    const cv = (window as any).cv;
-    const annotations: Annotation[] = [];
-    const { calculateBounds } = await import('../core/types');
-
-    // Reconstruct 16-bit cell IDs from R (high byte) and G (low byte) channels
-    const bboxes = new Map<number, {minX: number, minY: number, maxX: number, maxY: number, count: number}>();
-    for (let y = 0; y < img.height; y++) {
-      for (let x = 0; x < img.width; x++) {
-        const pixelOffset = (y * img.width + x) * bytesPerPixel;
-        const rVal = rawData[pixelOffset];
-        const gVal = rawData[pixelOffset + 1];
-        const cellId = (rVal << 8) | gVal;
-
-        if (cellId > 0) {
-          let b = bboxes.get(cellId);
-          if (!b) {
-            b = { minX: x, minY: y, maxX: x, maxY: y, count: 0 };
-            bboxes.set(cellId, b);
-          }
-          if (x < b.minX) b.minX = x;
-          if (x > b.maxX) b.maxX = x;
-          if (y < b.minY) b.minY = y;
-          if (y > b.maxY) b.maxY = y;
-          b.count++;
-        }
-      }
-    }
-
-    for (const [instanceId, b] of bboxes.entries()) {
-      if (b.count < 15) continue;
-
-      const w = b.maxX - b.minX + 1;
-      const h = b.maxY - b.minY + 1;
-      const sw = w + 2;
-      const sh = h + 2;
-
-      const subBinaryData = new Uint8Array(sw * sh);
-      for (let y = 0; y < h; y++) {
-        const srcRow = (y + b.minY) * img.width + b.minX;
-        const dstRow = (y + 1) * sw + 1;
-        for (let x = 0; x < w; x++) {
-          const pixelOffset = (srcRow + x) * bytesPerPixel;
-          const rVal = rawData[pixelOffset];
-          const gVal = rawData[pixelOffset + 1];
-          const cellId = (rVal << 8) | gVal;
-          if (cellId === instanceId) {
-            subBinaryData[dstRow + x] = 255;
-          }
-        }
-      }
-
-      const gray = new cv.Mat(sh, sw, cv.CV_8UC1);
-      gray.data.set(subBinaryData);
-
-      const binary = new cv.Mat();
-      cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY);
-
-      const contours = new cv.MatVector();
-      const hierarchy = new cv.Mat();
-      cv.findContours(binary, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-      for (let i = 0; i < contours.size(); i++) {
-        const contour = contours.get(i);
-        const area = cv.contourArea(contour);
-
-        if (area < 15) continue;
-
-        const approx = new cv.Mat();
-        const perimeter = cv.arcLength(contour, true);
-        const epsilon = 0.005 * perimeter;
-        cv.approxPolyDP(contour, approx, epsilon, true);
-
-        const points: import('../core/types').Point[] = [];
-        for (let j = 0; j < approx.data32S.length; j += 2) {
-          points.push({
-            x: approx.data32S[j] + b.minX - 1,
-            y: approx.data32S[j + 1] + b.minY - 1,
-          });
-        }
-        approx.delete();
-
-        if (points.length >= 3) {
-          annotations.push({
-            id: `mask-rgb-${instanceId}-${i}`,
-            shape: {
-              type: 'polygon',
-              points,
-              bounds: calculateBounds({
-                type: 'polygon',
-                points,
-                bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
-              }),
-            },
-            properties: {
-              source: 'png-mask',
-              type: 'region',
-              instanceId,
-              area,
-              layer: 'masks',
-            },
-            style: {
-              fill: '#FFFF00',
-              fillOpacity: 0.3,
-              stroke: '#FFFF00',
-              strokeWidth: 2,
-            },
-          });
-        }
-      }
-
-      gray.delete();
-      binary.delete();
-      contours.delete();
-      hierarchy.delete();
-    }
-
-    return annotations;
-  } catch (error) {
-    return [];
+    image = UPNG.decode(arrayBuffer);
+  } catch (cause) {
+    throw new AnnotaError('MASK_DECODE_FAILED', 'Failed to decode 16-bit mask', { cause });
   }
+  const bytes = new Uint8Array(image.data);
+  const pixelCount = image.width * image.height;
+  if (bytes.length < pixelCount * 2) {
+    throw new AnnotaError('MASK_DECODE_FAILED', '16-bit PNG pixel buffer is truncated');
+  }
+  const regionsById = new Map<number, {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+    pixels: Array<{ x: number; y: number }>;
+  }>();
+  for (let index = 0; index < pixelCount; index++) {
+    const instanceId = (bytes[index * 2] << 8) | bytes[index * 2 + 1];
+    if (instanceId === 0) continue;
+    const x = index % image.width;
+    const y = Math.floor(index / image.width);
+    const region = regionsById.get(instanceId);
+    if (region) {
+      region.minX = Math.min(region.minX, x);
+      region.minY = Math.min(region.minY, y);
+      region.maxX = Math.max(region.maxX, x);
+      region.maxY = Math.max(region.maxY, y);
+      region.pixels.push({ x, y });
+    } else {
+      regionsById.set(instanceId, {
+        minX: x,
+        minY: y,
+        maxX: x,
+        maxY: y,
+        pixels: [{ x, y }],
+      });
+    }
+  }
+  const regions: DecodedInstanceRegion[] = [...regionsById].map(([instanceId, region]) => ({
+    instance: { instanceId },
+    ...region,
+    pixelCount: region.pixels.length,
+  }));
+  const inputs = await instanceRegionsToAnnotations(regions, {
+    layerId: 'masks',
+    mapProperties: instance => ({
+      source: 'png-mask',
+      type: 'region',
+      instanceId: instance.instanceId,
+    }),
+  });
+  return inputs.map(input => normalizeAnnotation(input));
 }
 
 /**
@@ -703,9 +668,9 @@ async function loadMask(
 
   // Load based on detected/specified type
   if (actualType === 'instance16') {
-    return loadMask16bit(arrayBuffer);
+    return loadMask16bitSafe(arrayBuffer);
   } else {
-    return loadMask8bit(arrayBuffer, actualType);
+    return loadMask8bitSafe(arrayBuffer, actualType);
   }
 }
 
@@ -882,7 +847,7 @@ function rasterizePolygon16bit(
   mask: Uint16Array,
   width: number,
   height: number,
-  points: import('../core/types').Point[],
+  points: readonly import('../core/types').Point[],
   instanceId: number
 ): void {
   if (points.length < 3) return;

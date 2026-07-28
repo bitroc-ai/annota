@@ -1,7 +1,8 @@
 import { getContext } from 'svelte';
+import type { OpenSeadragonAnnotator } from 'annota';
 import { ANNOTA_CONTEXT_KEY, type AnnotaContextValue } from './context';
 
-export function getAnnotator() {
+export function getAnnotator(): () => OpenSeadragonAnnotator | undefined {
   try {
     const context = getContext<AnnotaContextValue>(ANNOTA_CONTEXT_KEY);
     if (!context) {
@@ -15,7 +16,9 @@ export function getAnnotator() {
   }
 }
 
-export function setAnnotator() {
+export function setAnnotator(): (
+  annotator: OpenSeadragonAnnotator | undefined
+) => void {
   try {
     const context = getContext<AnnotaContextValue>(ANNOTA_CONTEXT_KEY);
     if (!context) {
@@ -28,4 +31,3 @@ export function setAnnotator() {
     return () => {};
   }
 }
-

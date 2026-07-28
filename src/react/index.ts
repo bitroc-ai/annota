@@ -29,6 +29,8 @@ export {
   usePopup,
   usePushToolCursor,
   useContextMenu,
+  useContextMenuBinding,
+  useEditing,
 } from './hooks';
 export type {
   UseHistoryResult,
@@ -38,10 +40,27 @@ export type {
   UsePopupResult,
   UseContextMenuResult,
   ContextMenuState,
+  UseEditingResult,
 } from './hooks';
 
-export { AnnotationEditor } from './editor';
-export type { AnnotationEditorProps } from './editor';
+export {
+  AnnotationEditor,
+  registerShapeEditor,
+  unregisterShapeEditor,
+  getEditorConfig,
+} from './editor';
+export type { AnnotationEditorProps, ShapeEditorConfig } from './editor';
+
+export { AnnotationPopup } from './popup';
+export type { PopupPosition, PopupAnchor, PopupOptions } from './types';
+
+export { PointEditor, RectangleEditor, PolygonEditor, FreehandEditor } from './editors';
+export type {
+  PointEditorProps,
+  RectangleEditorProps,
+  PolygonEditorProps,
+  FreehandEditorProps,
+} from './editors';
 
 export { ContextMenu, ContextMenuItem, ContextMenuDivider } from './context-menu';
 export type { ContextMenuProps, ContextMenuItemProps, ContextMenuPosition } from './context-menu';

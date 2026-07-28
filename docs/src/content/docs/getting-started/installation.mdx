@@ -92,20 +92,20 @@ Import the required CSS in your app entry point:
 
 **React:**
 ```tsx
-import "annota/dist/index.css";
+import "annota/styles.css";
 ```
 
 **Svelte:**
 ```svelte
 <script>
-  import "annota/dist/index.css";
+  import "annota/styles.css";
 </script>
 ```
 
 Or in your global CSS:
 
 ```css
-@import "annota/dist/index.css";
+@import "annota/styles.css";
 ```
 
 ## Verify Installation
@@ -115,9 +115,9 @@ Or in your global CSS:
 Create a simple test component:
 
 ```tsx
-import { AnnotaProvider, AnnotaViewer, Annotator } from "annota";
+import { AnnotaProvider, Viewer as AnnotaViewer, Annotator } from "annota/react";
 import { useState } from "react";
-import "annota/dist/index.css";
+import "annota/styles.css";
 
 function TestViewer() {
   const [viewer, setViewer] = useState(null);
@@ -148,15 +148,15 @@ Create a simple test component:
 
 ```svelte
 <script>
-  import { AnnotaProvider, AnnotaViewer, Annotator } from "annota/svelte";
-  import "annota/dist/index.css";
+  import { AnnotaProvider, Viewer, Annotator } from "annota/svelte";
+  import "annota/styles.css";
 
   let viewer = $state(null);
 </script>
 
 <AnnotaProvider>
   <div style="width: 800px; height: 600px;">
-    <AnnotaViewer
+    <Viewer
       options={{
         tileSources: {
           type: "image",
@@ -229,4 +229,3 @@ Now that Annota is installed, continue to:
 - **[Svelte Quick Start](/getting-started/quick-start/svelte)** — Build your first Svelte annotation viewer
 - [Core Concepts](/getting-started/concepts) — Understand annotations, layers, and tools (framework-agnostic)
 - [Framework Comparison](/guides/framework-comparison) — Compare React and Svelte APIs
-

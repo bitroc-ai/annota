@@ -54,6 +54,8 @@ export class PixiStage {
   private viewer: OpenSeadragon.Viewer;
   private container: PIXI.Container;
   private annotationMap: Map<string, AnnotationGraphics>;
+  private annotationSequence: Map<string, number>;
+  private nextAnnotationSequence: number;
   private spatialIndex: RBush<SpatialEntry>;
   private spatialEntryById: Map<string, SpatialEntry>;
   private visibleIds: Set<string>;
@@ -87,6 +89,8 @@ export class PixiStage {
     this.app = app;
     this.viewer = viewer;
     this.annotationMap = new Map();
+    this.annotationSequence = new Map();
+    this.nextAnnotationSequence = 0;
     this.spatialIndex = new RBush<SpatialEntry>();
     this.spatialEntryById = new Map();
     this.visibleIds = new Set();
@@ -283,11 +287,13 @@ export class PixiStage {
     // events with spatial queries (store.getAt()) - see annotator.ts
 
     this.annotationMap.set(annotation.id, { annotation, graphics });
+    this.annotationSequence.set(annotation.id, this.nextAnnotationSequence++);
     this.container.addChild(graphics);
     this.upsertSpatialEntry(annotation);
 
     // Render the annotation
     this.renderAnnotation(annotation.id);
+    this.reorderDisplayObjects();
     this.updateEntryRenderCache(annotation.id);
     this.snapshotDirty = true;
   }
@@ -315,6 +321,7 @@ export class PixiStage {
 
     // Re-render with updated annotation
     this.renderAnnotation(newAnnotation.id);
+    this.reorderDisplayObjects();
     this.updateEntryRenderCache(newAnnotation.id);
     this.snapshotDirty = true;
   }
@@ -345,6 +352,7 @@ export class PixiStage {
       }
 
       this.annotationMap.delete(id);
+      this.annotationSequence.delete(id);
     }
 
     const spatialEntry = this.spatialEntryById.get(id);
@@ -427,7 +435,8 @@ export class PixiStage {
         this.container,
         annotation.shape,
         finalStyle,
-        this.scale
+        this.scale,
+        this.layerManager?.getLayerForAnnotation(annotation)?.opacity ?? 1
       );
       if (sprite) {
         entry.sprite = sprite;
@@ -456,6 +465,39 @@ export class PixiStage {
     if (entry.handleGraphics) {
       entry.handleGraphics.visible = false;
     }
+  }
+
+  /**
+   * Keep Pixi children in the layer contract order: lower z-index first, then
+   * stable layer creation order, then stable annotation insertion order.
+   */
+  private reorderDisplayObjects(): void {
+    const layers = this.layerManager?.getAllLayers() ?? [];
+    const layerOrder = new Map(layers.map((layer, index) => [layer.id, index]));
+    const ordered = [...this.annotationMap.values()].sort((left, right) => {
+      const leftLayer = this.layerManager?.getLayerForAnnotation(left.annotation);
+      const rightLayer = this.layerManager?.getLayerForAnnotation(right.annotation);
+      const zDifference = (leftLayer?.zIndex ?? 0) - (rightLayer?.zIndex ?? 0);
+      if (zDifference !== 0) return zDifference;
+      const layerDifference =
+        (layerOrder.get(leftLayer?.id ?? 'default') ?? Number.MAX_SAFE_INTEGER) -
+        (layerOrder.get(rightLayer?.id ?? 'default') ?? Number.MAX_SAFE_INTEGER);
+      if (layerDifference !== 0) return layerDifference;
+      return (
+        (this.annotationSequence.get(left.annotation.id) ?? 0) -
+        (this.annotationSequence.get(right.annotation.id) ?? 0)
+      );
+    });
+
+    const children: PIXI.ContainerChild[] = [];
+    ordered.forEach(entry => {
+      children.push(entry.graphics);
+      if (entry.sprite) children.push(entry.sprite);
+      if (entry.handleGraphics) children.push(entry.handleGraphics);
+    });
+    children.forEach((child, index) => {
+      if (child.parent === this.container) this.container.setChildIndex(child, index);
+    });
   }
 
   /**
@@ -832,6 +874,7 @@ export class PixiStage {
         this.renderAnnotation(annotation.id);
       }
     });
+    this.reorderDisplayObjects();
 
     // Trigger a redraw to handle culling and other state updates
     this.requestRedraw();
@@ -864,6 +907,7 @@ export class PixiStage {
       }
     });
     this.annotationMap.clear();
+    this.annotationSequence.clear();
     this.spatialIndex.clear();
     this.spatialEntryById.clear();
     this.visibleIds.clear();

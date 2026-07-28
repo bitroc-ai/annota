@@ -5,6 +5,7 @@
 
 import type { Point, PolygonShape, Annotation } from '../core/types';
 import { calculateBounds } from '../core/types';
+import { normalizeAnnotation } from '../core/normalization';
 import type { MaskLoaderOptions } from './masks';
 
 /**
@@ -142,14 +143,15 @@ export async function loadPgmFile(file: File | ArrayBuffer): Promise<Annotation[
       };
 
       return [
-        {
+        normalizeAnnotation({
           id: `pgm-region-${Date.now()}`,
           shape,
+          layerId: 'default',
           properties: {
             source: 'pgm',
             type: 'cell_region',
           },
-        },
+        }),
       ];
     }
   }
@@ -213,7 +215,12 @@ export function annotationsToPgm(
 /**
  * Simple polygon rasterization using scanline algorithm
  */
-function rasterizePolygon(mask: Uint8Array, width: number, height: number, points: Point[]): void {
+function rasterizePolygon(
+  mask: Uint8Array,
+  width: number,
+  height: number,
+  points: readonly Point[]
+): void {
   if (points.length < 3) return;
 
   // Find bounding box

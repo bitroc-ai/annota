@@ -18,9 +18,10 @@ The GitHub Actions workflow will automatically:
 - ✅ Run type checking and tests
 - ✅ Build the package
 - ✅ Generate a changelog
+- ✅ Validate canonical documentation imports and build the final changelog page
+- ✅ Commit the validated changelog to the docs site
 - ✅ Publish to npm
 - ✅ Create a GitHub release
-- ✅ Commit changelog to docs site
 
 ## First-Time Setup
 
@@ -89,7 +90,10 @@ git push origin v0.2.1
 
 2. **Quality Checks**
    - Runs `pnpm typecheck`
-   - Runs `pnpm test run`
+   - Runs `pnpm exec vitest run`
+   - Runs browser and React/Svelte lifecycle integration tests
+   - Builds and installs the packed tarball in ESM/CJS/React/Svelte/CSS consumers
+   - Runs `pnpm benchmark:ci`, which builds its own required artifacts before the fixed-seed gate
    - Fails if either check fails
 
 3. **Build**
@@ -97,35 +101,49 @@ git push origin v0.2.1
    - Generates dist files
 
 4. **Generate Changelog**
+   - Validates a strict SemVer release version before it reaches any shell command
+   - Fails before changelog generation when the tag or dispatch version differs from `package.json`
+   - Accepts stable and prerelease versions (for example, `1.2.3` and `1.2.3-rc.1`)
+   - Rejects build metadata, leading-zero numeric identifiers, whitespace, and shell syntax
    - Extracts commits since last tag that touched `src/` or `package.json`
-   - Creates `docs/content/changelog/v{version}.mdx`
+   - Prepends a new release or replaces the existing section for the same version in
+     `docs/src/content/docs/changelog.mdx`
    - Includes commit messages, hashes, and installation instructions
 
-5. **Publish**
-   - Publishes to npm registry
-   - Creates GitHub release with changelog
-   - Commits changelog file back to main branch
+5. **Validate Final Documentation**
+   - Runs `pnpm check:docs-imports` against user-facing Markdown, MDX, and Astro code examples
+   - Runs `pnpm --dir docs build` with the generated changelog
+   - Stops before any changelog push or npm publish if MDX is invalid
+
+6. **Commit and Publish**
+   - Commits the validated changelog file back to the main branch
+   - Verifies npm authentication and package ownership
+   - Publishes to the npm registry
+   - Creates the GitHub release with the same changelog
 
 ### Changelog Format
 
 Generated changelogs include:
 ```mdx
 ---
-title: v0.2.1
-description: Release notes for Annota v0.2.1
-date: 2025-10-26
+title: Changelog
+description: Release history and changes
 ---
 
-# v0.2.1
+# Changelog
 
-Released on 2025-10-26
+All notable changes to Annota are documented here.
 
-## Changes
+## v0.2.1
+
+Released on October 26, 2025
+
+### Changes
 
 - feat: add polygon vertex editing (abc123)
 - fix: layer visibility toggle (def456)
 
-## Installation
+### Installation
 
 \`\`\`bash
 npm install annota@0.2.1
@@ -198,10 +216,24 @@ The workflow will fail if quality checks don't pass:
 ```bash
 # Run locally first to catch issues
 pnpm typecheck
-pnpm test run
+pnpm exec vitest run
+pnpm build
+pnpm test:browser
+pnpm test:frameworks
+pnpm test:consumer
+pnpm benchmark:ci
+pnpm check:docs-imports
+pnpm --dir docs install --frozen-lockfile
+pnpm --dir docs build
 ```
 
 Fix all errors before tagging a release.
+
+### ❌ Release Version Does Not Match package.json
+
+The version from the pushed tag or manual workflow input must exactly match the `version` in
+`package.json`. Update and commit `package.json` before creating the tag. The workflow performs
+this check before changing the changelog or publishing anything.
 
 ---
 
@@ -215,7 +247,7 @@ Fix all errors before tagging a release.
 | Push with tags          | `git push origin main --follow-tags` |
 | View workflow runs      | https://github.com/bitroc-ai/annota/actions |
 | View published package  | https://www.npmjs.com/package/annota |
-| View changelogs         | Docs site: `/changelog/v{version}` |
+| View changelog          | Docs site: `/changelog` |
 
 ---
 
@@ -223,9 +255,9 @@ Fix all errors before tagging a release.
 
 Each publish creates:
 - 📦 npm package at https://www.npmjs.com/package/annota
-- 📝 `docs/content/changelog/v{version}.mdx` (committed to repo)
+- 📝 `docs/src/content/docs/changelog.mdx` (committed to repo)
 - 🏷️ GitHub release at https://github.com/bitroc-ai/annota/releases
-- 🌐 Changelog page at docs site `/changelog/v{version}`
+- 🌐 Changelog page at docs site `/changelog`
 
 ---
 

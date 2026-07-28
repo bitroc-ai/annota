@@ -27,7 +27,8 @@ Tools enable users to interact with the image and create annotations. Each tool 
 Activate a tool using the `useTool` hook:
 
 ```tsx
-import { useTool, PointTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool } from "annota/tools";
 
 function MyComponent({ viewer }) {
   const pointTool = new PointTool();
@@ -47,7 +48,8 @@ function MyComponent({ viewer }) {
 Allow users to switch between tools:
 
 ```tsx
-import { useTool, PointTool, RectangleTool, PolygonTool } from "annota";
+import { useTool } from "annota/react";
+import { PointTool, RectangleTool, PolygonTool } from "annota/tools";
 import { useState } from "react";
 
 function ToolController({ viewer }) {
@@ -93,7 +95,7 @@ Create point annotations with a single click.
 </CardGrid>
 
 ```tsx
-import { PointTool } from "annota";
+import { PointTool } from "annota/tools";
 
 const pointTool = new PointTool({
   style: {
@@ -116,7 +118,7 @@ Draw rectangular regions by clicking and dragging.
 3. **Release** to finish
 
 ```tsx
-import { RectangleTool } from "annota";
+import { RectangleTool } from "annota/tools";
 
 const rectangleTool = new RectangleTool({
   style: {
@@ -140,7 +142,7 @@ Draw polygons by clicking to add vertices.
 4. **Press Escape** to cancel
 
 ```tsx
-import { PolygonTool } from "annota";
+import { PolygonTool } from "annota/tools";
 
 const polygonTool = new PolygonTool({
   style: {
@@ -157,7 +159,7 @@ const polygonTool = new PolygonTool({
 Edit polygon vertices by pushing and pulling.
 
 ```tsx
-import { PushTool } from "annota";
+import { PushTool } from "annota/tools";
 
 const pushTool = new PushTool({
   radius: 50,      // Influence radius in pixels
@@ -181,7 +183,7 @@ const pushTool = new PushTool({
 Cut annotations into multiple pieces with a line.
 
 ```tsx
-import { SplitTool } from "annota";
+import { SplitTool } from "annota/tools";
 
 const splitTool = new SplitTool();
 ```
@@ -203,7 +205,7 @@ const splitTool = new SplitTool();
 Combine multiple selected annotations into a single annotation:
 
 ```tsx
-import { useAnnotator } from "annota";
+import { useAnnotator } from "annota/react";
 
 function MergeButton() {
   const annotator = useAnnotator();
@@ -224,10 +226,11 @@ function MergeButton() {
 Automatically detect contours from underlying image data.
 
 ```tsx
-import { ContourTool, loadOpenCV } from "annota";
+import { initOpenCV } from "annota";
+import { ContourTool } from "annota/tools";
 
 // Load OpenCV before using ContourTool
-await loadOpenCV();
+await initOpenCV();
 
 const contourTool = new ContourTool({
   threshold: 128,    // Threshold for binary mask
@@ -305,4 +308,3 @@ const tool = new PointTool({
 - [Events](/guides/events) — Respond to annotation changes
 - [Styling](/guides/styling) — Customize annotation appearance
 - [Layer System](/guides/layers) — Organize annotations
-

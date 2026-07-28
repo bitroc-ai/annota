@@ -3,7 +3,8 @@
  */
 
 import OpenSeadragon from "openseadragon";
-import type { Annotation, Point } from "../core/types";
+import type { AnnotationInput, Point } from "../core/types";
+import type { ToolMutationTransaction } from "../adapters/openseadragon/annotator";
 import { calculateBounds } from "../core/types";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
@@ -20,6 +21,7 @@ export class PolygonTool extends BaseTool {
   private isDrawing = false;
   private previewPoint: Point | null = null;
   private lastClickTime = 0;
+  private transaction: ToolMutationTransaction | null = null;
 
   constructor(options: ToolHandlerOptions = {}) {
     super("polygon", {
@@ -128,19 +130,21 @@ export class PolygonTool extends BaseTool {
       // Start new polygon
       this.isDrawing = true;
       this.currentAnnotationId = `polygon-${Date.now()}`;
+      this.transaction = this.annotator.tools.beginTransaction();
 
       // Signal that a tool is actively drawing to prevent interference
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = true;
+        this.annotator.unsafeState.toolDrawing.active = true;
       }
 
-      const annotation: Annotation = {
+      const annotation: AnnotationInput = {
         id: this.currentAnnotationId,
         shape: {
-          type: "polygon",
+          type: "freehand",
           points: [...this.points],
+          closed: false,
           bounds: calculateBounds({
-            type: "polygon",
+            type: "freehand",
             points: [...this.points],
             bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
           }),
@@ -152,7 +156,7 @@ export class PolygonTool extends BaseTool {
         },
       };
 
-      this.annotator.addAnnotation(annotation);
+      this.transaction.add(annotation);
     } else {
       // Update existing polygon (without preview since we just cleared it)
       this.updatePolygonWithPreview();
@@ -165,7 +169,7 @@ export class PolygonTool extends BaseTool {
   private updatePolygonWithPreview(): void {
     if (!this.currentAnnotationId || !this.annotator) return;
 
-    const existing = this.annotator.state.store.get(this.currentAnnotationId);
+    const existing = this.annotator.annotations.get(this.currentAnnotationId);
     if (!existing) return;
 
     // Create points array with preview point if available
@@ -173,13 +177,13 @@ export class PolygonTool extends BaseTool {
       ? [...this.points, this.previewPoint]
       : [...this.points];
 
-    this.annotator.updateAnnotation(this.currentAnnotationId, {
-      ...existing,
+    this.transaction?.update(this.currentAnnotationId, {
       shape: {
-        type: "polygon",
+        type: "freehand",
         points: displayPoints,
+        closed: false,
         bounds: calculateBounds({
-          type: "polygon",
+          type: "freehand",
           points: displayPoints,
           bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
         }),
@@ -194,21 +198,30 @@ export class PolygonTool extends BaseTool {
     if (!this.isDrawing || this.points.length < 3) {
       // Cancel if less than 3 points
       if (this.currentAnnotationId && this.annotator) {
-        this.annotator.state.store.delete(this.currentAnnotationId);
+        this.transaction?.cancel();
       }
     } else {
       // Remove the _inProgress marker and select the newly created annotation
       if (this.currentAnnotationId && this.annotator) {
-        const annotation = this.annotator.state.store.get(
+        const annotation = this.annotator.annotations.get(
           this.currentAnnotationId
         );
         if (annotation) {
           const { _inProgress, ...cleanProperties } =
             annotation.properties || {};
-          this.annotator.updateAnnotation(this.currentAnnotationId, {
-            ...annotation,
+          this.transaction?.update(this.currentAnnotationId, {
+            shape: {
+              type: "polygon",
+              points: [...this.points],
+              bounds: calculateBounds({
+                type: "polygon",
+                points: [...this.points],
+                bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 },
+              }),
+            },
             properties: cleanProperties,
           });
+          this.transaction?.commit();
         }
         this.selectAnnotation(this.currentAnnotationId);
       }
@@ -219,10 +232,11 @@ export class PolygonTool extends BaseTool {
     this.isDrawing = false;
     this.currentAnnotationId = null;
     this.previewPoint = null;
+    this.transaction = null;
 
     // Reset tool drawing state
     if (this.annotator) {
-      this.annotator.state.toolDrawing.active = false;
+      this.annotator.unsafeState.toolDrawing.active = false;
     }
   }
 
@@ -253,15 +267,16 @@ export class PolygonTool extends BaseTool {
 
     // Cancel any in-progress drawing
     if (this.isDrawing && this.currentAnnotationId && this.annotator) {
-      this.annotator.state.store.delete(this.currentAnnotationId);
+      this.transaction?.cancel();
       this.points = [];
       this.isDrawing = false;
       this.currentAnnotationId = null;
       this.previewPoint = null;
+      this.transaction = null;
 
       // Reset tool drawing state
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = false;
+        this.annotator.unsafeState.toolDrawing.active = false;
       }
     }
 
@@ -274,16 +289,17 @@ export class PolygonTool extends BaseTool {
   private onKeyDown = (evt: KeyboardEvent): void => {
     if (evt.key === "Escape" && this.isDrawing) {
       if (this.currentAnnotationId && this.annotator) {
-        this.annotator.state.store.delete(this.currentAnnotationId);
+        this.transaction?.cancel();
       }
       this.points = [];
       this.isDrawing = false;
       this.currentAnnotationId = null;
       this.previewPoint = null;
+      this.transaction = null;
 
       // Reset tool drawing state
       if (this.annotator) {
-        this.annotator.state.toolDrawing.active = false;
+        this.annotator.unsafeState.toolDrawing.active = false;
       }
     }
   };

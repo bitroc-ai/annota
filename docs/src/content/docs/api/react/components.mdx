@@ -12,7 +12,7 @@ React components for building annotation interfaces with Annota.
 Provides annotation context to all child components. Must wrap your annotation UI.
 
 ```tsx
-import { AnnotaProvider } from "annota";
+import { AnnotaProvider } from "annota/react";
 
 function App() {
   return (
@@ -39,7 +39,7 @@ function App() {
 Wrapper component for OpenSeadragon viewer.
 
 ```tsx
-import { AnnotaViewer } from "annota";
+import { Viewer as AnnotaViewer } from "annota/react";
 import { useState } from "react";
 
 function Viewer() {
@@ -92,7 +92,7 @@ Common options:
 Creates the annotation overlay layer on top of the viewer.
 
 ```tsx
-import { Annotator } from "annota";
+import { Annotator } from "annota/react";
 
 function AnnotationLayer({ viewer }) {
   return <Annotator viewer={viewer} />;
@@ -126,13 +126,13 @@ function AnnotationLayer({ viewer }) {
 ```tsx
 import {
   AnnotaProvider,
-  AnnotaViewer,
+  Viewer as AnnotaViewer,
   Annotator,
   useAnnotations,
   useSelection,
-} from "annota";
+} from "annota/react";
 import { useState } from "react";
-import "annota/dist/index.css";
+import "annota/styles.css";
 
 function App() {
   return (
@@ -176,4 +176,3 @@ function AnnotationWorkspace() {
 - [Quick Start](/getting-started/quick-start) — Build your first viewer
 - [Hooks](/api/hooks) — React hooks reference
 - [Styling Guide](/guides/styling) — Customize appearance
-
