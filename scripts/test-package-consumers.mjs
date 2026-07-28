@@ -5,6 +5,9 @@ import { join, resolve } from 'node:path';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'annota-consumers-'));
+const expectedPackageVersion = JSON.parse(
+  readFileSync(join(projectRoot, 'package.json'), 'utf8')
+).version;
 
 function run(command, args, cwd = projectRoot) {
   execFileSync(command, args, { cwd, stdio: 'inherit' });
@@ -38,8 +41,10 @@ function verifyPackageShape(consumer, tarball) {
   ]) {
     if (!packageJson.exports[path]) throw new Error(`Missing package export ${path}`);
   }
-  if (packageJson.version !== '1.0.0') {
-    throw new Error(`Expected packed version 1.0.0, received ${packageJson.version}`);
+  if (packageJson.version !== expectedPackageVersion) {
+    throw new Error(
+      `Expected packed version ${expectedPackageVersion}, received ${packageJson.version}`
+    );
   }
   if (!existsSync(join(consumer, 'node_modules/annota/dist/styles.css'))) {
     throw new Error('Stable CSS export does not exist');
