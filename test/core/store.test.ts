@@ -42,6 +42,44 @@ describe('AnnotationStore atomic contracts', () => {
       .toEqual(['a']);
   });
 
+  it('detaches and deeply freezes path control handles', () => {
+    const store = createAnnotationStore();
+    const input = {
+      id: 'path',
+      shape: {
+        type: 'path' as const,
+        points: [
+          {
+            x: 1,
+            y: 2,
+            handleIn: { x: -1, y: 0 },
+            handleOut: { x: 3, y: 4 },
+          },
+        ],
+        closed: false,
+      },
+    };
+    store.add(input);
+
+    input.shape.points[0].handleIn.x = 100;
+    input.shape.points[0].handleOut.y = 200;
+
+    const stored = store.get('path');
+    expect(stored?.shape.type).toBe('path');
+    if (stored?.shape.type !== 'path') throw new Error('Expected a path annotation');
+    expect(stored.shape.points[0].handleIn).toEqual({ x: -1, y: 0 });
+    expect(stored.shape.points[0].handleOut).toEqual({ x: 3, y: 4 });
+    expect(Object.isFrozen(stored.shape.points[0])).toBe(true);
+    expect(Object.isFrozen(stored.shape.points[0].handleIn)).toBe(true);
+    expect(Object.isFrozen(stored.shape.points[0].handleOut)).toBe(true);
+    expect(() => {
+      stored.shape.points[0].handleIn!.x = 999;
+    }).toThrow(TypeError);
+    expect(() => {
+      stored.shape.points[0].handleOut!.y = 999;
+    }).toThrow(TypeError);
+  });
+
   it('rejects an insert conflict atomically', () => {
     const store = createAnnotationStore();
     store.add(point('a', 1));

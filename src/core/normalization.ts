@@ -217,6 +217,12 @@ function cloneStyle(style?: AnnotationStyle): AnnotationStyle | undefined {
 function freezeAnnotation<P extends AnnotationProperties>(annotation: Annotation<P>): Annotation<P> {
   Object.freeze(annotation.shape.bounds);
   if ('points' in annotation.shape) {
+    if (annotation.shape.type === 'path') {
+      annotation.shape.points.forEach(point => {
+        if (point.handleIn) Object.freeze(point.handleIn);
+        if (point.handleOut) Object.freeze(point.handleOut);
+      });
+    }
     annotation.shape.points.forEach(Object.freeze);
     Object.freeze(annotation.shape.points);
   }

@@ -102,10 +102,12 @@ git push origin v0.2.1
 
 4. **Generate Changelog**
    - Validates a strict SemVer release version before it reaches any shell command
+   - Fails before changelog generation when the tag or dispatch version differs from `package.json`
    - Accepts stable and prerelease versions (for example, `1.2.3` and `1.2.3-rc.1`)
    - Rejects build metadata, leading-zero numeric identifiers, whitespace, and shell syntax
    - Extracts commits since last tag that touched `src/` or `package.json`
-   - Prepends the release to `docs/src/content/docs/changelog.mdx`
+   - Prepends a new release or replaces the existing section for the same version in
+     `docs/src/content/docs/changelog.mdx`
    - Includes commit messages, hashes, and installation instructions
 
 5. **Validate Final Documentation**
@@ -226,6 +228,12 @@ pnpm --dir docs build
 ```
 
 Fix all errors before tagging a release.
+
+### ❌ Release Version Does Not Match package.json
+
+The version from the pushed tag or manual workflow input must exactly match the `version` in
+`package.json`. Update and commit `package.json` before creating the tag. The workflow performs
+this check before changing the changelog or publishing anything.
 
 ---
 

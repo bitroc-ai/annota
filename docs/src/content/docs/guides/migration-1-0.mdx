@@ -31,6 +31,14 @@ Use `annota/react`, `annota/svelte`, `annota/tools`, and `annota/loaders` for ca
 The root entry is framework-independent and does not load React or Svelte. React compatibility is
 available from `annota/legacy-react` through 1.x. The old CSS path remains a compatibility proxy.
 
+Known applications pinned to `annota@^0.10.11` do not automatically receive 1.0 because that
+caret range excludes a new major version. Before explicitly upgrading such an application, move
+all root React imports—including `import('annota')` dynamic imports—to `annota/react`. A
+short-lived migration may point the former root imports at `annota/legacy-react` instead. Split
+tools and loaders into `annota/tools` and `annota/loaders`; framework-neutral types and core APIs
+can remain on `annota`. Run the consuming application's typecheck, tests, and production build
+before changing its dependency range to 1.x.
+
 `AnnotationInput` does not require bounds. Annota recomputes bounds for every write and ignores
 legacy input bounds. Update patches shallow-merge `properties` and `style`; pass `null` to remove
 either object, and pass `layerId: null` to move an annotation to the default layer.

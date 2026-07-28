@@ -35,7 +35,18 @@ if (!frontmatter) {
   throw new Error(`Changelog ${file} is missing valid frontmatter`);
 }
 
-const previousVersions = existing.match(/^## v[\s\S]*$/m)?.[0] ?? '';
+const versionHeadings = [...existing.matchAll(/^## v([^\r\n]+)\r?$/gm)];
+const previousVersions = versionHeadings
+  .map((heading, index) => ({
+    version: heading[1].trim(),
+    content: existing.slice(
+      heading.index,
+      versionHeadings[index + 1]?.index ?? existing.length
+    ).trimEnd(),
+  }))
+  .filter(section => section.version !== version)
+  .map(section => section.content)
+  .join('\n\n');
 const next = `${frontmatter}
 # Changelog
 
@@ -59,6 +70,6 @@ pnpm add annota@${version}
 
 ---
 
-${previousVersions}`;
+${previousVersions}`.trimEnd();
 
-await writeFile(file, next.endsWith('\n') ? next : `${next}\n`);
+await writeFile(file, `${next}\n`);

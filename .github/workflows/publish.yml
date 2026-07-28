@@ -117,6 +117,11 @@ jobs:
             printf 'PRERELEASE=false\n' >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify package release version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.VERSION }}
+        run: node scripts/validate-release-package-version.mjs
+
       - name: Generate changelog
         id: changelog
         env:

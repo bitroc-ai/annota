@@ -42,3 +42,17 @@ CommonMark fence、Astro 展示代码、公共导出存在性、namespace alias 
 | 临时最终 changelog + docs build | 47 pages、Pagefind、sitemap 通过并恢复无污染 |
 | Publish workflow YAML / diff check | 通过 |
 
+## Merge-readiness 补充
+
+后续合并审阅发现并修复了五项门禁缺口：
+
+- 文档 scanner 合同测试按其子进程工作量使用显式 timeout，全量并行测试不再受默认
+  5 秒限制。
+- 发布版本在 changelog 生成前必须与 `package.json.version` 完全一致。
+- 重跑同一版本的 changelog 生成会替换已有 section，并清除同版本重复 section。
+- Path control point 的 `handleIn` 和 `handleOut` 与其余快照一起 detached、frozen。
+- 已知 BitPath consumer 审计记录 `^0.10.11` 不会自动升级到 1.0，并明确 root React
+  imports 的 `annota/react` 或临时 `annota/legacy-react` 迁移要求。
+
+本轮定向合同测试为 3 files / 27 tests，全量 Vitest 为 17 files / 189 tests；
+`pnpm typecheck`、`pnpm build`、`pnpm check:docs-imports` 和最终 diff check 均通过。

@@ -30,7 +30,7 @@ describe('documentation import contract', () => {
 
     const corpus = checkDocs();
     expect(corpus.status, corpus.stderr).toBe(0);
-  });
+  }, 15_000);
 
   it('rejects semantic root and non-canonical subpath imports in fenced examples', () => {
     const result = checkDocs('test/fixtures/docs-imports/invalid.mdx');
