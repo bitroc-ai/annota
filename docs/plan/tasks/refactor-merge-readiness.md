@@ -1,7 +1,7 @@
 ---
 id: refactor-merge-readiness
 scope: annota
-status: in-progress
+status: done
 depends-on: [refactor-all, refactor-followup]
 ---
 
