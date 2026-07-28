@@ -28,6 +28,25 @@ pnpm add annota@1.0.0
 
 ---
 
+## v0.10.11
+
+Released on May 08, 2026
+
+### Changes
+
+- chore: bump version to 0.10.11 (ef78dba)
+- fix: 修复 loadMaskPolygons 未正确解码 RGB 编码的实例 ID。BC Cell API 返回的 mask 中 R 通道存储 cell_id 高 8 位、G 通道存储低 8 位、B 通道存储类别，但 loadMaskPolygons 原本只读取 R 通道作为实例 ID，完全忽略了 G 通道。大多数图像细胞数少于 256，所有细胞的 R 通道均为 0 导致被错误地当作背景丢弃，只有 ID≥256 的细胞（通常位于图像下方）因 R>0 而被检测到，造成大量细胞漏检。 (a1b5302)
+
+### Installation
+
+```bash
+npm install annota@0.10.11
+# or
+pnpm add annota@0.10.11
+```
+
+---
+
 ## v0.10.10
 
 Released on April 28, 2026
