@@ -4,7 +4,7 @@
  */
 
 import { getAnnotator } from './annotator';
-import type { Annotation } from '../core/types';
+import type { Annotation } from 'annota';
 
 export function annotations(): () => Annotation[] {
   const getAnnotatorFn = getAnnotator();
@@ -41,4 +41,3 @@ export function annotations(): () => Annotation[] {
   // Return a getter function to maintain reactivity
   return () => annotationsList;
 }
-

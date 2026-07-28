@@ -4,7 +4,7 @@
  */
 
 import { getAnnotator } from './annotator';
-import type { Layer } from '../core/layer';
+import type { Layer } from 'annota';
 
 export function layers(): () => readonly Layer[] {
   const getAnnotatorFn = getAnnotator();

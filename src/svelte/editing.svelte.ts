@@ -6,7 +6,7 @@
  */
 
 import { getAnnotator } from './annotator';
-import type { Annotation } from '../core/types';
+import type { Annotation } from 'annota';
 
 export interface EditingOptions {
   /** Automatically exit editing mode when clicking outside annotation (default: true) */
@@ -187,4 +187,3 @@ export function editing(options: EditingOptions = {}): EditingResult {
     isEditing,
   };
 }
-

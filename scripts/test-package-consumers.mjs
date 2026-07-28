@@ -80,7 +80,7 @@ const tsconfig = JSON.stringify({
     module: 'ESNext',
     moduleResolution: 'Bundler',
     strict: true,
-    skipLibCheck: true,
+    skipLibCheck: false,
   },
   include: ['consumer.ts'],
 }, null, 2);
@@ -169,6 +169,8 @@ try {
   verifyPackageShape(root, tarball);
 
   const react = createFixture('react-only', tarball, {
+    '@types/react': '^19.2.0',
+    '@types/react-dom': '^19.2.0',
     react: '^19.2.0',
     'react-dom': '^19.2.0',
     jsdom: '^29.0.0',
@@ -211,6 +213,8 @@ try {
   run('pnpm', ['exec', 'vite', 'build'], react);
 
   const legacy = createFixture('legacy-react', tarball, {
+    '@types/react': '^19.2.0',
+    '@types/react-dom': '^19.2.0',
     react: '^19.2.0',
     'react-dom': '^19.2.0',
     jsdom: '^29.0.0',
@@ -295,8 +299,56 @@ try {
       export default defineConfig({ plugins: [svelte()] });
     `,
     'consumer.ts': `
-      import { Annotator } from 'annota/svelte';
+      import {
+        AnnotaProvider,
+        AnnotationEditor,
+        Annotator,
+        ContextMenu,
+        ContextMenuDivider,
+        ContextMenuItem,
+        Popup,
+        Viewer,
+        annotations,
+        contextMenu,
+        contextMenuBinding,
+        editing,
+        getAnnotator,
+        history,
+        layerManager,
+        layers,
+        pushToolCursor,
+        selection,
+        setAnnotator,
+        tool,
+        viewer,
+        type Annotation,
+        type AnnotationStyle,
+        type Shape,
+        type ShapeType,
+      } from 'annota/svelte';
+      void AnnotaProvider;
+      void AnnotationEditor;
       void Annotator;
+      void ContextMenu;
+      void ContextMenuDivider;
+      void ContextMenuItem;
+      void Popup;
+      void Viewer;
+      void annotations;
+      void contextMenu;
+      void contextMenuBinding;
+      void editing;
+      void getAnnotator;
+      void history;
+      void layerManager;
+      void layers;
+      void pushToolCursor;
+      void selection;
+      void setAnnotator;
+      void tool;
+      void viewer;
+      const values: [Annotation?, AnnotationStyle?, Shape?, ShapeType?] = [];
+      void values;
     `,
     'tsconfig.json': tsconfig,
   });

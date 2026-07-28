@@ -53,6 +53,7 @@ export type {
 } from "./core/events";
 export { createGeometryController } from "./core/geometry";
 export type { GeometryController } from "./core/geometry";
+export type { PopupAnchor, PopupOptions, PopupPosition } from "./core/popup";
 export { createAnnotationStore } from "./core/store";
 export type {
   AnnotationStore,
@@ -64,7 +65,12 @@ export type {
 export { createLayerManager } from "./core/layer";
 export type { LayerManager } from "./core/layer";
 export { createHistoryManager } from "./core/history";
-export type { HistoryManager, HistoryManagerOptions } from "./core/history";
+export type {
+  HistoryManager,
+  HistoryManagerOptions,
+  HistoryObserver,
+  HistoryStateEvent,
+} from "./core/history";
 export type { Layer, LayerConfig } from "./core/layer";
 export {
   createPositiveMaskFilter,

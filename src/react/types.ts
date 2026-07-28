@@ -5,32 +5,10 @@
  * Supports both Image and OpenSeadragon viewers.
  */
 
+import type { PopupPosition } from '../core/popup';
 import type { Annotation } from '../core/types';
 
-/**
- * Popup position in viewport coordinates
- */
-export interface PopupPosition {
-  x: number;
-  y: number;
-  /** Anchor point (where the popup points to) */
-  anchorX: number;
-  anchorY: number;
-  /** CSS transform to apply for positioning */
-  transform: string;
-}
-
-/**
- * Popup anchor position relative to annotation
- */
-export type PopupAnchor =
-  | 'top-left'
-  | 'top-center'
-  | 'top-right'
-  | 'bottom-left'
-  | 'bottom-center'
-  | 'bottom-right'
-  | 'center';
+export type { PopupAnchor, PopupOptions, PopupPosition } from '../core/popup';
 
 /**
  * Props passed to custom popup components
@@ -53,26 +31,6 @@ export interface AnnotationPopupProps {
 
   /** Close the popup */
   onClose?: () => void;
-}
-
-/**
- * Popup configuration options
- */
-export interface PopupOptions {
-  /** Where to anchor the popup relative to annotation bounds */
-  anchor?: PopupAnchor;
-
-  /** Offset from anchor point in pixels */
-  offset?: { x: number; y: number };
-
-  /** Show popup on hover instead of click */
-  showOnHover?: boolean;
-
-  /** Auto-hide popup after delay (ms), 0 = never */
-  autoHideDelay?: number;
-
-  /** Keep popup open when hovering over it */
-  hoverStayOpen?: boolean;
 }
 
 /**

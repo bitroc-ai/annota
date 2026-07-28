@@ -3,7 +3,7 @@
  */
 
 import { getAnnotator } from './annotator';
-import type { HistoryStateEvent } from '../core/history';
+import type { HistoryStateEvent } from 'annota';
 
 export interface HistoryResult {
   /** Whether undo is available */
@@ -98,4 +98,3 @@ export function history(): HistoryResult {
     clear,
   };
 }
-

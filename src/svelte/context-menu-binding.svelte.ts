@@ -1,5 +1,5 @@
 import OpenSeadragon from 'openseadragon';
-import type { Annotation } from '../core/types';
+import type { Annotation } from 'annota';
 import { getContext } from 'svelte';
 import { ANNOTA_CONTEXT_KEY, type AnnotaContextValue } from './context';
 
@@ -59,4 +59,3 @@ export function contextMenuBinding(
     };
   });
 }
-

@@ -4,7 +4,7 @@
 
 import { getAnnotator } from './annotator';
 import { layers } from './layers.svelte';
-import type { Layer, LayerConfig } from '../core/layer';
+import type { Layer, LayerConfig } from 'annota';
 
 /**
  * Result of layerManager function

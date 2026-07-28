@@ -53,6 +53,8 @@ export { changeContext, createTransactionId, createTypedEvents } from './events'
 export type { GeometryController } from './geometry';
 export { createGeometryController, normalizeShapeInput } from './geometry';
 
+export type { PopupAnchor, PopupOptions, PopupPosition } from './popup';
+
 // Spatial
 export { createSpatialIndex, SpatialIndex } from './spatial';
 
