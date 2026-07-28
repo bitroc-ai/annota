@@ -14,7 +14,7 @@ export interface GeometryController {
 }
 
 function toCoordinates(shape: Shape): polygonClipping.MultiPolygon {
-  const coordinates = toPolygonCoordinates({ id: 'geometry', shape });
+  const coordinates = toPolygonCoordinates({ id: 'geometry', shape, layerId: 'default' });
   if (!coordinates) {
     throw new AnnotaError(
       'GEOMETRY_UNSUPPORTED',
@@ -42,6 +42,12 @@ function multiPolygonArea(polygons: polygonClipping.MultiPolygon): number {
 
 function coordinatesToShape(result: polygonClipping.MultiPolygon): Shape | null {
   if (result.length === 0) return null;
+  if (result.some(polygon => polygon.length > 1)) {
+    throw new AnnotaError(
+      'GEOMETRY_UNSUPPORTED',
+      'Geometry result contains holes, which the current Shape model cannot represent'
+    );
+  }
   if (result.length === 1) {
     const points = result[0][0].map(([x, y]) => ({ x, y }));
     return normalizeAnnotation({
@@ -104,7 +110,7 @@ export function createGeometryController(): GeometryController {
     },
     split(shape, line) {
       const pieces = splitAnnotation(
-        { id: 'geometry', shape },
+        { id: 'geometry', shape, layerId: 'default' },
         line.map(point => ({ ...point }))
       );
       return pieces?.map(piece => piece.shape) ?? [];

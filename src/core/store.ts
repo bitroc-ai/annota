@@ -1,7 +1,7 @@
 import type {
   Annotation,
-  AnnotationInput,
   AnnotationProperties,
+  AnnotationSource,
   Bounds,
   Filter,
 } from './types';
@@ -23,14 +23,14 @@ export interface StoreAddAllOptions {
 }
 
 export interface AnnotationStore {
-  add<P extends AnnotationProperties>(annotation: AnnotationInput<P>): void;
+  add<P extends AnnotationProperties>(annotation: AnnotationSource<P>): void;
   addAll<P extends AnnotationProperties>(
-    annotations: readonly AnnotationInput<P>[],
+    annotations: readonly AnnotationSource<P>[],
     options?: StoreAddAllOptions | boolean
   ): void;
-  replaceAll<P extends AnnotationProperties>(annotations: readonly AnnotationInput<P>[]): void;
+  replaceAll<P extends AnnotationProperties>(annotations: readonly AnnotationSource<P>[]): void;
   get(id: string): Annotation | undefined;
-  update<P extends AnnotationProperties>(id: string, annotation: AnnotationInput<P>): void;
+  update<P extends AnnotationProperties>(id: string, annotation: AnnotationSource<P>): void;
   delete(id: string): void;
   clear(): void;
   all(): Annotation[];
@@ -68,12 +68,12 @@ class AnnotationStoreImpl implements AnnotationStore {
     });
   }
 
-  add<P extends AnnotationProperties>(input: AnnotationInput<P>): void {
+  add<P extends AnnotationProperties>(input: AnnotationSource<P>): void {
     this.addAll([input], { mode: 'insert' });
   }
 
   addAll<P extends AnnotationProperties>(
-    inputs: readonly AnnotationInput<P>[],
+    inputs: readonly AnnotationSource<P>[],
     options: StoreAddAllOptions | boolean = {}
   ): void {
     if (typeof options === 'boolean') {
@@ -89,7 +89,7 @@ class AnnotationStoreImpl implements AnnotationStore {
   }
 
   private writeAll<P extends AnnotationProperties>(
-    inputs: readonly AnnotationInput<P>[],
+    inputs: readonly AnnotationSource<P>[],
     mode: StoreWriteMode
   ): void {
     const normalized = inputs.map(input => normalizeAnnotation(input));
@@ -113,7 +113,7 @@ class AnnotationStoreImpl implements AnnotationStore {
     this.emit({ created, updated, deleted: [] });
   }
 
-  replaceAll<P extends AnnotationProperties>(inputs: readonly AnnotationInput<P>[]): void {
+  replaceAll<P extends AnnotationProperties>(inputs: readonly AnnotationSource<P>[]): void {
     const normalized = inputs.map(input => normalizeAnnotation(input));
     this.assertUniqueBatch(normalized);
 
@@ -161,7 +161,7 @@ class AnnotationStoreImpl implements AnnotationStore {
     return annotation ? cloneAnnotation(annotation) : undefined;
   }
 
-  update<P extends AnnotationProperties>(id: string, input: AnnotationInput<P>): void {
+  update<P extends AnnotationProperties>(id: string, input: AnnotationSource<P>): void {
     const oldValue = this.index.get(id);
     if (!oldValue) throw new AnnotationNotFoundError(id);
     if (input.id !== id) {

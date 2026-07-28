@@ -430,7 +430,7 @@ export function renderPath(
 /**
  * Helper: Check if any points have control handles
  */
-function hasHandles(points: ControlPoint[]): boolean {
+function hasHandles(points: readonly ControlPoint[]): boolean {
   return points.some(p => p.handleIn || p.handleOut);
 }
 

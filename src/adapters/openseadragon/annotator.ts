@@ -42,6 +42,7 @@ import type {
   AnnotationInput,
   AnnotationPatch,
   AnnotationProperties,
+  AnnotationSource,
   Bounds,
   Filter,
   StyleExpression,
@@ -178,11 +179,11 @@ export interface MutationOptions {
 
 export interface AnnotationController {
   add<P extends AnnotationProperties>(
-    annotation: AnnotationInput<P>,
+    annotation: AnnotationSource<P>,
     options?: MutationOptions
   ): Annotation<P>;
   addAll<P extends AnnotationProperties>(
-    annotations: readonly AnnotationInput<P>[],
+    annotations: readonly AnnotationSource<P>[],
     options?: MutationOptions
   ): Annotation<P>[];
   update<P extends AnnotationProperties>(
@@ -193,7 +194,7 @@ export interface AnnotationController {
   remove(id: string, options?: MutationOptions): void;
   clear(options?: MutationOptions): void;
   replaceAll<P extends AnnotationProperties>(
-    annotations: readonly AnnotationInput<P>[],
+    annotations: readonly AnnotationSource<P>[],
     options?: MutationOptions
   ): Annotation<P>[];
   get(id: string): Annotation | undefined;
@@ -237,7 +238,7 @@ export interface ToolController {
 
 export interface ToolMutationTransaction {
   readonly id: string;
-  add<P extends AnnotationProperties>(annotation: AnnotationInput<P>): Annotation<P>;
+  add<P extends AnnotationProperties>(annotation: AnnotationSource<P>): Annotation<P>;
   update<P extends AnnotationProperties>(id: string, patch: AnnotationPatch<P>): Annotation<P>;
   remove(id: string): void;
   commit(): void;
@@ -264,11 +265,11 @@ export interface OpenSeadragonAnnotator {
 
   // Annotation management (convenience methods)
   /** @deprecated Since 0.11.0. Use `annotations.add`. Planned removal: 2.0.0. */
-  addAnnotation(annotation: import('../../core/types').Annotation): void;
+  addAnnotation(annotation: import('../../core/types').AnnotationInput): void;
   /** @deprecated Since 0.11.0. Use `annotations.addAll`. Planned removal: 2.0.0. */
-  addAnnotations(annotations: import('../../core/types').Annotation[]): void;
+  addAnnotations(annotations: readonly import('../../core/types').AnnotationInput[]): void;
   /** @deprecated Since 0.11.0. Use `annotations.update`. Planned removal: 2.0.0. */
-  updateAnnotation(id: string, annotation: import('../../core/types').Annotation): void;
+  updateAnnotation(id: string, annotation: import('../../core/types').AnnotationInput): void;
   /** @deprecated Since 0.11.0. Use `annotations.remove`. Planned removal: 2.0.0. */
   deleteAnnotation(id: string): void;
   /** @deprecated Since 0.11.0. Use `annotations.remove`. Planned removal: 2.0.0. */

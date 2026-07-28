@@ -126,15 +126,39 @@ try {
     'consumer.ts': `
       import {
         createAnnotator,
+        normalizeAnnotation,
         type AnnotationInput,
         type AnnotatorInstance,
       } from 'annota';
       const input: AnnotationInput = { id: 'root', shape: { type: 'point', point: { x: 1, y: 2 } } };
+      input.shape.bounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+      const snapshot = normalizeAnnotation({
+        id: 'readonly',
+        shape: {
+          type: 'polygon',
+          points: [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 0, y: 2 }],
+        },
+        properties: { metadata: { label: 'before' }, tags: ['one'] },
+      });
+      const normalizedLayerId: string = snapshot.layerId;
+      // @ts-expect-error Normalized annotation fields are read-only.
+      snapshot.id = 'changed';
+      // @ts-expect-error Normalized nested properties are deeply read-only.
+      snapshot.properties!.metadata.label = 'after';
+      // @ts-expect-error Normalized property arrays are deeply read-only.
+      snapshot.properties!.tags.push('two');
+      if (snapshot.shape.type === 'polygon') {
+        // @ts-expect-error Normalized shape arrays are read-only.
+        snapshot.shape.points.push({ x: 1, y: 1 });
+        // @ts-expect-error Normalized nested points are read-only.
+        snapshot.shape.points[0].x = 4;
+      }
       declare const annotator: AnnotatorInstance;
       // @ts-expect-error The compatibility state store is read-only.
       annotator.state.store.add(input);
       void createAnnotator;
       void input;
+      void normalizedLayerId;
     `,
     'tsconfig.json': tsconfig,
   });

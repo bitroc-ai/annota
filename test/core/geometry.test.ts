@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createGeometryController } from '../../src/core/geometry';
 import { normalizeAnnotation } from '../../src/core/normalization';
+import { mergeAnnotations } from '../../src/core/operations';
 
 const rectangle = (x: number, y: number, width: number, height: number) =>
   normalizeAnnotation({
@@ -35,5 +36,32 @@ describe('GeometryController', () => {
       [{ x: 5, y: -1 }, { x: 5, y: 11 }]
     );
     expect(pieces.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('rejects results with holes instead of silently filling them', () => {
+    const geometry = createGeometryController();
+    const frame = [
+      rectangle(0, 0, 10, 2),
+      rectangle(0, 8, 10, 2),
+      rectangle(0, 2, 2, 6),
+      rectangle(8, 2, 2, 6),
+    ];
+
+    expect(() => geometry.merge(frame)).toThrowError(
+      expect.objectContaining({
+        code: 'GEOMETRY_UNSUPPORTED',
+        message: expect.stringContaining('contains holes'),
+      })
+    );
+
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const annotations = frame.map((shape, index) =>
+      normalizeAnnotation({ id: `frame-${index}`, shape })
+    );
+    expect(mergeAnnotations(annotations)).toBeNull();
+    expect(error).toHaveBeenCalledWith(
+      expect.stringContaining('current Shape model cannot represent')
+    );
+    error.mockRestore();
   });
 });

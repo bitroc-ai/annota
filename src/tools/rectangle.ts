@@ -3,7 +3,7 @@
  */
 
 import OpenSeadragon from "openseadragon";
-import type { Annotation, Point } from "../core/types";
+import type { AnnotationInput, Point } from "../core/types";
 import type { ToolMutationTransaction } from "../adapters/openseadragon/annotator";
 import { BaseTool } from "./base";
 import type { ToolHandlerOptions } from "./types";
@@ -62,7 +62,7 @@ export class RectangleTool extends BaseTool {
     }
 
     // Create initial rectangle (0 size)
-    const annotation: Annotation = {
+    const annotation: AnnotationInput = {
       id: this.currentAnnotationId,
       shape: {
         type: "rectangle",

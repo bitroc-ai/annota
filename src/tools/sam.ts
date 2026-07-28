@@ -451,18 +451,19 @@ export class SamTool extends BaseTool {
 
         if (annotations.length > 0) {
           const annotation = annotations[0];
+          const created = this.annotator.annotations.add({
+            ...annotation,
+            properties: {
+              ...annotation.properties,
+              ...this.samOptions.annotationProperties,
+              source: "sam",
+              iouScore: iouScore,
+              clickPoint: { x: clickX, y: clickY },
+            },
+          }, { source: 'tool' });
 
-          annotation.properties = {
-            ...annotation.properties,
-            ...this.samOptions.annotationProperties,
-            source: "sam",
-            iouScore: iouScore,
-            clickPoint: { x: clickX, y: clickY },
-          };
-
-          this.annotator.annotations.add(annotation, { source: 'tool' });
-          this.selectAnnotation(annotation.id);
-          this.samOptions.onAnnotationCreated?.(annotation);
+          this.selectAnnotation(created.id);
+          this.samOptions.onAnnotationCreated?.(created);
         }
       } finally {
         URL.revokeObjectURL(blobUrl);

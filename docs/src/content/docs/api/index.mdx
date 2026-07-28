@@ -71,16 +71,28 @@ These APIs are identical for both React and Svelte:
 
 These types are shared between React and Svelte.
 
-### Annotation
+### Annotation input and snapshot
 
 ```typescript
-interface Annotation {
+interface AnnotationInput {
   id: string;
-  shape: Shape;
+  shape: ShapeInput;
+  layerId?: string;
   properties?: Record<string, unknown>;
   style?: AnnotationStyle;
 }
+
+interface Annotation {
+  readonly id: string;
+  readonly shape: Shape;
+  readonly layerId: string;
+  readonly properties?: DeepReadonly<Record<string, unknown>>;
+  readonly style?: Readonly<AnnotationStyle>;
+}
 ```
+
+Inputs are mutable. Returned annotations are normalized, deeply frozen snapshots and must be
+changed through the annotation update APIs.
 
 ### Shape
 

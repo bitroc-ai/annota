@@ -8,15 +8,15 @@
 // ============================================
 
 export interface Point {
-  x: number;
-  y: number;
+  readonly x: number;
+  readonly y: number;
 }
 
 export interface Bounds {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
+  readonly minX: number;
+  readonly minY: number;
+  readonly maxX: number;
+  readonly maxY: number;
 }
 
 // ============================================
@@ -36,83 +36,83 @@ export type ShapeType =
   | 'path';
 
 export interface BaseShape {
-  type: ShapeType;
-  bounds: Bounds;
+  readonly type: ShapeType;
+  readonly bounds: Bounds;
 }
 
 export interface PointShape extends BaseShape {
-  type: 'point';
-  point: Point;
+  readonly type: 'point';
+  readonly point: Point;
 }
 
 export interface CircleShape extends BaseShape {
-  type: 'circle';
-  center: Point;
-  radius: number;
+  readonly type: 'circle';
+  readonly center: Point;
+  readonly radius: number;
 }
 
 export interface EllipseShape extends BaseShape {
-  type: 'ellipse';
-  center: Point;
-  radiusX: number;
-  radiusY: number;
-  rotation?: number; // Rotation in radians
+  readonly type: 'ellipse';
+  readonly center: Point;
+  readonly radiusX: number;
+  readonly radiusY: number;
+  readonly rotation?: number; // Rotation in radians
 }
 
 export interface RectangleShape extends BaseShape {
-  type: 'rectangle';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  readonly type: 'rectangle';
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
 
 export interface LineShape extends BaseShape {
-  type: 'line';
-  start: Point;
-  end: Point;
+  readonly type: 'line';
+  readonly start: Point;
+  readonly end: Point;
 }
 
 export interface PolygonShape extends BaseShape {
-  type: 'polygon';
-  points: Point[];
+  readonly type: 'polygon';
+  readonly points: readonly Point[];
 }
 
 export interface FreehandShape extends BaseShape {
-  type: 'freehand';
-  points: Point[];
-  closed?: boolean; // If true, connects last point to first
+  readonly type: 'freehand';
+  readonly points: readonly Point[];
+  readonly closed?: boolean; // If true, connects last point to first
 }
 
 export interface MultiPolygonShape extends BaseShape {
-  type: 'multipolygon';
-  polygons: Point[][];
+  readonly type: 'multipolygon';
+  readonly polygons: readonly (readonly Point[])[];
 }
 
 export interface ImageShape extends BaseShape {
-  type: 'image';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  url: string; // Data URL or image source URL
-  opacity?: number; // Optional opacity (0-1)
+  readonly type: 'image';
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly url: string; // Data URL or image source URL
+  readonly opacity?: number; // Optional opacity (0-1)
 }
 
 /**
  * Control point for bezier or spline curves
  */
 export interface ControlPoint extends Point {
-  handleIn?: Point; // Incoming control handle (relative to point)
-  handleOut?: Point; // Outgoing control handle (relative to point)
-  smooth?: boolean; // Whether this is a smooth point or cusp
+  readonly handleIn?: Point; // Incoming control handle (relative to point)
+  readonly handleOut?: Point; // Outgoing control handle (relative to point)
+  readonly smooth?: boolean; // Whether this is a smooth point or cusp
 }
 
 export interface PathShape extends BaseShape {
-  type: 'path';
-  points: ControlPoint[]; // Control points with optional handles
-  closed: boolean; // Whether the path is closed
-  smoothing?: 'bezier' | 'catmull-rom' | 'none'; // Smoothing algorithm
+  readonly type: 'path';
+  readonly points: readonly ControlPoint[]; // Control points with optional handles
+  readonly closed: boolean; // Whether the path is closed
+  readonly smoothing?: 'bezier' | 'catmull-rom' | 'none'; // Smoothing algorithm
 }
 
 export type Shape =
@@ -149,9 +149,27 @@ export interface AnnotationProperties {
   [key: string]: unknown;
 }
 
-type WithoutBounds<T extends Shape> = Omit<T, 'bounds'> & {
+export type DeepReadonly<T> =
+  T extends (...args: never[]) => unknown
+    ? T
+    : T extends readonly (infer Item)[]
+      ? readonly DeepReadonly<Item>[]
+      : T extends object
+        ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
+        : T;
+
+export type DeepMutable<T> =
+  T extends (...args: never[]) => unknown
+    ? T
+    : T extends readonly (infer Item)[]
+      ? DeepMutable<Item>[]
+      : T extends object
+        ? { -readonly [Key in keyof T]: DeepMutable<T[Key]> }
+        : T;
+
+type WithoutBounds<T extends Shape> = DeepMutable<Omit<T, 'bounds'>> & {
   /** @deprecated Bounds are computed by Annota and ignored on input. */
-  bounds?: Bounds;
+  bounds?: DeepMutable<Bounds>;
 };
 
 export type ShapeInput =
@@ -168,7 +186,7 @@ export type ShapeInput =
 
 export interface AnnotationInput<P extends AnnotationProperties = AnnotationProperties> {
   id: string;
-  shape: ShapeInput | Shape;
+  shape: ShapeInput;
   layerId?: string;
   properties?: P;
   style?: AnnotationStyle;
@@ -179,12 +197,16 @@ export interface AnnotationInput<P extends AnnotationProperties = AnnotationProp
  * detached and frozen; callers must use an update operation to change them.
  */
 export interface Annotation<P extends AnnotationProperties = AnnotationProperties> {
-  id: string;
-  shape: Shape;
-  layerId?: string;
-  properties?: P;
-  style?: AnnotationStyle;
+  readonly id: string;
+  readonly shape: Shape;
+  readonly layerId: string;
+  readonly properties?: DeepReadonly<P>;
+  readonly style?: Readonly<AnnotationStyle>;
 }
+
+export type AnnotationSource<P extends AnnotationProperties = AnnotationProperties> =
+  | AnnotationInput<P>
+  | Annotation<P>;
 
 export interface AnnotationPatch<P extends AnnotationProperties = AnnotationProperties> {
   shape?: ShapeInput | Shape;
@@ -382,7 +404,7 @@ export function containsPoint(shape: Shape, x: number, y: number, buffer = 0): b
 /**
  * Point-in-polygon test using ray casting algorithm
  */
-function pointInPolygon(x: number, y: number, polygon: Point[], buffer = 0): boolean {
+function pointInPolygon(x: number, y: number, polygon: readonly Point[], buffer = 0): boolean {
   if (polygon.length < 3) return false;
 
   let inside = false;
@@ -410,7 +432,7 @@ function pointInPolygon(x: number, y: number, polygon: Point[], buffer = 0): boo
 /**
  * Calculate minimum distance from point to polygon edges
  */
-function distanceToPolygon(x: number, y: number, polygon: Point[]): number {
+function distanceToPolygon(x: number, y: number, polygon: readonly Point[]): number {
   let minDist = Infinity;
 
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {

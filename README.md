@@ -66,7 +66,9 @@ try {
 
 Annota computes and freezes geometry bounds on every write. Public collections are detached
 snapshots; all stable writes pass through the façade, history, transaction, event, store, spatial,
-and rendering pipeline.
+and rendering pipeline. Geometry operations reject results containing holes with
+`GEOMETRY_UNSUPPORTED` because the current shape model cannot represent interior rings; they never
+silently fill those holes.
 
 ## Capability API
 

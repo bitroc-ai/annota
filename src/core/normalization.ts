@@ -2,10 +2,11 @@ import { AnnotationValidationError } from './errors';
 import { calculateBounds } from './types';
 import type {
   Annotation,
-  AnnotationInput,
   AnnotationPatch,
   AnnotationProperties,
+  AnnotationSource,
   AnnotationStyle,
+  DeepReadonly,
   Point,
   Shape,
   ShapeInput,
@@ -155,8 +156,10 @@ function normalizeShape(shape: ShapeInput | Shape): Shape {
       );
   }
 
-  normalized.bounds = calculateBounds(normalized);
-  return normalized;
+  return {
+    ...normalized,
+    bounds: calculateBounds(normalized),
+  };
 }
 
 function emptyBounds() {
@@ -167,16 +170,16 @@ function cloneReadonlyValue<T>(
   value: T,
   path: string,
   seen = new WeakMap<object, unknown>()
-): T {
+): DeepReadonly<T> {
   if (value === null || typeof value !== 'object') {
     if (typeof value === 'function') {
       throw new AnnotationValidationError(`${path} must contain serializable values`);
     }
-    return value;
+    return value as DeepReadonly<T>;
   }
 
   const previous = seen.get(value);
-  if (previous) return previous as T;
+  if (previous) return previous as DeepReadonly<T>;
 
   if (Array.isArray(value)) {
     const clone: unknown[] = [];
@@ -184,7 +187,7 @@ function cloneReadonlyValue<T>(
     value.forEach((item, index) => {
       clone.push(cloneReadonlyValue(item, `${path}[${index}]`, seen));
     });
-    return Object.freeze(clone) as T;
+    return Object.freeze(clone) as DeepReadonly<T>;
   }
 
   const prototype = Object.getPrototypeOf(value);
@@ -201,10 +204,12 @@ function cloneReadonlyValue<T>(
       seen
     );
   });
-  return Object.freeze(clone) as T;
+  return Object.freeze(clone) as DeepReadonly<T>;
 }
 
-function cloneProperties<P extends AnnotationProperties>(properties?: P): P | undefined {
+function cloneProperties<P extends AnnotationProperties>(
+  properties?: P
+): DeepReadonly<P> | undefined {
   return properties === undefined
     ? undefined
     : cloneReadonlyValue(properties, 'properties');
@@ -246,7 +251,7 @@ function freezeAnnotation<P extends AnnotationProperties>(annotation: Annotation
 }
 
 export function normalizeAnnotation<P extends AnnotationProperties = AnnotationProperties>(
-  input: AnnotationInput<P>
+  input: AnnotationSource<P>
 ): Annotation<P> {
   if (!input || typeof input !== 'object') {
     throw new AnnotationValidationError('Annotation input is required');
@@ -255,19 +260,19 @@ export function normalizeAnnotation<P extends AnnotationProperties = AnnotationP
     throw new AnnotationValidationError('Annotation id must be a non-empty string');
   }
 
-  const clonedProperties = cloneProperties(input.properties);
+  const clonedProperties = cloneProperties(input.properties as P | undefined);
   const legacyLayer = clonedProperties?.layer;
   const properties = clonedProperties && 'layer' in clonedProperties
     ? Object.freeze(
         Object.fromEntries(
           Object.entries(clonedProperties).filter(([key]) => key !== 'layer')
         )
-      ) as P
+      ) as DeepReadonly<P>
     : clonedProperties;
   const layerId =
     input.layerId ??
     (typeof legacyLayer === 'string' && legacyLayer.length > 0 ? legacyLayer : 'default');
-  return freezeAnnotation({
+  return freezeAnnotation<P>({
     id: input.id,
     shape: normalizeShape(input.shape),
     layerId,
@@ -293,17 +298,17 @@ export function applyAnnotationPatch<P extends AnnotationProperties = Annotation
         ? current.style
         : mergePatch(current.style, patch.style);
 
-  return normalizeAnnotation({
+  return normalizeAnnotation<P>({
     id: current.id,
-    shape: patch.shape ?? current.shape,
+    shape: (patch.shape ?? current.shape) as ShapeInput,
     layerId: patch.layerId === null ? 'default' : (patch.layerId ?? current.layerId),
-    ...(properties ? { properties } : {}),
+    ...(properties ? { properties: properties as P } : {}),
     ...(style ? { style } : {}),
   });
 }
 
 function mergePatch<T extends object>(
-  current: T | undefined,
+  current: DeepReadonly<T> | undefined,
   patch: Partial<T>
 ): T {
   const result = { ...current } as Record<string, unknown>;
@@ -317,5 +322,9 @@ function mergePatch<T extends object>(
 export function cloneAnnotation<P extends AnnotationProperties = AnnotationProperties>(
   annotation: Annotation<P>
 ): Annotation<P> {
-  return normalizeAnnotation(annotation);
+  return normalizeAnnotation<P>({
+    ...annotation,
+    shape: annotation.shape as ShapeInput,
+    properties: annotation.properties as P | undefined,
+  });
 }

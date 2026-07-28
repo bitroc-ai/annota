@@ -4,6 +4,7 @@
  */
 
 import type { Annotation, PointShape } from '../core/types';
+import { normalizeAnnotation } from '../core/normalization';
 
 /**
  * H5 data structure
@@ -90,7 +91,7 @@ export function h5ToAnnotations(h5Data: H5Data, options: H5LoaderOptions = {}): 
       bounds: { minX: x, minY: y, maxX: x, maxY: y },
     };
 
-    annotations.push({
+    annotations.push(normalizeAnnotation({
       id: `h5-point-${i}`,
       shape,
       properties: {
@@ -104,7 +105,7 @@ export function h5ToAnnotations(h5Data: H5Data, options: H5LoaderOptions = {}): 
         stroke: color,
         strokeWidth,
       },
-    });
+    }));
   }
 
   return annotations;

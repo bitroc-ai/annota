@@ -9,17 +9,20 @@ Understanding these core concepts will help you work effectively with Annota.
 
 ## Annotations
 
-An **annotation** is the fundamental unit in Annota. Each annotation contains:
+An **annotation** is the fundamental unit in Annota. Writes accept a mutable input:
 
 ```typescript
-interface Annotation {
+interface AnnotationInput {
   id: string;              // Unique identifier
-  shape: Shape;            // Geometry (point, rectangle, polygon)
+  shape: ShapeInput;       // Bounds may be omitted
   properties?: object;     // Custom metadata
   style?: AnnotationStyle; // Visual appearance
-  layerId?: string;        // Layer assignment
+  layerId?: string;        // Defaults to "default"
 }
 ```
+
+Annota returns a detached, deeply frozen `Annotation` snapshot. Its computed bounds and `layerId`
+are always present; update it through the annotation APIs instead of mutating the snapshot.
 
 ### Shape Types
 

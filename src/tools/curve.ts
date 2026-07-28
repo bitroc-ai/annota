@@ -3,7 +3,7 @@
  */
 
 import OpenSeadragon from 'openseadragon';
-import type { Annotation, Point, ControlPoint } from '../core/types';
+import type { AnnotationInput, Point, ControlPoint } from '../core/types';
 import type { ToolMutationTransaction } from '../adapters/openseadragon/annotator';
 import { calculateBounds } from '../core/types';
 import { BaseTool } from './base';
@@ -62,7 +62,7 @@ export class CurveTool extends BaseTool {
     this.transaction = this.annotator.tools.beginTransaction();
 
     // Create initial annotation (using polygon type for save/load symmetry)
-    const annotation: Annotation = {
+    const annotation: AnnotationInput = {
       id: this.currentAnnotationId,
       shape: {
         type: 'freehand',

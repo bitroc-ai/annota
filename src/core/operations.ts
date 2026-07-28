@@ -226,6 +226,12 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
       console.error('[mergeAnnotations] Union resulted in empty geometry');
       return null;
     }
+    if (result.some(polygon => polygon.length > 1)) {
+      console.error(
+        '[mergeAnnotations] Union contains holes, which the current Shape model cannot represent'
+      );
+      return null;
+    }
 
     // Use first annotation's properties as base
     const baseAnnotation = annotations[0];
@@ -236,8 +242,7 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
     let shape: PolygonShape | MultiPolygonShape;
 
     if (result.length === 1) {
-      // Single polygon (may have holes in result[0][1], result[0][2], etc.)
-      // For now, only use the outer ring (result[0][0]) and ignore holes
+      // Single polygon
       const points = coordinatesToPoints(result[0][0]);
       shape = {
         type: 'polygon',
@@ -258,6 +263,7 @@ export function mergeAnnotations(annotations: Annotation[]): Annotation | null {
     return {
       id: generateId(),
       shape,
+      layerId: baseAnnotation.layerId,
       properties,
       style: baseAnnotation.style,
     };
@@ -336,6 +342,7 @@ export function splitAnnotation(
       pieces.push({
         id: generateId(),
         shape,
+        layerId: annotation.layerId,
         properties: { ...annotation.properties },
         style: annotation.style,
       });

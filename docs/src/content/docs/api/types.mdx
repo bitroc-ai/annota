@@ -9,17 +9,29 @@ Complete TypeScript type definitions for Annota.
 
 ## Core Types
 
-### Annotation
+### Annotation input and snapshot
 
 ```typescript
-interface Annotation {
+interface AnnotationInput<P extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
-  shape: Shape;
-  properties?: Record<string, unknown>;
-  style?: AnnotationStyle;
+  shape: ShapeInput;
   layerId?: string;
+  properties?: P;
+  style?: AnnotationStyle;
+}
+
+interface Annotation<P extends Record<string, unknown> = Record<string, unknown>> {
+  readonly id: string;
+  readonly shape: Shape;
+  readonly layerId: string;
+  readonly properties?: DeepReadonly<P>;
+  readonly style?: Readonly<AnnotationStyle>;
 }
 ```
+
+`AnnotationInput` is mutable and may omit computed bounds and `layerId`. Values returned by Annota
+are normalized, detached, deeply frozen snapshots; their `layerId` is always present. Apply changes
+through the annotation update APIs.
 
 ### Shape
 
@@ -276,4 +288,3 @@ interface Point {
 ```typescript
 import type { Annotation, Shape, Layer, AnnotationStyle } from "annota";
 ```
-

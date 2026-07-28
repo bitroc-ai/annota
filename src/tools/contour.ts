@@ -3,7 +3,7 @@
  */
 
 import OpenSeadragon from 'openseadragon';
-import type { Annotation, PolygonShape } from '../core/types';
+import type { AnnotationInput, ShapeInput } from '../core/types';
 import { calculateBounds } from '../core/types';
 import { detectContour as defaultDetector, isOpenCVReady, initOpenCV } from '../extensions/opencv';
 import { BaseTool } from './base';
@@ -158,7 +158,7 @@ export class ContourTool extends BaseTool {
           return { x: imagePoint.x, y: imagePoint.y };
         });
 
-        const shape: PolygonShape = {
+        const shape: ShapeInput = {
           type: 'polygon',
           points: imagePolygon,
           bounds: calculateBounds({
@@ -168,7 +168,7 @@ export class ContourTool extends BaseTool {
           }),
         };
 
-        const annotation: Annotation = {
+        const annotation: AnnotationInput = {
           id: `contour-${Date.now()}`,
           shape,
           style: this.options.annotationStyle,

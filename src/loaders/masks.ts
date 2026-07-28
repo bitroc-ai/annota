@@ -193,6 +193,7 @@ async function loadMask8bit(
           });
           annotations.push({
             id: `mask-binary-${Date.now()}-${i}`,
+            layerId: 'masks',
             shape: {
               type: 'polygon',
               points,
@@ -295,6 +296,7 @@ async function loadMask8bit(
           if (points.length >= 3) {
             annotations.push({
               id: `mask-${instanceId}-${i}`,
+              layerId: 'masks',
               shape: {
                 type: 'polygon',
                 points,
@@ -469,6 +471,7 @@ async function loadMask16bit(arrayBuffer: ArrayBuffer): Promise<Annotation[]> {
         if (points.length >= 3) {
           annotations.push({
             id: `mask-${instanceId}-${i}`,
+            layerId: 'masks',
             shape: {
               type: 'polygon',
               points,
@@ -844,7 +847,7 @@ function rasterizePolygon16bit(
   mask: Uint16Array,
   width: number,
   height: number,
-  points: import('../core/types').Point[],
+  points: readonly import('../core/types').Point[],
   instanceId: number
 ): void {
   if (points.length < 3) return;
