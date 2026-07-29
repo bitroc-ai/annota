@@ -1,6 +1,6 @@
 {
   "name": "annota",
-  "version": "1.0.0",
+  "version": "0.11.0",
   "type": "module",
   "description": "An annotation framework for React and Svelte",
   "main": "dist/index.cjs",

@@ -15,7 +15,7 @@ documents.
 
 ## Decision
 
-Ship this atomic delivery as `annota@1.0.0`.
+Ship this atomic delivery as `annota@0.11.0`.
 
 - `annota` is framework-neutral and does not statically load React or Svelte.
 - `annota/react` is the canonical React entry.
