@@ -1,12 +1,15 @@
 {
   "name": "annota",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "type": "module",
   "description": "An annotation framework for React and Svelte",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup --config tsup.config.ts && pnpm build:svelte",
     "build:svelte": "svelte-package -i src/svelte -o dist/svelte",

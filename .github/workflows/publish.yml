@@ -58,7 +58,7 @@ jobs:
         with:
           version: 10.15.0
 
-      - name: Setup Node.js
+      - name: Setup Node.js for library compatibility
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -88,6 +88,13 @@ jobs:
 
       - name: Run benchmark regression gate
         run: pnpm benchmark:ci
+
+      - name: Setup Node.js for documentation
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install documentation dependencies
         run: pnpm --dir docs install --frozen-lockfile
