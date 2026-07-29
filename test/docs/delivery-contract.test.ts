@@ -44,11 +44,15 @@ describe('documentation delivery contract', () => {
     expect(publish).toBeGreaterThan(commit);
 
     const commitStep = workflow.slice(commit, publish);
+    const gitFetch = commitStep.indexOf('git fetch origin main');
+    const remoteDiff = commitStep.indexOf('git diff --quiet origin/main -- "$CHANGELOG_FILE"');
     const gitCommit = commitStep.indexOf('git commit ');
     const gitPush = commitStep.indexOf('git push ');
     expect(commitStep).toContain('set -euo pipefail');
-    expect(commitStep).toContain('if git diff --quiet -- "$CHANGELOG_FILE"; then');
+    expect(gitFetch).toBeGreaterThan(-1);
+    expect(remoteDiff).toBeGreaterThan(gitFetch);
     expect(gitCommit).toBeGreaterThan(-1);
+    expect(gitCommit).toBeGreaterThan(remoteDiff);
     expect(gitPush).toBeGreaterThan(gitCommit);
     expect(commitStep).not.toMatch(/git (?:commit|push)[^\n]*\|\|/);
   });
