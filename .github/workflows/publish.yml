@@ -26,7 +26,15 @@ jobs:
 
       - name: Check if src/ has changes
         id: check_changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual release requested; proceeding with publish"
+            echo "has_src_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
@@ -136,18 +144,26 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          RELEASE_TAG="v${RELEASE_VERSION}"
+          if git rev-parse --verify --quiet "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+            RELEASE_REF="$RELEASE_TAG"
+            PREV_TAG=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || echo "")
+          else
+            RELEASE_REF="HEAD"
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          fi
 
           if [ -z "$PREV_TAG" ]; then
             # First release - get all commits that touched src/ or package.json
-            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+            CHANGELOG=$(git log "$RELEASE_REF" --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           else
             # Get commits between tags that touched src/ or package.json
-            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
+            CHANGELOG=$(git log "${PREV_TAG}..${RELEASE_REF}" --pretty=format:"- %s (%h)" --no-merges -- src/ package.json)
           fi
 
           CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
+          git fetch origin main
+          git show "origin/main:${CHANGELOG_FILE}" > "$CHANGELOG_FILE"
           printf '%s\n' "$CHANGELOG" | node scripts/generate-changelog.mjs \
             --version "$RELEASE_VERSION" \
             --file "$CHANGELOG_FILE"
@@ -173,12 +189,18 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           CHANGELOG_FILE="docs/src/content/docs/changelog.mdx"
-          if git diff --quiet -- "$CHANGELOG_FILE"; then
-            echo "Changelog is already up to date; nothing to commit."
+          git fetch origin main
+
+          if git diff --quiet origin/main -- "$CHANGELOG_FILE"; then
+            echo "Changelog is already present on main; nothing to commit."
           else
             git add "$CHANGELOG_FILE"
             git commit -m "docs: add changelog for v${RELEASE_VERSION}"
-            git push origin HEAD:main
+            if ! git push origin HEAD:main; then
+              git fetch origin main
+              git rebase origin/main
+              git push origin HEAD:main
+            fi
           fi
 
       - name: Verify npm auth and package ownership
