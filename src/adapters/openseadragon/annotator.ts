@@ -260,7 +260,7 @@ export interface OpenSeadragonAnnotator {
   readonly events: AnnotatorEvents<AnnotatorEventMap>;
   readonly tools: ToolController;
   readonly unsafeState: OpenSeadragonAnnotatorState;
-  /** @deprecated Since 1.0.0. Use capability controllers or `unsafeState`. Planned removal: 2.0.0. */
+  /** @deprecated Since 0.11.0. Use capability controllers or `unsafeState`. Planned removal: 2.0.0. */
   readonly state: OpenSeadragonAnnotatorReadonlyState;
 
   // Annotation management (convenience methods)

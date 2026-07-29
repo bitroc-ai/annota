@@ -30,7 +30,7 @@ framework-neutral 根入口导入 React API，或从非 canonical 入口导入 t
 
 - `docs/INDEX.md`
 - `docs/plan/analysis/annota-refactoring.md`
-- `docs/plan/decisions/annota-1.0-atomic-delivery.md`
+- `docs/plan/decisions/annota-0.11-atomic-delivery.md`
 - `docs/src/content/docs/guides/migration-1-0.mdx`
 - `CONTRIBUTING.md`
 - `PUBLISHING.md`

@@ -1,4 +1,4 @@
-# Annota 1.0 Atomic Delivery Decision
+# Annota 0.11 Atomic Delivery Decision
 
 - Status: accepted
 - Date: 2026-07-27
@@ -7,11 +7,9 @@
 ## Context
 
 The original analysis and task contracts describe the compatibility rules for a
-minor-version migration: a minor release must retain React exports at the package
-root. This delivery intentionally combines the planned 0.11, 0.12, and 1.0
-milestones into one atomic major-version release, as requested by the delivery
-owner. The historical minor-version constraints remain unchanged in their source
-documents.
+pre-1.0 minor-version migration. This delivery packages the completed refactoring
+scope as one atomic pre-1.0 release while retaining the former root React surface
+through the explicit `annota/legacy-react` compatibility entry.
 
 ## Decision
 
@@ -25,8 +23,8 @@ Ship this atomic delivery as `annota@0.11.0`.
   the former React names with generated `@deprecated` declarations.
 - The compatibility proxy is planned for removal in 2.0.0.
 
-This is a major-version compatibility transition, not a retroactive change to
-the minor-version rules recorded in the analysis.
+This is a pre-1.0 compatibility transition. The original 1.0 roadmap remains a
+future stabilization target rather than the version assigned to this release.
 
 ## Verification
 

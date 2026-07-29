@@ -56,7 +56,7 @@ function verifyPackageShape(consumer, tarball) {
   for (const declaration of ['legacy-react.d.ts', 'legacy-react.d.cts']) {
     const content = readFileSync(join(consumer, 'node_modules/annota/dist', declaration), 'utf8');
     if (
-      !content.includes('@deprecated Since 1.0.0') ||
+      !content.includes('@deprecated Since 0.11.0') ||
       !content.includes('declare const Annotator') ||
       !content.includes('declare const AnnotaViewer')
     ) {

@@ -11,7 +11,7 @@ Git 历史、npm 包入口及同一工作区中的已知 BitPath consumer。没�
 ## 已知 BitPath consumer
 
 BitPath 当前在 `package.json` 中依赖 `annota: ^0.10.11`。SemVer 的 caret 范围不会
-接受 `1.0.0`，因此 BitPath 不会因 Annota 1.0 发布而自动升级；升级必须由 BitPath
+接受 `0.11.0`，因此 BitPath 不会因 Annota 0.11 发布而自动升级；升级必须由 BitPath
 显式修改依赖版本并完成迁移。
 
 BitPath 当前有多类从包根 `annota` 导入的调用：
@@ -25,7 +25,7 @@ BitPath 当前有多类从包根 `annota` 导入的调用：
   `exportMasksToPng`。
 - `Annotation`、`SamPredictFn` 等类型导入。
 
-升级到 1.0 时，React 静态和动态导入应迁移到 `annota/react`，工具迁移到
+升级到 0.11 时，React 静态和动态导入应迁移到 `annota/react`，工具迁移到
 `annota/tools`，loader 迁移到 `annota/loaders`；框架无关类型和核心 API 可继续从
 `annota` 导入。若 BitPath 需要先做最小改动验证，可临时把旧的包根导入改为
 `annota/legacy-react`，但该兼容入口计划在 2.0 删除。完成这些导入迁移并运行 BitPath

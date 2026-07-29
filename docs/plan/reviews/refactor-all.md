@@ -23,7 +23,7 @@ package exports、CI、benchmark 和文档。阻塞发现均已在同一交付�
 
 独立 verify 共进行六轮；前五轮的 blocking findings 均在同一交付分支修复，第六轮
 结论为 `pass`，没有遗留 blocking 或 non-blocking finding。包按原子交付 ADR 升级为
-`1.0.0`：根入口保持 framework-neutral；原根入口的 React 消费面由完整的
+`0.11.0`：根入口保持 framework-neutral；原根入口的 React 消费面由完整的
 `annota/legacy-react` 迁移代理承接，并计划在 2.0 删除。
 
 ## 验证结果

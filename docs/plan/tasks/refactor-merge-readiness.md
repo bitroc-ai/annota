@@ -27,7 +27,7 @@ merge to `main`, or modify the separate BitPath repository.
 - `docs/plan/README.md`
 - `docs/plan/analysis/annota-refactoring.md`
 - `docs/plan/analysis/manager-domain-usage-audit.md`
-- `docs/plan/decisions/annota-1.0-atomic-delivery.md`
+- `docs/plan/decisions/annota-0.11-atomic-delivery.md`
 - `docs/src/content/docs/guides/migration-1-0.mdx`
 - `PUBLISHING.md`
 

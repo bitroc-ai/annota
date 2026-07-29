@@ -13,11 +13,11 @@
   每次均为 17 files / 189 tests 通过，scanner 用例未超过显式 15 秒 timeout。
 - 任务 release contract、`.github/workflows/publish.yml` 与
   `scripts/validate-release-package-version.mjs`：package version 校验位于 changelog
-  生成之前；独立以 `1.0.1` 对当前 `package.json.version` `1.0.0` 验证时退出码为 1，
+  生成之前；独立以 `0.11.1` 对当前 `package.json.version` `0.11.0` 验证时退出码为 1，
   因而 mismatch 会在 changelog mutation 和 publish 之前终止。
 - 任务 changelog contract 与 `scripts/generate-changelog.mjs`：使用含两个
-  `v1.0.0` section 的临时 changelog，连续两次生成 `1.0.0` 后文件内容字节一致，
-  且只剩一个 `v1.0.0` section，其他版本 section 保留。
+  `v0.11.0` section 的临时 changelog，连续两次生成 `0.11.0` 后文件内容字节一致，
+  且只剩一个 `v0.11.0` section，其他版本 section 保留。
 - `docs/plan/analysis/annota-refactoring.md` 的只读快照合同与
   `src/core/normalization.ts`：独立调用构建产物的 `normalizeAnnotation`，确认
   `handleIn` / `handleOut` 与输入引用分离；修改输入不影响快照，递归遍历 Path

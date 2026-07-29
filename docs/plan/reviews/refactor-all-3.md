@@ -39,13 +39,13 @@ commit: 8f0f4096cf8b17cca6fb828e6fd414a963ac4d8e
 
 | # | 第三轮结果 | 验证摘要 |
 | --- | --- | --- |
-| 1 | closed | 发布版本为 1.0.0；原分析/任务中的历史 minor 约束已恢复。新 ADR 只解释原子 major 交付，没有改写历史事实；root 框架中立，`legacy-react` 完整代理旧根 surface。packed root/React/legacy React/Svelte consumer 均通过。 |
+| 1 | closed | 发布版本为 0.11.0；原分析/任务中的历史 minor 约束已恢复。新 ADR 说明原子 pre-1.0 交付，没有改写未来 1.0 路线；root 框架中立，`legacy-react` 完整代理旧根 surface。packed root/React/legacy React/Svelte consumer 均通过。 |
 | 2 | closed | `state` 是独立、冻结、只含查询/观察能力的 readonly wrapper；与 `unsafeState` 对象不同，类型和运行时均不暴露 store/history 写方法。 |
 | 3 | closed | Split 预览、提交和取消统一使用 tool transaction；真实集成测试验证 transient preview、单个 transaction、一次 undo、undo 恢复和 cancel 不留历史。 |
 | 4 | partial / blocked | 已有独立 manager 和真实 Annotator 注入，但共享 contract suite 不完整且独立实现实际违反 Store/Layer 正式契约，见 finding 1。 |
 | 5 | closed | 非 click drag 在 release 命中另一 annotation 时仍先提交被拖对象；交叠测试验证最终 update 只属于移动对象且 undo 可恢复。 |
 | 6 | closed | OpenCV 主资源改为逐项可选分配并在 `finally` 逆序释放；测试覆盖 contours/hierarchy 构造抛错，先前分配对象均只删除一次。 |
-| 7 | closed | packed `legacy-react.d.ts` 和 `.d.cts` 均保留逐导出 `@deprecated Since 1.0.0`、替代入口和 2.0.0 删除计划；声明同时包含旧 React 名及完整 neutral/tools/loaders surface。 |
+| 7 | closed | packed `legacy-react.d.ts` 和 `.d.cts` 均保留逐导出 `@deprecated Since 0.11.0`、替代入口和 2.0.0 删除计划；声明同时包含旧 React 名及完整 neutral/tools/loaders surface。 |
 
 ## 验证记录
 
